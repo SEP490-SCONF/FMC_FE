@@ -20,37 +20,11 @@ Trang web này được thiết kế để:
   - React.js
   - HTML5, CSS3
   - JavaScript (ES6+)
-  
-- **Backend**:
-  - ASP.NET Core
-  - C#
-  - Entity Framework Core
-  
-- **Cơ sở dữ liệu**: 
-  - SQL Server
-
 ---
 
 ## 🧑‍💻 Cài Đặt và Sử Dụng
 
-### Bước 1: Cài Đặt Backend
-
-1. Cài đặt **.NET Core SDK** (nếu chưa cài đặt):  
-   Tải về và cài đặt từ [dotnet.microsoft.com](https://dotnet.microsoft.com/download).
-
-2. Clone repo này về máy của bạn:
-   ```bash
-   git clone https://github.com/SEP490-SCONF/SCONF.git
-3. Điều hướng đến thư mục chứa backend của dự án:
-   ```bash
-   cd Backend
-4. Cài đặt các package cần thiết:
-   ```bash
-   dotnet restore
-5. Chạy ứng dụng:
-   ```bash
-   dotnet run
-### Bước 2: Cài Đặt Frontend
+### Cài Đặt Frontend
 1. Điều hướng đến thư mục frontend của dự án:
    ```bash
    cd Frontend
