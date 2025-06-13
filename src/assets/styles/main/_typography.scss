@@ -1,0 +1,309 @@
+.display-one {
+	font-size: 120px;
+	@include maxQuery(1499){
+		font-size: 100px;
+	}
+	@include maxQuery(1199){
+		font-size: 90px;
+	}
+}
+.display-ex-one {
+	font-size: 280px;
+	@include maxQuery(1499){
+		font-size: 100px;
+	}
+	@include maxQuery(1199){
+		font-size: 90px;
+	}
+}
+.display-ex-three {
+	font-size: 200px;
+	@include maxQuery(1199){
+		font-size: 170px;
+	}
+	@include maxQuery(991){
+		font-size: 150px;
+	}
+	@include maxQuery(767){
+		font-size: 110px;
+	}
+	@include maxQuery(575){
+		font-size: 80px;
+	}
+}
+
+.display-two {
+	font-size: 80px;
+}
+
+.display-ex-two {
+	font-size: 96px;
+	@include maxQuery(1599){
+		font-size: 80px;
+	}
+	@include maxQuery(1199){
+		font-size: 60px;
+	}
+	@include maxQuery(767){
+		font-size: 40px;
+	}
+}
+
+.display-three {
+	font-size: 64px;
+}
+
+.display-four {
+	font-size: 56px;
+}
+
+.display-five {
+	font-size: 48px;
+}
+
+.display-six {
+	font-size: 32px;
+}
+
+.fs-one,
+h1 {
+	font-size: 64px;
+}
+
+.fs-two,
+h2 {
+	font-size: 52px;
+}
+
+.fs-three,
+h3 {
+	font-size: 34px;
+}
+
+.fs-four,
+h4 {
+	font-size: 28px;
+}
+
+.fs-five,
+h5 {
+	font-size: 24px;
+	line-height: 130%;
+}
+
+.fs-six,
+h6 {
+	font-size: 20px;
+	line-height: 130%;
+}
+
+.fs-seven {
+	font-size: 18px;
+	line-height: 130%;
+}
+
+.fs-eight {
+	font-size: 16px;
+	line-height: 130%;
+}
+
+.fs-nine {
+	font-size: 14px;
+	line-height: 130%;
+}
+
+.fs-ten {
+	font-size: 12px;
+	line-height: 130%;
+}
+
+table thead tr th {
+	font-size: 18px;
+	line-height: 130%;
+}
+
+a, 
+p,
+button,
+span,
+label,
+li {
+	font-size: 16px;
+	line-height: 130%;
+}
+
+@media (max-width: 1199px) {
+	h1 {
+		font-size: 57px;
+		line-height: 74.1px;
+	}
+	h2 {
+		font-size: 43px;
+		line-height: 55.9px;
+	}
+	.preloader {
+		background-size: 30%;
+	}
+}
+
+.pt-120 {
+	padding-top: 120px;
+}
+
+.pb-120 {
+	padding-bottom: 120px;
+}
+
+@media (max-width: 991px) {
+	// Normalize
+	.display-one {
+		font-size: 72px;
+		line-height: 86.4px;
+	}
+	
+	.display-two {
+		font-size: 64px;
+		line-height: 76.8px;
+	}
+	
+	.display-three {
+		font-size: 56px;
+		line-height: 67.2px;
+	}
+	
+	.display-four {
+		font-size: 48px;
+		line-height: 46.4px;
+	}
+	
+	.display-five {
+		font-size: 42px;
+		line-height: 54.6px;
+	}
+	
+	.display-six {
+		font-size: 32px;
+		line-height: 38.4px;
+	}
+
+	.fs-one,
+	h1 {
+		font-size: 40px;
+		line-height: 48px;
+	}
+	
+	.fs-two,
+	h2 {
+		font-size: 32px;
+		line-height: 38.4px;
+	}
+	
+	.fs-three,
+	h3 {
+		font-size: 24px;
+		line-height: 31.2px;
+	}
+	
+	.fs-four,
+	h4 {
+		font-size: 20px;
+		line-height: 26px;
+	}
+	
+	.fs-five,
+	h5 {
+		font-size: 18px;
+		line-height: 20.8px;
+	}
+	
+	.fs-six,
+	h6 {
+		font-size: 16px;
+		line-height: 18.8px;
+	}
+	
+	.fs-seven {
+		font-size: 16px;
+		line-height: 18.8px;
+	}
+	
+	.fs-eight {
+		font-size: 14px;
+		line-height: 18px;
+	}
+	
+	.fs-nine {
+		font-size: 12px;
+		line-height: 130%;
+	}
+
+	.fs-ten {
+		font-size: 10px;
+		line-height: 130%;
+	}
+	
+	table thead tr th {
+		font-size: 15px;
+		line-height: 20.8px;
+	}
+	
+	a,
+	p,
+	span,
+	button,
+	label,
+	li {
+		font-size: 14px;
+		line-height: 22px;
+	}
+
+	.pt-120 {
+		padding-top: 60px;
+	}
+	.pb-120 {
+		padding-bottom: 60px;
+	}
+
+	.banner-section .overlay .sec-img{
+		display: none;
+	}
+}
+
+@media (max-width: 575px) {
+	.display-one {
+		font-size: 42px;
+		line-height: 54.6px;
+	}
+	
+	.display-two {
+		font-size: 40px;
+		line-height: 46.4px;
+	}
+	
+	.display-three {
+		font-size: 38px;
+		line-height: 54.6px;
+	}
+	
+	.display-four {
+		font-size: 32px;
+		line-height: 38.4px;
+	}
+	
+	.display-five {
+		font-size: 24px;
+		line-height: 31.2px;
+	}
+	
+	.display-six {
+		font-size: 32px;
+		line-height: 38.4px;
+	}
+
+	.pt-120 {
+		padding-top: 50px;
+	}
+	.pb-120 {
+		padding-bottom: 50px;
+	}
+}

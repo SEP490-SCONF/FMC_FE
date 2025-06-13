@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import './App.css'
 import Header from './components/layout/Header'
-import Home from './pages/Home'
+import Footer from './components/layout/Footer'
+import Login from './pages/Login'
+
 
 
 function App() {
@@ -10,7 +12,8 @@ function App() {
     <>
       <div>
         <Header />
-        <Home />
+        <Login />
+        <Footer />
       </div>
     </>
   )

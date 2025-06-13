@@ -1,0 +1,338 @@
+@import '../main/_mixins';
+@import '../../css/plugins/fontawesome.min.css';
+
+
+
+.header-section {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 5;
+
+    @include maxQuery(991) {
+        background-color: rgba(var(--n2), 1);
+    }
+
+    .nav-brand {
+        width: 265px;
+        max-width: 265px;
+
+        @include maxQuery(991) {
+            width: 150px;
+            max-width: 150px;
+        }
+    }
+
+    // Navbar Start
+    .main-navbar {
+        @include maxQuery(991) {
+            .navbar-toggle-item {
+                display: none;
+            }
+
+            .nav-logo {
+                width: 100%;
+            }
+        }
+
+        @include minQuery(992) {
+            .navbar-toggle-item {
+                display: initial !important;
+            }
+        }
+
+        .logo {
+            @include minQuery(1199) {
+                display: none;
+            }
+        }
+
+        .custom-nav {
+            .menu-item {
+                button {
+                    &::after {
+                        position: absolute;
+                        content: "";
+                        font-family: "FontAwesome";
+                        font-weight: 500;
+                        font-size: 12px;
+                        right: 0;
+                        z-index: -1;
+                        transition: all 1s ease;
+                    }
+
+                    &.arrow-none {
+                        &::after {
+                            display: none;
+                        }
+                    }
+                }
+            }
+
+            .menu-item,
+            .menu-link {
+
+                button,
+                a {
+                    transition: var(--transition);
+                    font-weight: 500;
+                }
+            }
+
+            @include maxQuery(991) {
+                max-height: 50vh;
+                overflow-y: scroll;
+                overflow-x: hidden;
+                width: 100%;
+
+                .sub-menu {
+                    display: none;
+                    border-left: 1px solid rgba(var(--p6), 1);
+                    padding: 10px 20px;
+
+                    a,
+                    button {
+                        position: relative;
+
+                        &::before {
+                            content: '';
+                            position: absolute;
+                            background-color: rgb(var(--p6));
+                            width: 16px;
+                            height: 1px;
+                            left: -20px;
+                            top: 5px;
+                            z-index: -1;
+                        }
+                    }
+                }
+            }
+
+            @include minQuery(992) {
+                .menu-item {
+                    position: relative;
+
+                    &:hover {
+                        >.sub-menu {
+                            opacity: 1;
+                            visibility: visible;
+                            transform: translateY(0);
+                            pointer-events: auto;
+                        }
+                    }
+
+                    button {
+                        &:hover {
+                            button {
+                                &::after {
+                                    transform: rotate(-180deg);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                .sub-menu {
+                    position: absolute;
+                    top: 24px;
+                    left: 0;
+                    opacity: 0;
+                    width: max-content;
+                    visibility: hidden;
+                    transform: translateY(20px);
+                    text-wrap: nowrap;
+                    transition: var(--transition);
+                    display: initial !important;
+                    z-index: 10;
+                    pointer-events: none;
+
+                    &::after {
+                        content: "";
+                        position: absolute;
+                        width: 16px;
+                        height: 16px;
+                        top: -8px;
+                        right: calc(100% - 24px);
+                        z-index: -1;
+                        transform: rotate(45deg);
+                    }
+
+                    .sub-menu {
+                        left: 100%;
+                        top: -20px;
+                    }
+                }
+            }
+        }
+    }
+
+    .navbar-toggle-btn {
+        width: 40px;
+        height: 28px;
+        position: relative;
+        right: 0;
+        transition: var(--transition);
+        top: 0;
+
+        span {
+            display: block;
+            position: absolute;
+            height: 3px;
+            width: 100%;
+            background: rgb(var(--n1));
+            border-radius: 9px;
+            opacity: 1;
+            left: 0;
+            transform: rotate(0deg);
+            transition: var(--transition);
+
+            &:nth-child(1) {
+                top: 0;
+            }
+
+            &:nth-child(2),
+            &:nth-child(3) {
+                top: 12px;
+            }
+
+            &:nth-child(4) {
+                top: 24px;
+            }
+        }
+
+        &.open {
+            span {
+                &:nth-child(1) {
+                    top: 18px;
+                    width: 0%;
+                    left: 50%;
+                }
+
+                &:nth-child(2) {
+                    transform: rotate(45deg);
+                }
+
+                &:nth-child(3) {
+                    transform: rotate(-45deg);
+                }
+
+                &:nth-child(4) {
+                    top: 18px;
+                    width: 0%;
+                    left: 50%;
+                }
+            }
+        }
+    }
+
+    &.index-two {
+        @include maxQuery(991) {
+            background-color: rgba(var(--n1), 1);
+        }
+
+        .navbar-toggle-btn {
+            span {
+                background: rgb(var(--p7));
+            }
+        }
+    }
+}
+
+// sidebar-items
+.sidebar-items {
+    .cmn-head {
+        cursor: pointer;
+    }
+
+    .single-item {
+        position: relative;
+
+        .close-btn {
+            right: 15px;
+            top: 15px;
+        }
+
+        .nav-items-wrapper {
+            max-width: 500px;
+            min-height: 100vh;
+            overflow-y: auto;
+            backdrop-filter: blur(22.5px);
+            z-index: 999;
+            transform: translateX(100%);
+            transition: all 1.3s;
+        }
+
+        &.active {
+            .nav-items-wrapper {
+                transform: translateX(0);
+            }
+        }
+    }
+
+    .content-box {
+        .icon-box {
+            max-width: 100px;
+        }
+    }
+}
+
+// Sidebar Menu
+.sidebar-wrapper {
+    .side-menubar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        z-index: 5;
+    }
+
+    .nav-brand {
+        .logo {
+            transform: rotate(-90deg);
+        }
+    }
+
+    .slider-pagination {
+        span {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: transparent;
+            font-size: inherit;
+            width: initial;
+            height: initial;
+            color: inherit;
+            opacity: 1;
+
+            &.swiper-pagination-bullet-active {
+                color: rgba(var(--p6), 1);
+                font-weight: 600;
+            }
+        }
+    }
+}
+
+
+// sticky header 
+.header-fixed {
+    background: rgba(var(--n2), 1);
+
+    .top-header,
+    .categories {
+        display: none !important;
+    }
+
+    .main-navbar {
+        .logo {
+            display: block;
+
+            @include maxQuery(991) {
+                display: none;
+            }
+        }
+    }
+
+    &.index-two {
+        background: rgba(var(--n1), 1);
+    }
+}

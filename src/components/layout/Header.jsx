@@ -3,6 +3,7 @@ import favLogo from "../../assets/images/fav-2.png";
 import logoText from "../../assets/images/logo-text.png";
 import "../../assets/css/style.min.css";
 
+
 const Header = () => {
     return (
         <header className="header-section index-two n1-bg-color py-4 px-2 px-md-6">
@@ -11,8 +12,8 @@ const Header = () => {
                     <nav className="navbar-custom">
                         <div className="d-flex align-items-center justify-content-between">
                             <a href="index.html" className="nav-brand d-flex align-items-center gap-2 d-lg-none">
-                                <img src="assets/images/fav-2.png" alt="logo" />
-                                <img src="assets/images/logo-text.png" alt="logo" />
+                                <img src={favLogo} alt="logo" />
+                                <img src={logoText} alt="logo" />
                             </a>
                             <div className="d-flex gap-6">
                                 <button className="navbar-toggle-btn d-block d-lg-none" type="button">
@@ -26,13 +27,17 @@ const Header = () => {
                         <div className="navbar-toggle-item">
                             <div className="d-flex gap-5 flex-column flex-lg-row align-items-start align-items-lg-center justify-content-between mt-5 mt-lg-0">
                                 <a href="index.html" className="navbar-brand logo d-none d-lg-flex d-xl-flex d-lg-flex gap-2 align-items-center">
-                                    <img src="assets/images/fav-2.png" alt="logo" />
-                                    <img src="assets/images/logo-text.png" className="d-none d-md-none d-xl-flex" alt="logo" />
+                                    <img src={favLogo} alt="logo" />
+                                    <img src={logoText} className="d-none d-md-none d-xl-flex" alt="logo" />
                                 </a>
                                 <ul className="custom-nav third d-lg-flex d-grid gap-3 gap-lg-4">
-                                    <li className="menu-item position-relative">
+                                    <li className="menu-item position-relative menu-link">
                                         <button className="position-relative pe-5 z-1 slide-third text-uppercase slide-vertical" data-splitting>
-                                            Home
+                                            HOME
+                                            <span className="dropdown-arrow ms-2">
+
+                                            </span>
+
                                         </button>
                                         <ul className="sub-menu n1-bg-color p-lg-5">
                                             <li className="menu-link py-1 py-lg-2">
@@ -73,9 +78,12 @@ const Header = () => {
                                             </li>
                                         </ul>
                                     </li>
-                                    <li className="menu-item position-relative">
+                                    <li className="menu-item position-relative menu-link">
                                         <button className="position-relative pe-5 z-1 slide-third text-uppercase slide-vertical" data-splitting>
-                                            Pages
+                                            PAGES
+                                            <span className="dropdown-arrow ms-2">
+
+                                            </span>
                                         </button>
                                         <ul className="sub-menu n1-bg-color p-lg-5">
                                             <li className="menu-link py-1">
@@ -116,9 +124,12 @@ const Header = () => {
                                             </li>
                                         </ul>
                                     </li>
-                                    <li className="menu-item position-relative">
+                                    <li className="menu-item position-relative menu-link">
                                         <button className="position-relative pe-5 z-1 slide-third text-uppercase slide-vertical" data-splitting>
-                                            Blog
+                                            BLOG
+                                            <span className="dropdown-arrow ms-2">
+
+                                            </span>
                                         </button>
                                         <ul className="sub-menu n1-bg-color p-lg-5">
                                             <li className="menu-link py-1">
@@ -138,9 +149,12 @@ const Header = () => {
                                             </li>
                                         </ul>
                                     </li>
-                                    <li className="menu-item position-relative">
+                                    <li className="menu-item position-relative menu-link">
                                         <button className="position-relative pe-5 z-1 slide-third text-uppercase slide-vertical" data-splitting>
-                                            Shop
+                                            SHOP
+                                            <span className="dropdown-arrow ms-2">
+
+                                            </span>
                                         </button>
                                         <ul className="sub-menu n1-bg-color p-lg-5">
                                             <li className="menu-link py-1">
@@ -160,9 +174,12 @@ const Header = () => {
                                             </li>
                                         </ul>
                                     </li>
-                                    <li className="menu-item position-relative">
+                                    <li className="menu-item position-relative menu-link">
                                         <button className="position-relative pe-5 z-1 slide-third text-uppercase slide-vertical" data-splitting>
-                                            Event
+                                            EVENT
+                                            <span className="dropdown-arrow ms-2">
+
+                                            </span>
                                         </button>
                                         <ul className="sub-menu n1-bg-color p-lg-5">
                                             <li className="menu-link py-1">
