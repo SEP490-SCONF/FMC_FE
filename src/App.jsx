@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import './App.css'
-import Header from './components/layout/Header'
-import Footer from './components/layout/Footer'
 import Login from './pages/Login'
+import Home from './pages/Home'
 
 
 
@@ -11,12 +10,14 @@ function App() {
   return (
     <>
       <div>
-        <Header />
-        <Login />
-        <Footer />
+
+        <Home />
+
       </div>
     </>
   )
 }
 
 export default App
+
+

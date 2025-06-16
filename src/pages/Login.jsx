@@ -1,6 +1,6 @@
 import React from "react";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
-import bgImage from "../assets/images/tru-so-fpt20250415141843.jpg"; // Make sure this path is correct
+import bgImage from "../assets/images/FPTinformationsytem.jpg"; // Make sure this path is correct
 
 const clientId = "YOUR_GOOGLE_CLIENT_ID"; // Replace with your Google OAuth client ID
 
