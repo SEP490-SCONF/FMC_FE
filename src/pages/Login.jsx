@@ -2,22 +2,25 @@ import React from "react";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import bgImage from "../assets/images/FPTinformationsytem.jpg"; // Make sure this path is correct
 
-const clientId = "YOUR_GOOGLE_CLIENT_ID"; // Replace with your Google OAuth client ID
+const clientId = "170897089182-ki6hqkt96pjabhg2tlqhk27csufvqhq4.apps.googleusercontent.com";
 
 const Login = () => {
     const handleSuccess = async (credentialResponse) => {
         const credential = credentialResponse.credential;
         try {
-            // Send the credential to your .NET backend
-            const res = await fetch("https://your-backend-url/api/auth/google", {
+            // Gửi credential lên backend
+            const res = await fetch("https://localhost:7205/api/GoogleLogin/Login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ token: credential }),
+                body: JSON.stringify({ idToken: credential }),
+                credentials: "include" // Để nhận cookie HttpOnly từ backend
             });
             if (res.ok) {
                 const data = await res.json();
-                // Save JWT/token, redirect, etc.
-                console.log("Backend login success:", data);
+                // Lưu accessToken vào localStorage
+                localStorage.setItem("accessToken", data.accessToken);
+                // Chuyển hướng hoặc reload
+                window.location.href = "/";
             } else {
                 console.error("Backend login failed");
             }

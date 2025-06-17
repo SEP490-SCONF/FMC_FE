@@ -1,10 +1,32 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { apiService } from '../../api/ApiService';
 import favLogo from "../../assets/images/fav-2.png";
 import logoText from "../../assets/images/logo-text.png";
 import "../../assets/css/style.min.css";
 
 
 const Header = () => {
+    const [user, setUser] = useState(null);
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            const token = localStorage.getItem("accessToken");
+            if (!token) return;
+            try {
+                const userInfo = await apiService.get("/User/Information");
+                setUser(userInfo);
+            } catch (err) {
+                setUser(null);
+            }
+        };
+        fetchUser();
+    }, []);
+
+    const handleLogout = () => {
+        localStorage.removeItem("accessToken");
+        window.location.href = "/auth/login";
+    };
+
     return (
         <header className="header-section index-two n1-bg-color py-4 px-2 px-md-6">
             <div className="container-fluid">
@@ -338,9 +360,17 @@ const Header = () => {
                                         </div>
                                     </div>
                                     <div className="single-item d-none d-lg-block">
-                                        <a href="sign-in.html" className="box-style box-second first-alt alt-two d-center gap-2 py-2 py-md-3 px-3 px-md-6 px-xl-9">
-                                            <span className="fs-seven">Join Forum</span>
-                                        </a>
+                                        {user ? (
+                                            <div className="d-flex align-items-center gap-2">
+                                                <img src={user.avatarUrl} alt="avatar" style={{ width: 32, height: 32, borderRadius: "50%" }} />
+                                                <span>{user.name}</span>
+                                                {/* <button onClick={handleLogout} className="btn btn-link">Logout</button> */}
+                                            </div>
+                                        ) : (
+                                            <a href="/auth/login" className="box-style box-second first-alt alt-two d-center gap-2 py-2 py-md-3 px-3 px-md-6 px-xl-9">
+                                                <span className="fs-seven">Join Forum</span>
+                                            </a>
+                                        )}
                                     </div>
                                 </div>
                             </div>
