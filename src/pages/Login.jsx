@@ -1,6 +1,8 @@
 import React from "react";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
-import bgImage from "../assets/images/FPTinformationsytem.jpg"; // Make sure this path is correct
+import Header from "../components/layout/Header";
+import Footer from "../components/layout/Footer";
+import bgImage from "../assets/images/tru-so-fpt20250415141843.jpg"; // Make sure this path is correct
 
 const clientId = "170897089182-ki6hqkt96pjabhg2tlqhk27csufvqhq4.apps.googleusercontent.com";
 
@@ -34,29 +36,33 @@ const Login = () => {
     };
 
     return (
-        <div
-            className="login-page d-center"
-            style={{
-                minHeight: "100vh",
-                backgroundImage: `url(${bgImage})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-                backgroundRepeat: "no-repeat",
-            }}
-        >
-            <div className="login-box p-5 rounded shadow" style={{ background: "#fff" }}>
-                <GoogleOAuthProvider clientId={clientId}>
-                    <GoogleLogin
-                        onSuccess={handleSuccess}
-                        onError={handleError}
-                        width="100%"
-                        shape="rectangular"
-                        text="signin_with"
-                        theme="filled_blue"
-                    />
-                </GoogleOAuthProvider>
+        <>
+            <Header />
+            <div
+                className="login-page d-center"
+                style={{
+                    minHeight: "100vh",
+                    backgroundImage: `url(${bgImage})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center",
+                    backgroundRepeat: "no-repeat",
+                }}
+            >
+                <div className="login-box p-5 rounded shadow" style={{ background: "#fff" }}>
+                    <GoogleOAuthProvider clientId={clientId}>
+                        <GoogleLogin
+                            onSuccess={handleSuccess}
+                            onError={handleError}
+                            width="100%"
+                            shape="rectangular"
+                            text="signin_with"
+                            theme="filled_blue"
+                        />
+                    </GoogleOAuthProvider>
+                </div>
             </div>
-        </div>
+            <Footer />
+        </>
     );
 };
 

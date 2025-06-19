@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import './App.css'
-import Login from './pages/Login'
 import Home from './pages/Home'
+import CommiteeList from './pages/CommitteeList'
+import CallForPaper from './pages/CallForPaper'
 
 
 
@@ -11,7 +12,7 @@ function App() {
     <>
       <div>
 
-        <Home />
+        <CallForPaper />
 
       </div>
     </>
@@ -19,5 +20,3 @@ function App() {
 }
 
 export default App
-
-

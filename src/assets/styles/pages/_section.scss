@@ -1162,3 +1162,36 @@
         }
     }
 }
+
+.cfp-submit-btn {
+    transition: background 0.3s, color 0.3s;
+
+    &:hover {
+        color: #000000 !important;
+        background: #5927a6 !important;
+    }
+}
+
+.cfp-deadlines ul {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-left: 0;
+    list-style: none;
+}
+
+.cfp-deadlines ul li {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.25rem;
+    margin-bottom: 0;
+}
+
+.cfp-align-left {
+    text-align: left !important;
+}
+
+.cfp-align-left ul {
+    margin-left: 0 !important;
+}
