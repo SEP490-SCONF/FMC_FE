@@ -12,7 +12,7 @@ const Home = () => {
     return (
         <>
             <Header />
-            <main>
+            <main className="pt-20">
                 <Banner />
                 <Service />
                 <Event />

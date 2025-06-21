@@ -9,7 +9,7 @@ const Comm = () => {
     return (
         <>
             <Header />
-            <main>
+            <main className="pt-20">
                 <ComTop />
                 <Committee />
             </main>
