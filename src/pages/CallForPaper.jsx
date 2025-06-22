@@ -1,13 +1,14 @@
 import CFP from "../components/layout/CFP";
 import Header from "../components/layout/Header";
 import Footer from "../components/layout/Footer";
+import ConferenceHeader from "../components/header/ConferenceHeader";
 
 
 
 const CallForPaper = () => {
     return (
         <>
-            <Header />
+            <ConferenceHeader />
             <main>
                 <CFP />
             </main>
