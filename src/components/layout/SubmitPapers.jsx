@@ -12,8 +12,13 @@ const rules = [
     "At least one author must register and present if accepted.",
 ];
 
+const topics = ["AI", "Web", "Business", "Sport", "Music"];
+
 const SubmitPapers = () => {
     const [file, setFile] = useState(null);
+    const [title, setTitle] = useState("");
+    const [abstract, setAbstract] = useState("");
+    const [topic, setTopic] = useState(topics[0]);
 
     const handleFileChange = (e) => {
         setFile(e.target.files[0]);
@@ -21,8 +26,8 @@ const SubmitPapers = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (!file) {
-            alert("Please select a file to submit.");
+        if (!file || !title || !abstract || !topic) {
+            alert("Please fill in all fields and select a file.");
             return;
         }
         // Handle file upload logic here (e.g., send to backend)
@@ -48,6 +53,48 @@ const SubmitPapers = () => {
                             </ul>
                         </div>
                         <form onSubmit={handleSubmit} className="d-grid gap-4">
+                            <div className="mb-3">
+                                <label htmlFor="title" className="fw-semibold mb-2 d-block">
+                                    Title
+                                </label>
+                                <input
+                                    type="text"
+                                    id="title"
+                                    className="form-control"
+                                    value={title}
+                                    onChange={e => setTitle(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div className="mb-3">
+                                <label htmlFor="abstract" className="fw-semibold mb-2 d-block">
+                                    Abstract
+                                </label>
+                                <input
+                                    type="text"
+                                    id="abstract"
+                                    className="form-control"
+                                    value={abstract}
+                                    onChange={e => setAbstract(e.target.value)}
+                                    required
+                                />
+                            </div>
+                            <div className="mb-3">
+                                <label htmlFor="topic" className="fw-semibold mb-2 d-block">
+                                    Topic
+                                </label>
+                                <select
+                                    id="topic"
+                                    className="form-control"
+                                    value={topic}
+                                    onChange={e => setTopic(e.target.value)}
+                                    required
+                                >
+                                    {topics.map((t) => (
+                                        <option key={t} value={t}>{t}</option>
+                                    ))}
+                                </select>
+                            </div>
                             <div className="mb-3">
                                 <label htmlFor="paperFile" className="fw-semibold mb-2 d-block">
                                     Upload Paper (PDF, DOC, DOCX)

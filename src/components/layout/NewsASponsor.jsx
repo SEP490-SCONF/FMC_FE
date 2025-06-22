@@ -40,15 +40,15 @@ const NewsAndSponsorPage = () => {
             {/* Sponsor bên trên */}
             <section className="animated fadeInUp mb-5">
                 <h3 className="mb-4 fw-bold">Sponsor</h3>
-                <div className="row g-4 justify-content-center">
+                <div className="row g-3 justify-content-center">
                     {sponsorList.map(sponsor => (
-                        <div className="col-6 col-md-6 col-lg-6 text-center" key={sponsor.id}>
+                        <div className="col-4 col-md-3 col-lg-2 text-center" key={sponsor.id}>
                             <a href={sponsor.website} target="_blank" rel="noopener noreferrer">
                                 <img
                                     src={sponsor.logo}
-                                    alt={sponsor.name}
+                                    alt="Sponsor logo"
                                     className="img-fluid mb-2"
-                                    style={{ height: 50, width: 120, objectFit: 'contain' }}
+                                    style={{ height: 40, width: 90, objectFit: 'contain' }}
                                 />
                             </a>
                         </div>
