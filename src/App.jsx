@@ -6,6 +6,8 @@ import CallForPaper from './pages/CallForPaper'
 import PaperSubmition from './pages/PaperSubmition'
 import UserP from './pages/User'
 import Screen from './pages/Screen'
+import Sub from './pages/author/Submittedpaper'
+import SubOrganizer from './pages/organizer/SubmittedPaper'
 
 
 
@@ -17,9 +19,11 @@ function App() {
         {/* <Home /> */}
         {/* <CommiteeList /> */}
         {/* <UserP /> */}
-        <Screen />
+        {/* <Screen /> */}
         {/* <CallForPaper /> */}
         {/* <PaperSubmition /> */}
+        <SubOrganizer />
+        {/* <Sub /> */}
       </div>
     </>
   )
