@@ -8,11 +8,11 @@ import ConferenceHeader from "../components/header/ConferenceHeader";
 const CallForPaper = () => {
     return (
         <>
-            <Header />
+            
             <main className="pt-20" >
                 <CFP />
             </main>
-            <Footer />
+            
         </>
     );
 };

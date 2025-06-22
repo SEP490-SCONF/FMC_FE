@@ -7,11 +7,11 @@ import UserInfo from "../components/layout/UserInfo";
 const UserP = () => {
     return (
         <>
-            <Header />
+           
             <main className="pt-20">
                 <UserInfo />
             </main>
-            <Footer />
+           
         </>
     );
 };

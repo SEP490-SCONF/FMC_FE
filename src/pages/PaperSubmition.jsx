@@ -7,11 +7,11 @@ import SubmitPapers from "../components/layout/SubmitPapers";
 const PaperSubmition = () => {
     return (
         <>
-            <Header />
+         
             <main className="pt-20">
                 <SubmitPapers />
             </main>
-            <Footer />
+            
         </>
     );
 };

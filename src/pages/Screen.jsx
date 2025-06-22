@@ -7,7 +7,7 @@ import NewsAndSponsorPage from "../components/layout/NewsASponsor";
 const Screen = () => {
     return (
         <>
-            <Header />
+           
             <main className="pt-20">
                 <div className="container">
                     <div className="row g-4">
@@ -23,7 +23,7 @@ const Screen = () => {
                     </div>
                 </div>
             </main>
-            <Footer />
+           
         </>
     );
 };

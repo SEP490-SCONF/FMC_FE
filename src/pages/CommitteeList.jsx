@@ -8,12 +8,12 @@ import Committee from '../components/layout/Committee';
 const Comm = () => {
     return (
         <>
-            <Header />
+            
             <main className="pt-20">
                 <ComTop />
                 <Committee />
             </main>
-            <Footer />
+           
         </>
     );
 };

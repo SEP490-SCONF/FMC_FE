@@ -1,26 +1,17 @@
-import { useState } from 'react'
-import './App.css'
-import Home from './pages/Home'
-import CommiteeList from './pages/CommitteeList'
-import CallForPaper from './pages/CallForPaper'
-import { BrowserRouter } from "react-router-dom";
-import PaperSubmition from './pages/PaperSubmition'
-import UserP from './pages/User'
-import Screen from './pages/Screen'
-
-
+import { Outlet } from "react-router-dom";
+import './App.css';
+import Header from "./components/layout/Header";
+import Footer from "./components/layout/Footer";
 
 function App() {
-
   return (
-    <>
-      <div>
- <BrowserRouter> <CallForPaper /></BrowserRouter>
-       
-
-      </div>
-    </>
-  )
+    <div>
+      <Header />
+      {/* Sidebar nếu có, thêm ở đây */}
+      <Outlet />
+      <Footer />
+    </div>
+  );
 }
 
-export default App
+export default App;

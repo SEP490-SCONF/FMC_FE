@@ -37,7 +37,7 @@ const Login = () => {
 
     return (
         <>
-            <Header />
+            
             <div
                 className="login-page d-center"
                 style={{
@@ -61,7 +61,7 @@ const Login = () => {
                     </GoogleOAuthProvider>
                 </div>
             </div>
-            <Footer />
+            
         </>
     );
 };

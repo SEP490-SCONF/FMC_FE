@@ -7,11 +7,11 @@ import Faq from "../components/layout/Faq";
 import Schedule from "../components/layout/schedule";
 import Service from "../components/layout/Service";
 import Solution from "../components/layout/Solution";
-
+import ConferenceHeader from "../components/header/ConferenceHeader";
 const Home = () => {
     return (
         <>
-            <Header />
+            
             <main className="pt-20">
                 <Banner />
                 <Service />
@@ -20,7 +20,7 @@ const Home = () => {
                 <Solution />
                 <Faq />
             </main>
-            <Footer />
+            
         </>
     );
 };
