@@ -1,7 +1,7 @@
 import CFP from "../components/layout/CFP";
-import Header from "../components/layout/Header";
+import Header from "../components/layout/ConfereanceHeader";
 import Footer from "../components/layout/Footer";
-import ConferenceHeader from "../components/header/ConferenceHeader";
+import ConferenceHeader from "../components/header/MainHeader";
 
 
 

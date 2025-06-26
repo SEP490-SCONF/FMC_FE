@@ -3,7 +3,7 @@ import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
 import { Link } from "react-router-dom";
 
-export default function UserDropdown() {
+export default function UserDropdown({ user }) {
   const [isOpen, setIsOpen] = useState(false);
 
   function toggleDropdown() {
@@ -13,6 +13,7 @@ export default function UserDropdown() {
   function closeDropdown() {
     setIsOpen(false);
   }
+
   return (
     <div className="relative">
       <button
@@ -20,10 +21,14 @@ export default function UserDropdown() {
         className="flex items-center text-gray-700 dropdown-toggle dark:text-gray-400"
       >
         <span className="mr-3 overflow-hidden rounded-full h-11 w-11">
-          <img src="/images/user/owner.jpg" alt="User" />
+          <img src={user?.avatarUrl || "/images/user/owner.jpg"} alt="User" />
         </span>
-
-        <span className="block mr-1 font-medium text-theme-sm">Musharof</span>
+        <span
+          className="block mr-1 font-medium text-theme-sm"
+          style={{ fontFamily: "Roboto, Arial, sans-serif" }}
+        >
+          {user?.name || "User"}
+        </span>
         <svg
           className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${
             isOpen ? "rotate-180" : ""
@@ -51,10 +56,10 @@ export default function UserDropdown() {
       >
         <div>
           <span className="block font-medium text-gray-700 text-theme-sm dark:text-gray-400">
-            Musharof Chowdhury
+            {user?.fullName || user?.name || "User Name"}
           </span>
           <span className="mt-0.5 block text-theme-xs text-gray-500 dark:text-gray-400">
-            randomuser@pimjo.com
+            {user?.email || "user@email.com"}
           </span>
         </div>
 
@@ -66,7 +71,6 @@ export default function UserDropdown() {
               to="/profile"
               className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
             >
-              {/* ...icon và text... */}
               Edit profile
             </DropdownItem>
           </li>
@@ -77,7 +81,6 @@ export default function UserDropdown() {
               to="/profile"
               className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
             >
-              {/* ...icon và text... */}
               Account settings
             </DropdownItem>
           </li>
@@ -88,16 +91,21 @@ export default function UserDropdown() {
               to="/profile"
               className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
             >
-              {/* ...icon và text... */}
               Support
             </DropdownItem>
           </li>
         </ul>
         <Link
-          to="/signin"
+          to="/login"
+          onClick={() => {
+            localStorage.removeItem("accessToken"); // Xóa token nếu có
+            // Nếu dùng cookie, có thể cần xóa cookie ở đây
+            // Có thể gọi API logout nếu backend yêu cầu
+            
+            window.location.reload(); // load lại trang
+          }}
           className="flex items-center gap-3 px-3 py-2 mt-3 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
         >
-          {/* ...icon và text... */}
           Sign out
         </Link>
       </Dropdown>

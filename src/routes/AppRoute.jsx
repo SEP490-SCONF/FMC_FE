@@ -6,25 +6,28 @@ import CallForPaper from "../pages/CallForPaper";
 import PaperSubmition from "../pages/PaperSubmition";
 import UserP from "../pages/User";
 import Screen from "../pages/Screen";
-import Login from "../pages/Login"; 
+import Login from "../pages/Login";
 import ScrollToTop from "../components/common/ScrollToTop";
 import PaperReview from "../pages/PaperReview";
+import ConferenceLayout from "../layouts/ConferenceLayout";
 export default function AppRoutes() {
   return (
     <BrowserRouter>
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<App />}>
-          <Route index element={<Home />} />
+          <Route index element={<Screen />} />
+          <Route path="/login" element={<Login />} />
+        </Route>
+
+        <Route element={<ConferenceLayout />}>
           <Route path="committee" element={<CommitteeList />} />
           <Route path="call-for-paper" element={<CallForPaper />} />
           <Route path="paper-submition" element={<PaperSubmition />} />
           <Route path="user" element={<UserP />} />
           <Route path="screen" element={<Screen />} />
-          <Route path="paper-review" element={<PaperReview />}/>
-          <Route path="/login" element={<Login />} />
+          <Route path="paper-review" element={<PaperReview />} />
         </Route>
-        
       </Routes>
     </BrowserRouter>
   );

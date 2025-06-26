@@ -6,7 +6,7 @@ import NotificationDropdown from "./NotificationDropdown";
 import UserDropdown from "./UserDropdown";
 
 
-const ConferenceHeader = ({ onClick, onToggle }) => {
+const MainHeader = ({ onClick, onToggle }) => {
     const [user, setUser] = useState(null);
     const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
 
@@ -105,12 +105,23 @@ const ConferenceHeader = ({ onClick, onToggle }) => {
                 <div className="flex items-center gap-3 ml-4">
                     {/* Nút dark mode nếu có */}
                     {/* <ThemeToggleButton /> */}
-                    <NotificationDropdown />
-                    <UserDropdown />
+                    {user ? (
+                        <>
+                            <NotificationDropdown />
+                            <UserDropdown user={user} />
+                        </>
+                    ) : (
+                        <Link
+                            to="/login"
+                            className="px-4 py-2 rounded bg-brand-500 text-white font-medium hover:bg-brand-600 transition"
+                        >
+                            Sign In
+                        </Link>
+                    )}
                 </div>
             </div>
         </header>
     );
 };
 
-export default ConferenceHeader;
+export default MainHeader;

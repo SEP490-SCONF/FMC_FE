@@ -1,5 +1,5 @@
 import React from "react";
-import Header from "../components/layout/Header";
+import Header from "../components/layout/ConfereanceHeader";
 import Footer from "../components/layout/Footer";
 import HomeScreen from "../components/layout/HomeScreen";
 import NewsAndSponsorPage from "../components/layout/NewsASponsor";
