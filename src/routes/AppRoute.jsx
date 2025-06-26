@@ -8,7 +8,7 @@ import UserP from "../pages/User";
 import Screen from "../pages/Screen";
 import Login from "../pages/Login"; 
 import ScrollToTop from "../components/common/ScrollToTop";
-
+import PaperReview from "../pages/PaperReview";
 export default function AppRoutes() {
   return (
     <BrowserRouter>
@@ -21,6 +21,7 @@ export default function AppRoutes() {
           <Route path="paper-submition" element={<PaperSubmition />} />
           <Route path="user" element={<UserP />} />
           <Route path="screen" element={<Screen />} />
+          <Route path="paper-review" element={<PaperReview />}/>
           <Route path="/login" element={<Login />} />
         </Route>
         

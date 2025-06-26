@@ -85,6 +85,17 @@ const Header = () => {
                                             <span className="dropdown-arrow ms-2"></span>
                                         </Link>
                                     </li>
+                                    {/* PAPER REVIEW */}
+                                    <li className="menu-item position-relative menu-link">
+                                        <Link
+                                            to="/paper-review"
+                                            className="position-relative pe-5 z-1 slide-third text-uppercase slide-vertical menu-link"
+                                            data-splitting
+                                        >
+                                            PAPER REVIEW
+                                            <span className="dropdown-arrow ms-2"></span>
+                                        </Link>
+                                    </li>
                                     {/* Các menu khác giữ nguyên hoặc xóa nếu không cần */}
                                 </ul>
                                 <div className="right-area sidebar-items position-relative d-flex gap-3 gap-md-5 align-items-center">
