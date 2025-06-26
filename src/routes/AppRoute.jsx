@@ -11,6 +11,7 @@ import ScrollToTop from "../components/common/ScrollToTop";
 import SubOrganizer from "../pages/organizer/SubmittedPaper";
 import ResultPaper from "../pages/author/ResultPaper";
 import PaperPay from "../pages/author/Payment";
+import PaperReview from "../pages/PaperReview";
 
 
 export default function AppRoutes() {
@@ -25,6 +26,7 @@ export default function AppRoutes() {
           <Route path="paper-submition" element={<PaperSubmition />} />
           <Route path="user" element={<UserP />} />
           <Route path="screen" element={<Screen />} />
+          <Route path="paper-review" element={<PaperReview />} />
           <Route path="/login" element={<Login />} />
           {/* <Route path="*" element={<PaperPay />} /> */}
           {/* <Route path="organizer/submitted-paper" element={<SubOrganizer />} /> */}

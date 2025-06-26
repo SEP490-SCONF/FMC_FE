@@ -206,7 +206,7 @@ table thead tr th {
     line-height: 130%
 }
 
-a,
+/* a,
 p,
 button,
 span,
@@ -214,7 +214,7 @@ label,
 li {
     font-size: 16px;
     line-height: 130%
-}
+} */
 
 @media(max-width: 1199px) {
     h1 {
@@ -411,7 +411,7 @@ footer {
     overflow: hidden
 }
 
-a,
+/* a,
 p,
 button,
 span,
@@ -421,7 +421,7 @@ li {
     font-family: var(--body-font);
     color: rgba(var(--n2), 1);
     font-weight: 400
-}
+} */
 
 .transition {
     transition: var(--transition)
