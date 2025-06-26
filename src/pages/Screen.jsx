@@ -1,13 +1,11 @@
 import React from "react";
-import Header from "../components/layout/Header";
-import Footer from "../components/layout/Footer";
 import HomeScreen from "../components/layout/HomeScreen";
 import NewsAndSponsorPage from "../components/layout/NewsASponsor";
 
 const Screen = () => {
     return (
         <>
-           
+
             <main className="pt-20">
                 <div className="container">
                     <div className="row g-4">
@@ -23,7 +21,7 @@ const Screen = () => {
                     </div>
                 </div>
             </main>
-           
+
         </>
     );
 };

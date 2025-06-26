@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import "../../assets/styles/pages/_section.scss";
 
 const CFP = () => (
@@ -46,12 +47,12 @@ const CFP = () => (
                         </ul>
                     </div>
                     <div className="text-center mt-5">
-                        <a
-                            href="/submit-paper"
+                        <Link
+                            to="/paper-submition"
                             className="box-style box-second first-alt alt-two d-inline-block py-2 px-5 fs-seven fw-semibold transition cfp-submit-btn"
                         >
                             Submit Your Paper
-                        </a>
+                        </Link>
                     </div>
                 </div>
             </div>

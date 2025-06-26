@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import Modal from "../ui/Modal";
 
@@ -9,10 +10,10 @@ const papers = [
 ];
 
 const reviewerDB = [
-    { id: 1, name: "Giacomo Guilizzoni", job: "Founder & CEO", age: 40, nickname: "Peldi", employee: true },
-    { id: 2, name: "Marco Botton", job: "Tuttofare", age: 38, nickname: "", employee: true },
-    { id: 3, name: "Mariah Maclachlan", job: "Better Half", age: 41, nickname: "Potato", employee: false },
-    { id: 4, name: "Valerie Liberty", job: "Head Chef", age: "", nickname: "Val", employee: false }
+    { id: 1, name: "Giacomo Guilizzoni", email: "giacomo@gmail.com", job: "Founder & CEO", age: 40, nickname: "Peldi", employee: true },
+    { id: 2, name: "Marco Botton", email: "marco@gmail.com", job: "Tuttofare", age: 38, nickname: "", employee: true },
+    { id: 3, name: "Mariah Maclachlan", email: "mariah@gmail.com", job: "Better Half", age: 41, nickname: "Potato", employee: false },
+    { id: 4, name: "Valerie Liberty", email: "valerie@gmail.com", job: "Head Chef", age: "", nickname: "Val", employee: false }
 ];
 
 const SubmittedOrga = () => {
@@ -115,14 +116,6 @@ const SubmittedOrga = () => {
                 </div>
             </div>
 
-            {/* Test Button */}
-            <button
-                onClick={() => openAssign(0)}
-                className="fixed bottom-10 right-10 px-4 py-2 bg-blue-600 text-white rounded z-50"
-            >
-                Test Open Modal
-            </button>
-
             {assignIdx !== null && (
                 <Modal onClose={closeModal}>
                     <button className="absolute top-2 right-3 text-xl font-bold text-gray-500 hover:text-gray-700" onClick={closeModal}>×</button>
@@ -146,6 +139,7 @@ const SubmittedOrga = () => {
                             <thead>
                                 <tr>
                                     <th className="border px-2 py-1 font-semibold text-left">Name<br /><span className="font-normal">(job title)</span></th>
+                                    <th className="border px-2 py-1 font-semibold">Email</th>
                                     <th className="border px-2 py-1 font-semibold">Age</th>
                                     <th className="border px-2 py-1 font-semibold">Nickname</th>
                                     <th className="border px-2 py-1 font-semibold">Employee</th>
@@ -168,6 +162,7 @@ const SubmittedOrga = () => {
                                                 </span>
                                             </label>
                                         </td>
+                                        <td className="border px-2 py-1">{r.email}</td>
                                         <td className="border px-2 py-1">{r.age}</td>
                                         <td className="border px-2 py-1">{r.nickname}</td>
                                         <td className="border px-2 py-1 text-center">
@@ -175,7 +170,7 @@ const SubmittedOrga = () => {
                                         </td>
                                     </tr>
                                 )) : (
-                                    <tr><td colSpan={4} className="text-center py-2 text-gray-400">No reviewer found</td></tr>
+                                    <tr><td colSpan={5} className="text-center py-2 text-gray-400">No reviewer found</td></tr>
                                 )}
                             </tbody>
                         </table>

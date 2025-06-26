@@ -1,7 +1,15 @@
-// src/components/ui/Modal.jsx
+import React, { useEffect } from "react";
 import ReactDOM from "react-dom";
 
+
 const Modal = ({ children, onClose }) => {
+    useEffect(() => {
+        const handleEsc = (e) => {
+            if (e.key === "Escape") onClose();
+        };
+        window.addEventListener("keydown", handleEsc);
+        return () => window.removeEventListener("keydown", handleEsc);
+    }, [onClose]);
     const modalRoot = document.getElementById("modal-root");
     if (!modalRoot) return null;
 

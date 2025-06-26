@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import "../../assets/styles/pages/_section.scss";
-import Buttonsubmit from "../ui/Button";
+import Buttonsubmit from "../ui/button/Button";
 
 const rules = [
     "Papers must be original and not under consideration elsewhere.",
