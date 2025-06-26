@@ -1,5 +1,8 @@
 import CFP from "../components/layout/CFP";
 import React from "react";
+import ConferenceHeader from "../components/header/MainHeader";
+
+
 
 const CallForPaper = () => {
     return (

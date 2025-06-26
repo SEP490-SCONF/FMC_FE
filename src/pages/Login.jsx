@@ -7,9 +7,10 @@ const clientId = "170897089182-ki6hqkt96pjabhg2tlqhk27csufvqhq4.apps.googleuserc
 const Login = () => {
     const handleSuccess = async (credentialResponse) => {
         const credential = credentialResponse.credential;
+        console.log('credentialResponse:', credential);
         try {
             // Gửi credential lên backend
-            const res = await fetch("https://localhost:7205/api/GoogleLogin/Login", {
+            const res = await fetch("https://localhost:7166/api/GoogleLogin/Login", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ idToken: credential }),
