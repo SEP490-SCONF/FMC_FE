@@ -1,7 +1,5 @@
 import React from "react";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
-import Header from "../components/layout/Header";
-import Footer from "../components/layout/Footer";
 import bgImage from "../assets/images/tru-so-fpt20250415141843.jpg"; // Make sure this path is correct
 
 const clientId = "170897089182-ki6hqkt96pjabhg2tlqhk27csufvqhq4.apps.googleusercontent.com";
@@ -37,7 +35,7 @@ const Login = () => {
 
     return (
         <>
-            
+
             <div
                 className="login-page d-center"
                 style={{
@@ -61,7 +59,7 @@ const Login = () => {
                     </GoogleOAuthProvider>
                 </div>
             </div>
-            
+
         </>
     );
 };

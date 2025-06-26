@@ -20,11 +20,11 @@ export default function AppRoutes() {
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<App />}>
-          <Route index element={<ResultPaper />} />
+          <Route index element={<UserP />} />
           <Route path="committee" element={<CommitteeList />} />
           <Route path="call-for-paper" element={<CallForPaper />} />
           <Route path="paper-submition" element={<PaperSubmition />} />
-          <Route path="user" element={<UserP />} />
+          {/* <Route path="user" element={<UserP />} /> */}
           <Route path="screen" element={<Screen />} />
           <Route path="paper-review" element={<PaperReview />} />
           <Route path="/login" element={<Login />} />
