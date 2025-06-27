@@ -1,33 +1,15 @@
-import React, { useEffect, useState } from 'react';
-import { apiService } from '../../api/ApiService';
-
+import React from 'react';
 import { Link } from "react-router-dom";
 import NotificationDropdown from "./NotificationDropdown";
 import UserDropdown from "./UserDropdown";
+import { useUser } from "../../context/UserContext"; 
 
 
 const MainHeader = ({ onClick, onToggle }) => {
-    const [user, setUser] = useState(null);
-    const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
+    const { user } = useUser(); 
+    const [isApplicationMenuOpen, setApplicationMenuOpen] = React.useState(false);
 
-    useEffect(() => {
-        const fetchUser = async () => {
-            const token = localStorage.getItem("accessToken");
-            if (!token) return;
-            try {
-                const userInfo = await apiService.get("/User/Information");
-                setUser(userInfo);
-            } catch (err) {
-                setUser(null);
-            }
-        };
-        fetchUser();
-    }, []);
-
-    const handleLogout = () => {
-        localStorage.removeItem("accessToken");
-        window.location.href = "/auth/login";
-    };
+   
 
     const toggleApplicationMenu = () => {
         setApplicationMenuOpen(!isApplicationMenuOpen);

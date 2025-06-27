@@ -2,7 +2,6 @@ import axios from "axios";
 
 const API_DOMAIN_URL = import.meta.env.VITE_API_DOMAIN_URL;
 class ApiService {
-  api: any;
   constructor() {
     this.api = axios.create({
       baseURL: API_DOMAIN_URL,
@@ -29,11 +28,7 @@ class ApiService {
     );
   }
 
-  async request(
-    method: string,
-    endpoint: string,
-    options: { [key: string]: any; _retry?: boolean } = {}
-  ) {
+  async request(method, endpoint, options = {}) {
     try {
       if (!endpoint) {
         throw new Error("invalid endpoint");
@@ -44,7 +39,7 @@ class ApiService {
         ...options,
       });
       return response.data;
-    } catch (error: any) {
+    } catch (error) {
       // Nếu lỗi 401, thử refresh token qua cookie HttpOnly
       if (error.response && error.response.status === 401 && !options._retry) {
         try {
@@ -73,27 +68,26 @@ class ApiService {
     }
   }
 
-  async get(endpoint: string, params = {}) {
+  async get(endpoint, params = {}) {
     return this.request("get", endpoint, { params });
   }
-  async post(endpoint: string, data: any) {
+  async post(endpoint, data) {
     return this.request("post", endpoint, { data });
   }
-  async put(endpoint: string, data: any) {
+  async put(endpoint, data) {
     return this.request("put", endpoint, { data });
   }
-  async delete(endpoint: string) {
+  async delete(endpoint) {
     return this.request("delete", endpoint);
   }
 
-  handleError(error: any) {
+  handleError(error) {
     console.error("❌ API Call Failed:", error);
 
     if (error.response) {
       console.error("⚠️ Response Data:", error.response.data);
       console.error("🔴 Status Code:", error.response.status);
       console.error("📩 Headers:", error.response.headers);
-      // Throw the original error to preserve all response data
       throw error;
     } else if (error.request) {
       console.error("🚫 No response received from server", error.request);
