@@ -7,7 +7,7 @@ import Schedule from "../components/layout/schedule";
 import Service from "../components/layout/Service";
 import Solution from "../components/layout/Solution";
 import HomeBody from "../components/layout/HomeScreen";
-import { getConferenceById } from "../Service/ConferenceService";
+import { getConferenceById } from "../service/ConferenceService";
 
 const Home = () => {
     const { id } = useParams();
