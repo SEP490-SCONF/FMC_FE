@@ -7,7 +7,7 @@ import 'swiper/css/pagination';
 import { useNavigate } from "react-router-dom";
 
 import about1 from '../../assets/images/about-us-img-1.webp';
-import { getConferences } from '../../api/ConferenceService';
+import { getConferences } from '../../Service/ConferenceService';
 
 const ConferenceSlider = ({ title, conferences }) => {
     const navigate = useNavigate();
