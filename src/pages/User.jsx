@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import UserInfo from "../components/layout/UserInfo";
-import { getUserProfile } from "../api/UserService";
+import { getUserProfile } from "../Service/UserService";
 import { useUser } from "../context/UserContext";
 
 const UserP = () => {

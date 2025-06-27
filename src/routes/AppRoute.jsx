@@ -20,7 +20,7 @@ export default function AppRoutes() {
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<App />}>
-          <Route index element={<Screen />} />
+          <Route index element={<PaperSubmition  />} />
           <Route path="/login" element={<Login />} />
           <Route path="user" element={<UserP />} />
         </Route>

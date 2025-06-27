@@ -1,7 +1,7 @@
 import React from "react";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import bgImage from "../assets/images/tru-so-fpt20250415141843.jpg";
-import { loginWithGoogle } from "../api/AuthenService";
+import { loginWithGoogle } from "../Service/AuthenService";
 
 const clientId = "170897089182-ki6hqkt96pjabhg2tlqhk27csufvqhq4.apps.googleusercontent.com";
 
