@@ -26,6 +26,7 @@ export default function AppRoutes() {
         </Route>
 
         <Route element={<ConferenceLayout />}>
+          <Route path="/conference/:id" element={<Home />} />
           <Route path="committee" element={<CommitteeList />} />
           <Route path="call-for-paper" element={<CallForPaper />} />
           <Route path="paper-submition" element={<PaperSubmition />} />
