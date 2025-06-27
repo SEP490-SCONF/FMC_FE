@@ -1,56 +1,134 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import '../../assets/styles/pages/_section.scss';
+
+// Countdown component nhận targetDate là props
+const Countdown = ({ targetDate }) => {
+    const getTimeLeft = () => {
+        const now = new Date();
+        const diff = new Date(targetDate) - now;
+        if (diff <= 0) {
+            return { days: 0, hours: 0, minutes: 0, seconds: 0 };
+        }
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((diff / (1000 * 60)) % 60);
+        const seconds = Math.floor((diff / 1000) % 60);
+        return { days, hours, minutes, seconds };
+    };
+
+    const [timeLeft, setTimeLeft] = useState(getTimeLeft());
+
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setTimeLeft(getTimeLeft());
+        }, 1000);
+        return () => clearInterval(timer);
+    }, [targetDate]);
+
+    return (
+        <>
+            {/* Dòng chữ thu hút đặt bên ngoài khung đếm */}
+            <div style={{
+                marginBottom: 24,
+                textAlign: "center"
+            }}>
+                <span style={{
+                    fontSize: 22,
+                    fontWeight: 600,
+                    color: "#5B2EBC",
+                    letterSpacing: 0.5
+                }}>
+                    Don’t miss your chance to join the most inspiring conference of the year!
+                </span>
+            </div>
+            <div style={{
+                background: "#fff",
+                borderRadius: 8,
+                padding: "30px 0", // giảm padding
+                boxShadow: "0 2px 16px 0 rgba(0,0,0,0.04)",
+                width: "100%",
+                minHeight: 180, // giảm chiều cao tối thiểu
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexDirection: "column"
+            }}>
+                <div
+                    className="countdown d-center gap-3 gap-sm-4 gap-md-6 gap-lg-10 align-items-center"
+                    style={{ fontSize: "0.9em" }} // thu nhỏ toàn bộ đồng hồ
+                >
+                    <div className="d-inline-grid text-center gap-1">
+                        <span className="fs-six fw-bold" style={{ color: "#232323" }}>Days</span>
+                        <span style={{ borderBottom: "2px dashed #232323", marginBottom: 6, display: "block" }}></span>
+                        <span className="fs-four fw-bold" style={{ color: "#5B2EBC" }}>{timeLeft.days}</span>
+                    </div>
+                    <span className="fs-four fw-bold" style={{ color: "#232323" }}>:</span>
+                    <div className="d-inline-grid text-center gap-1">
+                        <span className="fs-six fw-bold" style={{ color: "#232323" }}>Hours</span>
+                        <span style={{ borderBottom: "2px dashed #232323", marginBottom: 6, display: "block" }}></span>
+                        <span className="fs-four fw-bold" style={{ color: "#5B2EBC" }}>{timeLeft.hours.toString().padStart(2, '0')}</span>
+                    </div>
+                    <span className="fs-four fw-bold" style={{ color: "#232323" }}>:</span>
+                    <div className="d-inline-grid text-center gap-1">
+                        <span className="fs-six fw-bold" style={{ color: "#232323" }}>Minutes</span>
+                        <span style={{ borderBottom: "2px dashed #232323", marginBottom: 6, display: "block" }}></span>
+                        <span className="fs-four fw-bold" style={{ color: "#5B2EBC" }}>{timeLeft.minutes.toString().padStart(2, '0')}</span>
+                    </div>
+                    <span className="fs-four fw-bold" style={{ color: "#232323" }}>:</span>
+                    <div className="d-inline-grid text-center gap-1">
+                        <span className="fs-six fw-bold" style={{ color: "#232323" }}>Seconds</span>
+                        <span style={{ borderBottom: "2px dashed #232323", marginBottom: 6, display: "block" }}></span>
+                        <span className="fs-four fw-bold" style={{ color: "#5B2EBC" }}>{timeLeft.seconds.toString().padStart(2, '0')}</span>
+                    </div>
+                </div>
+            </div>
+        </>
+    );
+};
 
 const ScheduleSection = ({ conference }) => (
     <section className="schedule-section position-relative s1-bg-color pt-120 pb-120">
-        <div className="abs-area pe-none">
-            <div className="item position-absolute shape-animation-2 d-none d-lg-block end-0 top-0 m-n20">
-                <img src="assets/images/shape/schedule-shape-1.webp" className="me-n15 mt-n8" alt="icon" />
-            </div>
-            <div className="item item-2 position-absolute shape-animation-2 d-none d-lg-block start-0 bottom-0 m-n20">
-                <img src="assets/images/shape/schedule-shape-2.webp" alt="icon" />
-            </div>
-        </div>
         <div className="container">
-            <div className="row gy-6 gy-md-0 mb-8 mb-md-15 justify-content-center text-center">
-                <div className="col-md-8 col-lg-8 col-xl-7">
-                    <div className="section-area d-grid gap-3 gap-md-4 reveal-single reveal-text text-one">
-                        <span className="p7-color fw-semibold">SCHEDULE</span>
-                        <h2 className="fs-two">Unlock the Day&apos;s Schedule</h2>
-                    </div>
-                </div>
-            </div>
             <div className="row gy-6 singleTab second">
                 <div className="col-lg-3 col-xl-2">
-                    <ul className="tabLinks d-center justify-content-start flex-wrap gap-1">
-                        <li className="nav-links transition active">
-                            <button className="tablink pb-1 d-grid gap-1 px-2 px-md-5 py-3 py-md-4 text-start">
-                                <span className="fs-eight fw-semibold n2-color">Start Date</span>
-                                <span className="fs-eight n3-color">
-                                    {conference
-                                        ? new Date(conference.startDate).toLocaleString()
-                                        : "--"}
-                                </span>
-                            </button>
-                        </li>
-                        <li className="nav-links transition active">
-                            <button className="tablink pb-1 d-grid gap-1 px-2 px-md-5 py-3 py-md-4 text-start">
-                                <span className="fs-eight fw-semibold n2-color">End Date</span>
-                                <span className="fs-eight n3-color">
-                                    {conference
-                                        ? new Date(conference.endDate).toLocaleString()
-                                        : "--"}
-                                </span>
-                            </button>
-                        </li>
-                    </ul>
-                </div>
-                <div className="col-lg-9 col-xl-10">
-                    <div className="tabContents">
-                        <div className="tabItem d-grid gap-6 gap-md-6 active">
-                            {/* Bạn có thể bỏ phần hiển thị start/end date ở đây nếu không cần nữa */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                        <div style={{
+                            background: "#5B2EBC",
+                            color: "#fff",
+                            borderRadius: 4,
+                            padding: "24px 18px",
+                            marginBottom: 8,
+                            fontWeight: 600,
+                            fontSize: 20
+                        }}>
+                            <div>Start Date</div>
+                            <div style={{ fontWeight: 400, fontSize: 18, marginTop: 8 }}>
+                                {conference
+                                    ? new Date(conference.startDate).toLocaleString()
+                                    : "--"}
+                            </div>
+                        </div>
+                        <div style={{
+                            background: "#5B2EBC",
+                            color: "#fff",
+                            borderRadius: 4,
+                            padding: "24px 18px",
+                            fontWeight: 600,
+                            fontSize: 20
+                        }}>
+                            <div>End Date</div>
+                            <div style={{ fontWeight: 400, fontSize: 18, marginTop: 8 }}>
+                                {conference
+                                    ? new Date(conference.endDate).toLocaleString()
+                                    : "--"}
+                            </div>
                         </div>
                     </div>
+                </div>
+                <div className="col-lg-9 col-xl-10 d-flex flex-column gap-5">
+                    {conference?.startDate && (
+                        <Countdown targetDate={conference.startDate} label="Countdown to Start" />
+                    )}
                 </div>
             </div>
         </div>

@@ -17,14 +17,15 @@ const Banner = ({ conference }) => (
                                 className="btn w-100"
                                 style={{
                                     fontWeight: 300,
-                                    fontSize: 18,
-                                    backgroundColor: "#5B2EBC",
+                                    fontFamily: "Arial, sans-serif",
+                                    fontSize: 17,
+                                    backgroundColor: "#592DA8",
                                     color: "#fff",
                                     border: "none"
                                 }}
                                 onClick={() => window.open('https://your-registration-link.com', '_blank')}
                             >
-                                Đăng ký tham gia hội thảo
+                                Register Now
                             </button>
                         </div>
                         <div className="banner-img pe-none position-absolute start-0 end-0 z-0">
