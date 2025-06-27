@@ -1,34 +1,34 @@
 import React, { useEffect, useState } from "react";
 import UserInfo from "../components/layout/UserInfo";
-import { apiService } from '../api/ApiService';
+import { getUserProfile } from "../api/UserService";
+import { useUser } from "../context/UserContext";
 
 const UserP = () => {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+  const { user: contextUser } = useUser();
+  const [user, setUser] = useState(null);
 
-    useEffect(() => {
-        const fetchUser = async () => {
-            try {
-                const res = await apiService.get("/UserProfile/2");
-                setUser(res);
-            } catch (err) {
-                console.error("❌ Lỗi khi lấy thông tin người dùng:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
+  useEffect(() => {
+    if (!contextUser || !contextUser.userId) return;
 
-        fetchUser();
-    }, []);
+    const fetchUser = async () => {
+      try {
+        const res = await getUserProfile(contextUser.userId);
 
-    if (loading) return <div className="text-center p-5">⏳ Đang tải dữ liệu người dùng...</div>;
-    if (!user) return <div className="text-center p-5 text-danger">Không tìm thấy thông tin người dùng.</div>;
+        setUser(res);
+      } catch (err) {
+        console.error("❌ Error fetching user information:", err);
+      }
+    };
 
-    return (
-        <main className="pt-20">
-            <UserInfo user={user} />
-        </main>
-    );
+    fetchUser();
+  }, [contextUser]);
+  if (!user) return <div>Đang tải...</div>;
+
+  return (
+    <main className="pt-20">
+      <UserInfo user={user} />
+    </main>
+  );
 };
 
 export default UserP;
