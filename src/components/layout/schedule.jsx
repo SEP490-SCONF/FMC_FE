@@ -86,53 +86,61 @@ const Countdown = ({ targetDate }) => {
     );
 };
 
-const ScheduleSection = ({ conference }) => (
-    <section className="schedule-section position-relative s1-bg-color pt-120 pb-120">
-        <div className="container">
-            <div className="row gy-6 singleTab second">
-                <div className="col-lg-3 col-xl-2">
-                    <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                        <div style={{
-                            background: "#5B2EBC",
-                            color: "#fff",
-                            borderRadius: 4,
-                            padding: "24px 18px",
-                            marginBottom: 8,
-                            fontWeight: 600,
-                            fontSize: 20
-                        }}>
-                            <div>Start Date</div>
-                            <div style={{ fontWeight: 400, fontSize: 18, marginTop: 8 }}>
-                                {conference
-                                    ? new Date(conference.startDate).toLocaleString()
-                                    : "--"}
+const Schedule = ({ conference }) => {
+    if (!conference) {
+        return (
+            <section className="schedule-section position-relative s1-bg-color pt-120 pb-120">
+                <div className="container text-center py-5">
+                    <h5>Please select a conference to view the schedule.</h5>
+                </div>
+            </section>
+        );
+    }
+
+    return (
+        <section className="schedule-section position-relative s1-bg-color pt-120 pb-120">
+            <div className="container">
+                <div className="row gy-6 singleTab second">
+                    <div className="col-lg-3 col-xl-2">
+                        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                            <div style={{
+                                background: "#5B2EBC",
+                                color: "#fff",
+                                borderRadius: 4,
+                                padding: "24px 18px",
+                                marginBottom: 8,
+                                fontWeight: 600,
+                                fontSize: 20
+                            }}>
+                                <div>Start Date</div>
+                                <div style={{ fontWeight: 400, fontSize: 18, marginTop: 8 }}>
+                                    {new Date(conference.startDate).toLocaleString()}
+                                </div>
                             </div>
-                        </div>
-                        <div style={{
-                            background: "#5B2EBC",
-                            color: "#fff",
-                            borderRadius: 4,
-                            padding: "24px 18px",
-                            fontWeight: 600,
-                            fontSize: 20
-                        }}>
-                            <div>End Date</div>
-                            <div style={{ fontWeight: 400, fontSize: 18, marginTop: 8 }}>
-                                {conference
-                                    ? new Date(conference.endDate).toLocaleString()
-                                    : "--"}
+                            <div style={{
+                                background: "#5B2EBC",
+                                color: "#fff",
+                                borderRadius: 4,
+                                padding: "24px 18px",
+                                fontWeight: 600,
+                                fontSize: 20
+                            }}>
+                                <div>End Date</div>
+                                <div style={{ fontWeight: 400, fontSize: 18, marginTop: 8 }}>
+                                    {new Date(conference.endDate).toLocaleString()}
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div className="col-lg-9 col-xl-10 d-flex flex-column gap-5">
-                    {conference?.startDate && (
-                        <Countdown targetDate={conference.startDate} label="Countdown to Start" />
-                    )}
+                    <div className="col-lg-9 col-xl-10 d-flex flex-column gap-5">
+                        {conference.startDate && (
+                            <Countdown targetDate={conference.startDate} label="Countdown to Start" />
+                        )}
+                    </div>
                 </div>
             </div>
-        </div>
-    </section>
-);
+        </section>
+    );
+};
 
-export default ScheduleSection;
+export default Schedule;

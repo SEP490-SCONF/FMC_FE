@@ -7,15 +7,15 @@ import 'swiper/css/pagination';
 import { useNavigate } from "react-router-dom";
 
 import about1 from '../../assets/images/about-us-img-1.webp';
-import { getConferences } from '../../service/ConferenceService';
+import { getConferenceById, getConferences } from '../../service/ConferenceService';
 
-const ConferenceSlider = ({ title, conferences }) => {
+const ConferenceSlider = ({ title, conferences, onConferenceClick }) => {
     const navigate = useNavigate();
     const now = new Date();
     const filtered = conferences.filter(
         (conf) =>
-            conf.status === true &&
-            new Date(conf.endDate) >= now
+            (!conf.status || conf.status === true) &&
+            (!conf.endDate || new Date(conf.endDate) >= now)
     );
 
     return (
@@ -39,11 +39,14 @@ const ConferenceSlider = ({ title, conferences }) => {
                     }}
                 >
                     {filtered.map((conf) => (
-                        <SwiperSlide key={conf.conferenceId}>
+                        <SwiperSlide key={conf.title.replace(/\s/g, '')}>
                             <div
                                 className="card h-100 border-0 shadow-sm rounded-4 overflow-hidden"
                                 style={{ cursor: "pointer" }}
-                                onClick={() => navigate(`/conference/${conf.conferenceId}`)}
+                                onClick={() => {
+                                    if (onConferenceClick) onConferenceClick(conf.conferenceId);
+                                    navigate(`/conference/${conf.conferenceId}`);
+                                }}
                             >
                                 <img
                                     src={conf.bannerUrl || about1}
@@ -71,8 +74,9 @@ const HomeBody = ({ onConferenceSelect }) => {
     useEffect(() => {
         const fetchConferences = async () => {
             try {
-                const data = await getConferences();
+                const data = await getConferences(); // Lấy tất cả conference
                 setConferences(data);
+                console.log("Conferences:", data);
             } catch (error) {
                 setConferences([]);
             } finally {

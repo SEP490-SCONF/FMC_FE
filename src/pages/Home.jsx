@@ -7,18 +7,22 @@ import Schedule from "../components/layout/schedule";
 import Service from "../components/layout/Service";
 import Solution from "../components/layout/Solution";
 import HomeBody from "../components/layout/HomeScreen";
-import { getConferenceById } from "../service/ConferenceService";
+import TechMarquee from "../components/layout/Marque";
+import { getConferences, getConferenceById } from "../service/ConferenceService";
+import { getConferenceTopics } from "../Service/ConferenceTopic";
 
 const Home = () => {
     const { id } = useParams();
     const [selectedConference, setSelectedConference] = useState(null);
+    const [topics, setTopics] = useState([]);
+    const [loadingTopics, setLoadingTopics] = useState(false);
 
     useEffect(() => {
         if (id) {
             const fetchData = async () => {
                 try {
                     const data = await getConferenceById(id);
-                    setSelectedConference(data);
+                    setSelectedConference(data || null);
                     console.log("Selected Conference:", data);
                 } catch (error) {
                     setSelectedConference(null);
@@ -28,17 +32,44 @@ const Home = () => {
         }
     }, [id]);
 
+    useEffect(() => {
+        if (selectedConference?.conferenceId) {
+            setLoadingTopics(true);
+            const fetchTopics = async () => {
+                try {
+                    const allTopics = await getConferenceTopics();
+                    const filtered = allTopics.filter(
+                        t => t.conferenceId === selectedConference.conferenceId
+                    );
+                    setTopics(filtered);
+                } finally {
+                    setLoadingTopics(false);
+                }
+            };
+            fetchTopics();
+        }
+    }, [selectedConference]);
+
+    // Hàm nhận id và gọi API lấy chi tiết conference
+    const handleConferenceSelect = async (conferenceId) => {
+        try {
+            const data = await getConferenceById(conferenceId);
+            setSelectedConference(data);
+        } catch (error) {
+            setSelectedConference(null);
+        }
+    };
+
     return (
         <>
-            <main className="pt-20">
+            <main>
                 <Banner conference={selectedConference} />
-                <Service />
+                <Service conference={selectedConference} topics={topics} />
                 <Event />
                 <Schedule conference={selectedConference} />
                 <Solution />
                 <Faq />
-                {/* Không cần truyền onConferenceSelect nữa */}
-                {/* <HomeBody onConferenceSelect={handleConferenceSelect} /> */}
+                <TechMarquee />
             </main>
         </>
     );
