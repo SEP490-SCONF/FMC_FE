@@ -1,29 +1,34 @@
 import React from "react";
 import HomeScreen from "../components/layout/HomeScreen";
 import NewsAndSponsorPage from "../components/layout/NewsASponsor";
+import { useConference, ConferenceProvider } from "../context/ConferenceContext";
 
-const Screen = () => {
+const ScreenContent = () => {
+    const { conferences, loading } = useConference();
+
+    if (loading) return <div>Loading...</div>;
+    if (!conferences || conferences.length === 0) return <div>No conferences found.</div>;
+
     return (
-        <>
-
-            <main className="pt-20">
-                <div className="container">
-                    <div className="row g-4">
-                        {/* Cột HomeScreen */}
-                        <div className="col-lg-8">
-                            <HomeScreen />
-                        </div>
-
-                        {/* Cột News & Sponsor */}
-                        <div className="col-lg-4">
-                            <NewsAndSponsorPage />
-                        </div>
+        <main className="pt-20">
+            <div className="container">
+                <div className="row g-4">
+                    <div className="col-lg-8">
+                        <HomeScreen conferences={conferences} loading={loading} />
+                    </div>
+                    <div className="col-lg-4">
+                        <NewsAndSponsorPage />
                     </div>
                 </div>
-            </main>
-
-        </>
+            </div>
+        </main>
     );
 };
+
+const Screen = () => (
+    <ConferenceProvider>
+        <ScreenContent />
+    </ConferenceProvider>
+);
 
 export default Screen;

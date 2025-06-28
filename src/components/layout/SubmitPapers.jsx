@@ -1,6 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "../../assets/styles/pages/_section.scss";
 import Buttonsubmit from "../ui/button/Button";
+import { useConference } from "../../context/ConferenceContext";
+import { getConferenceTopicsByConferenceId } from "../../service/ConferenceTopicService";
+import { useParams } from "react-router-dom";
+import { useUser } from "../../context/UserContext";
+import { uploadPaperPdf } from "../../Service/PaperSerice";
 
 const rules = [
     "Papers must be original and not under consideration elsewhere.",
@@ -12,26 +17,86 @@ const rules = [
     "At least one author must register and present if accepted.",
 ];
 
-const topics = ["AI", "Web", "Business", "Sport", "Music"];
-
 const SubmitPapers = () => {
+    const { selectedConference, fetchConferenceDetail } = useConference();
+    const { user } = useUser(); // Lấy user từ context
+    const { id } = useParams();
     const [file, setFile] = useState(null);
     const [title, setTitle] = useState("");
     const [abstract, setAbstract] = useState("");
-    const [topic, setTopic] = useState(topics[0]);
+    const [keywords, setKeywords] = useState("");
+    const [topic, setTopic] = useState("");
+    const [topics, setTopics] = useState([]);
+    // Mặc định chọn chính user hiện tại làm tác giả
+    const [authorIds, setAuthorIds] = useState(user ? [user.userId] : []);
+
+    // Chỉ lấy user hiện tại làm tác giả
+    const authors = user ? [{ id: user.userId, name: user.name }] : [];
+
+    useEffect(() => {
+        if (!selectedConference || selectedConference.conferenceId !== Number(id)) {
+            fetchConferenceDetail(id);
+        }
+    }, [id, selectedConference, fetchConferenceDetail]);
+
+    useEffect(() => {
+        if (selectedConference?.conferenceId) {
+            getConferenceTopicsByConferenceId(selectedConference.conferenceId)
+                .then((res) => setTopics(res))
+                .catch(() => setTopics([]));
+        }
+    }, [selectedConference]);
 
     const handleFileChange = (e) => {
         setFile(e.target.files[0]);
     };
 
-    const handleSubmit = (e) => {
+    const handleAuthorChange = (e) => {
+        const options = Array.from(e.target.selectedOptions, option => Number(option.value));
+        setAuthorIds(options);
+    };
+
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!file || !title || !abstract || !topic) {
-            alert("Please fill in all fields and select a file.");
+        if (
+            !file ||
+            !title ||
+            !abstract ||
+            !keywords ||
+            !topic ||
+            !selectedConference?.conferenceId ||
+            authorIds.length === 0
+        ) {
+            console.log({
+                file,
+                title,
+                abstract,
+                keywords,
+                topic,
+                conferenceId: selectedConference?.conferenceId,
+                authorIds
+            });
+            alert("Please fill in all required fields and select a file.");
             return;
         }
-        // Handle file upload logic here (e.g., send to backend)
-        alert(`File "${file.name}" submitted!`);
+        // Tạo formData để gửi lên server
+        const formData = new FormData();
+        formData.append("ConferenceId", selectedConference.conferenceId);
+        formData.append("Title", title);
+        formData.append("Abstract", abstract);
+        formData.append("Keywords", keywords);
+        formData.append("TopicId", topic);
+        authorIds.forEach(id => formData.append("AuthorIds", id));
+        formData.append("PdfFile", file);
+
+        try {
+            const res = await uploadPaperPdf(formData);
+            alert("Paper submitted successfully!");
+            // Reset form nếu cần
+        } catch (error) {
+            alert("Failed to submit paper.");
+            console.error(error);
+        }
     };
 
     return (
@@ -90,19 +155,55 @@ const SubmitPapers = () => {
                                     onChange={e => setTopic(e.target.value)}
                                     required
                                 >
+                                    <option value="">Select topic</option>
                                     {topics.map((t) => (
-                                        <option key={t} value={t}>{t}</option>
+                                        <option key={t.topicId} value={t.topicId}>{t.topicName}</option>
                                     ))}
                                 </select>
                             </div>
                             <div className="mb-3">
+                                <label htmlFor="keywords" className="fw-semibold mb-2 d-block">
+                                    Keywords
+                                </label>
+                                <input
+                                    type="text"
+                                    id="keywords"
+                                    className="form-control"
+                                    value={keywords}
+                                    onChange={e => setKeywords(e.target.value)}
+                                    maxLength={500}
+                                    placeholder="Enter keywords separated by commas"
+                                />
+                            </div>
+                            {/* Ẩn phần chọn tác giả, chỉ lấy user hiện tại */}
+                            {/* 
+                            <div className="mb-3">
+                                <label htmlFor="authors" className="fw-semibold mb-2 d-block">
+                                    Authors
+                                </label>
+                                <select
+                                    id="authors"
+                                    className="form-control"
+                                    multiple
+                                    value={authorIds}
+                                    onChange={handleAuthorChange}
+                                    required
+                                >
+                                    {authors.map(a => (
+                                        <option key={a.id} value={a.id}>{a.name}</option>
+                                    ))}
+                                </select>
+                                <small className="text-muted">Hold Ctrl (Windows) hoặc Cmd (Mac) để chọn nhiều tác giả.</small>
+                            </div>
+                            */}
+                            <div className="mb-3">
                                 <label htmlFor="paperFile" className="fw-semibold mb-2 d-block">
-                                    Upload Paper (PDF, DOC, DOCX)
+                                    Upload Paper (PDF only, max 30MB)
                                 </label>
                                 <input
                                     type="file"
                                     id="paperFile"
-                                    accept=".pdf,.doc,.docx"
+                                    accept=".pdf"
                                     className="form-control"
                                     onChange={handleFileChange}
                                     required
