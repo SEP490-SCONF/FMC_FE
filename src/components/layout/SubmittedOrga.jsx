@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Modal from "../ui/Modal";
-import { getSubmittedPapersByConferenceId } from "../../Service/PaperSerice";
+import { getSubmittedPapersByConferenceId } from "../../service/PaperSerice";
 import { getConferenceReviewers } from "../../service/UserConferenceRoleService"; // import hàm mới
 import { useParams } from "react-router-dom";
 

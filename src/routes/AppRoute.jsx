@@ -48,6 +48,7 @@ export default function AppRoutes() {
             element={<SubmittedOrga />}
           />
           <Route path="/manage-conference" element={<OrganizerView />} />
+          <Route path="/reviewer/assigned-papers" element={<PaperAss />} />
         </Route>
         <Route element={<ManageConferenceLayout />}>
           <Route

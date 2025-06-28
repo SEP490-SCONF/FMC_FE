@@ -1,4 +1,4 @@
-import { apiService } from "../service/ApiService";
+import { apiService } from "./ApiService";
 
 // Upload PDF
 export const uploadPaperPdf = async (formData) => {

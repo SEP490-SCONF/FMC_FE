@@ -3,7 +3,7 @@ import { apiService } from "./ApiService";
 const API_URL = "/Conferences";
 
 export const getConferences = async () => {
-    return apiService.get(API_URL);
+    return apiService.get(API_URL, {}, { public: true });
 };
 
 export const getConferenceById = async (id) => {

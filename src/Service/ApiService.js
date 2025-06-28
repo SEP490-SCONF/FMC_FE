@@ -12,11 +12,13 @@ class ApiService {
     });
     this.api.interceptors.request.use(
       (config) => {
-        const token = localStorage.getItem("accessToken");
-        if (token) {
-          config.headers.Authorization = `Bearer ${token}`;
+        // Nếu là API public thì không thêm Authorization
+        if (!config.public) {
+          const token = localStorage.getItem("accessToken");
+          if (token) {
+            config.headers.Authorization = `Bearer ${token}`;
+          }
         }
-
         if (config.data instanceof FormData) {
           config.headers["Content-Type"] = "multipart/form-data";
         } else {
@@ -68,17 +70,17 @@ class ApiService {
     }
   }
 
-  async get(endpoint, params = {}) {
-    return this.request("get", endpoint, { params });
+  async get(endpoint, params = {}, options = {}) {
+    return this.request("get", endpoint, { params, ...options });
   }
-  async post(endpoint, data) {
-    return this.request("post", endpoint, { data });
+  async post(endpoint, data, options = {}) {
+    return this.request("post", endpoint, { data, ...options });
   }
-  async put(endpoint, data) {
-    return this.request("put", endpoint, { data });
+  async put(endpoint, data, options = {}) {
+    return this.request("put", endpoint, { data, ...options });
   }
-  async delete(endpoint) {
-    return this.request("delete", endpoint);
+  async delete(endpoint, options = {}) {
+    return this.request("delete", endpoint, options);
   }
 
   handleError(error) {
