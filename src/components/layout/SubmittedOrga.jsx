@@ -1,14 +1,8 @@
 import React, { useState, useEffect } from "react";
 import Modal from "../ui/Modal";
 import { getSubmittedPapersByConferenceId } from "../../Service/PaperSerice";
+import { getConferenceReviewers } from "../../service/UserConferenceRoleService"; // import hàm mới
 import { useParams } from "react-router-dom";
-
-const reviewerDB = [
-    { id: 1, name: "Giacomo Guilizzoni", email: "giacomo@gmail.com", job: "Founder & CEO", age: 40, nickname: "Peldi", employee: true },
-    { id: 2, name: "Marco Botton", email: "marco@gmail.com", job: "Tuttofare", age: 38, nickname: "", employee: true },
-    { id: 3, name: "Mariah Maclachlan", email: "mariah@gmail.com", job: "Better Half", age: 41, nickname: "Potato", employee: false },
-    { id: 4, name: "Valerie Liberty", email: "valerie@gmail.com", job: "Head Chef", age: "", nickname: "Val", employee: false }
-];
 
 const SubmittedOrga = () => {
     const { id: conferenceId } = useParams();
@@ -17,12 +11,13 @@ const SubmittedOrga = () => {
     const [assignIdx, setAssignIdx] = useState(null);
     const [search, setSearch] = useState("");
     const [selectedReviewers, setSelectedReviewers] = useState([]);
+    const [reviewers, setReviewers] = useState([]); // reviewers từ API
 
+    // Lấy danh sách paper
     useEffect(() => {
         if (conferenceId) {
             getSubmittedPapersByConferenceId(conferenceId)
                 .then(res => {
-                    console.log("Submitted papers:", res);
                     const mapped = (res || []).map((p) => ({
                         id: p.paperId,
                         title: p.title,
@@ -40,6 +35,15 @@ const SubmittedOrga = () => {
                     setPaperList(mapped);
                 })
                 .catch(() => setPaperList([]));
+        }
+    }, [conferenceId]);
+
+    // Lấy danh sách reviewer
+    useEffect(() => {
+        if (conferenceId) {
+            getConferenceReviewers(conferenceId)
+                .then(res => setReviewers(res || []))
+                .catch(() => setReviewers([]));
         }
     }, [conferenceId]);
 
@@ -70,16 +74,19 @@ const SubmittedOrga = () => {
         closeModal();
     };
 
-    const filteredReviewers = reviewerDB.filter((r) =>
-        r.name.toLowerCase().includes(search.toLowerCase()) ||
-        r.job.toLowerCase().includes(search.toLowerCase()) ||
-        r.nickname.toLowerCase().includes(search.toLowerCase())
+    // Lọc reviewer theo search
+    const filteredReviewers = reviewers.filter((r) =>
+        (r.name || "").toLowerCase().includes(search.toLowerCase()) ||
+        (r.email || "").toLowerCase().includes(search.toLowerCase())
     );
 
     const getReviewerIcons = (assigned) => {
-        return assigned.map((rid, idx) => (
-            <span key={idx} className="text-xl mr-1" title={reviewerDB.find(r => r.id === rid)?.name || ""}>👤</span>
-        ));
+        return assigned.map((rid, idx) => {
+            const reviewer = reviewers.find(r => r.userId === rid);
+            return (
+                <span key={idx} className="text-xl mr-1" title={reviewer?.name || ""}>👤</span>
+            );
+        });
     };
 
     return (
@@ -181,39 +188,38 @@ const SubmittedOrga = () => {
                         <table className="w-full border-collapse text-xs">
                             <thead>
                                 <tr>
-                                    <th className="border px-2 py-1 font-semibold text-left">Name<br /><span className="font-normal">(job title)</span></th>
+                                    <th className="border px-2 py-1 font-semibold text-left">Avatar</th>
+                                    <th className="border px-2 py-1 font-semibold text-left">Name</th>
                                     <th className="border px-2 py-1 font-semibold">Email</th>
-                                    <th className="border px-2 py-1 font-semibold">Age</th>
-                                    <th className="border px-2 py-1 font-semibold">Nickname</th>
-                                    <th className="border px-2 py-1 font-semibold">Employee</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {filteredReviewers.length > 0 ? filteredReviewers.map((r) => (
-                                    <tr key={r.id} className="hover:bg-gray-100">
+                                    <tr key={r.userId} className="hover:bg-gray-100">
+                                        <td className="border px-2 py-1 text-center">
+                                            {r.avatarUrl ? (
+                                                <img src={r.avatarUrl} alt={r.name} className="w-8 h-8 rounded-full mx-auto" />
+                                            ) : (
+                                                <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center mx-auto text-gray-600">
+                                                    {r.name?.charAt(0) || "?"}
+                                                </div>
+                                            )}
+                                        </td>
                                         <td className="border px-2 py-1">
                                             <label className="flex items-center gap-2 cursor-pointer">
                                                 <input
                                                     type="checkbox"
-                                                    checked={selectedReviewers.includes(r.id)}
-                                                    onChange={() => toggleReviewer(r.id)}
+                                                    checked={selectedReviewers.includes(r.userId)}
+                                                    onChange={() => toggleReviewer(r.userId)}
                                                     className="accent-blue-500"
                                                 />
-                                                <span>
-                                                    {r.name}<br />
-                                                    <span className="text-gray-500 text-xs">{r.job}</span>
-                                                </span>
+                                                <span>{r.name}</span>
                                             </label>
                                         </td>
                                         <td className="border px-2 py-1">{r.email}</td>
-                                        <td className="border px-2 py-1">{r.age}</td>
-                                        <td className="border px-2 py-1">{r.nickname}</td>
-                                        <td className="border px-2 py-1 text-center">
-                                            <input type="checkbox" checked={r.employee} readOnly />
-                                        </td>
                                     </tr>
                                 )) : (
-                                    <tr><td colSpan={5} className="text-center py-2 text-gray-400">No reviewer found</td></tr>
+                                    <tr><td colSpan={3} className="text-center py-2 text-gray-400">No reviewer found</td></tr>
                                 )}
                             </tbody>
                         </table>
