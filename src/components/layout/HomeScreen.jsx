@@ -67,36 +67,21 @@ const ConferenceSlider = ({ title, conferences, onConferenceClick }) => {
     );
 };
 
-const HomeBody = ({ onConferenceSelect }) => {
-    const [conferences, setConferences] = useState([]);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        const fetchConferences = async () => {
-            try {
-                const data = await getConferences(); // Lấy tất cả conference
-                setConferences(data);
-                console.log("Conferences:", data);
-            } catch (error) {
-                setConferences([]);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchConferences();
-    }, []);
-
+const HomeBody = ({ conferences, loading }) => {
     if (loading) return <div className="text-center py-5">Đang tải dữ liệu...</div>;
-
+    console.log("conferences:", conferences, "loading:", loading);
     return (
         <div className="bg-white py-5">
             <ConferenceSlider
                 title="Conferences"
                 conferences={conferences}
-                onConferenceClick={onConferenceSelect}
             />
         </div>
     );
 };
 
-export default HomeBody;
+const HomeScreen = ({ conferences, loading }) => (
+    <HomeBody conferences={conferences} loading={loading} />
+);
+
+export default HomeScreen;

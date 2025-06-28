@@ -10,7 +10,7 @@ import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 
 const ReviewContent = () => {
-    const fileUrl = '/pdf-open-parameters.pdf';
+    const fileUrl = 'https://myconferencepapers.blob.core.windows.net/paper/b0db7b86-5175-4bb4-a9ac-cc67e11936ba.pdf';
     const [message, setMessage] = useState('');
     const [notes, setNotes] = useState([]);
     const notesContainerRef = useRef(null);

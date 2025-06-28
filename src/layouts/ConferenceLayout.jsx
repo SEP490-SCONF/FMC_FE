@@ -1,13 +1,16 @@
 import ConferenceHeader from "../components/layout/ConfereanceHeader";
 import Footer from "../components/layout/Footer";
 import { Outlet } from "react-router-dom";
+import { ConferenceProvider } from "../context/ConferenceContext";
 
 const ConferenceLayout = () => (
-  <div>
-    <ConferenceHeader />
-    <Outlet />
-    <Footer />
-  </div>
+  <ConferenceProvider>
+    <div>
+      <ConferenceHeader />
+      <Outlet />
+      <Footer />
+    </div>
+  </ConferenceProvider>
 );
 
 export default ConferenceLayout;

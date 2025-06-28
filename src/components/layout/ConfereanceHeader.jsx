@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { useConference } from "../../context/ConferenceContext";
+import { useParams } from "react-router-dom";
 
 import favLogo from "../../assets/images/fav-2.png";
 import logoText from "../../assets/images/logo-text.png";
@@ -8,7 +10,13 @@ import UserDropdown from "../header/UserDropdown";
 import { useUser } from "../../context/UserContext";
 
 const Header = () => {
-  const { user } = useUser(); 
+  const { user } = useUser();
+  const { selectedConference } = useConference();
+  const params = useParams();
+
+  // Ưu tiên lấy id từ context, nếu không có thì lấy từ URL
+  const conferenceId = selectedConference?.conferenceId || params.id;
+
   return (
     <header className="header-section index-two n1-bg-color py-4 px-2 px-md-6">
       <div className="container-fluid">
@@ -56,7 +64,7 @@ const Header = () => {
                   {/* COMMITTEE */}
                   <li className="menu-item position-relative menu-link">
                     <Link
-                      to="/committee"
+                      to={conferenceId ? `/conference/${conferenceId}/committee` : "#"}
                       className="position-relative pe-5 z-1 slide-third text-uppercase slide-vertical menu-link"
                       data-splitting
                     >
@@ -67,7 +75,7 @@ const Header = () => {
                   {/* CFP */}
                   <li className="menu-item position-relative menu-link">
                     <Link
-                      to="/call-for-paper"
+                      to={conferenceId ? `/conference/${conferenceId}/call-for-paper` : "#"}
                       className="position-relative pe-5 z-1 slide-third text-uppercase slide-vertical menu-link"
                       data-splitting
                     >
@@ -78,7 +86,7 @@ const Header = () => {
                   {/* PAPER REVIEW */}
                   <li className="menu-item position-relative menu-link">
                     <Link
-                      to="/paper-review"
+                      to={conferenceId ? `/conference/${conferenceId}/paper-review` : "#"}
                       className="position-relative pe-5 z-1 slide-third text-uppercase slide-vertical menu-link"
                       data-splitting
                     >
