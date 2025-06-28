@@ -16,13 +16,14 @@ import ConferenceLayout from "../layouts/ConferenceLayout";
 import PaperAss from "../pages/reviewer/PaperAss";
 import OrganizerView from "../pages/organizer/OrganizerView";
 
+import SubmittedOrga from "../components/layout/SubmittedOrga";
 export default function AppRoutes() {
   return (
     <BrowserRouter>
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<App />}>
-          <Route index element={<OrganizerView />} />
+          <Route index element={<Screen />} />
           <Route path="/login" element={<Login />} />
           <Route path="user" element={<UserP />} />
         </Route>
@@ -33,7 +34,10 @@ export default function AppRoutes() {
           <Route path="/conference/:id/call-for-paper" element={<CallForPaper />} />
           <Route path="/conference/:id/paper-submition" element={<PaperSubmition />} />
           <Route path="/conference/:id/paper-review" element={<PaperReview />} />
+          <Route path="/conference/:id/submitted-papers" element={<SubmittedOrga />} />
+          <Route path="/manage-conference" element={<SubmittedOrga />} />
         </Route>
+
       </Routes>
     </BrowserRouter>
   );

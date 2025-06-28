@@ -1,13 +1,8 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Modal from "../ui/Modal";
-
-const papers = [
-    { id: 1, author: "Nguyễn Văn A", title: "Future with AI", paper: "link", assigned: [1, 2, 3], updated: true, topic: "AI", resubmits: 2, time: "30/05/2025 11:10 AM" },
-    { id: 2, author: "Nguyễn Văn B", title: "Work with AI", paper: "link", assigned: [], updated: false, topic: "AI", resubmits: 1, time: "30/05/2025 11:10 AM" },
-    { id: 3, author: "Nguyễn Văn C", title: "Study with AI", paper: "link", assigned: [], updated: false, topic: "AI", resubmits: 1, time: "30/05/2025 11:10 AM" },
-    { id: 4, author: "Nguyễn Văn D", title: "Play with AI", paper: "link", assigned: [], updated: false, topic: "AI", resubmits: 1, time: "30/05/2025 11:10 AM" }
-];
+import { getSubmittedPapersByConferenceId } from "../../Service/PaperSerice";
+import { useParams } from "react-router-dom";
+import { useConference } from "../../context/ConferenceContext";
 
 const reviewerDB = [
     { id: 1, name: "Giacomo Guilizzoni", email: "giacomo@gmail.com", job: "Founder & CEO", age: 40, nickname: "Peldi", employee: true },
@@ -17,10 +12,39 @@ const reviewerDB = [
 ];
 
 const SubmittedOrga = () => {
-    const [paperList, setPaperList] = useState(papers);
+    const { selectedConference } = useConference();
+    const conferenceId = selectedConference?.conferenceId;
+    console.log("conferenceId:", conferenceId); // In ra để kiểm tra
+
+    const [paperList, setPaperList] = useState([]);
     const [assignIdx, setAssignIdx] = useState(null);
     const [search, setSearch] = useState("");
     const [selectedReviewers, setSelectedReviewers] = useState([]);
+
+    useEffect(() => {
+        if (conferenceId) {
+            getSubmittedPapersByConferenceId(conferenceId)
+                .then(res => {
+                    const mapped = (res.data || []).map((p, idx) => ({
+                        id: p.paperId,
+                        title: p.title,
+                        abstract: p.abstract,
+                        keywords: p.keywords,
+                        topic: p.topicName,
+                        filePath: p.filePath,
+                        status: p.status,
+                        submitDate: p.submitDate,
+                        // Các trường giả lập cho bảng
+                        author: "", // Nếu backend trả về thì lấy, không thì để rỗng
+                        assigned: [],
+                        updated: false,
+                        resubmits: "",
+                    }));
+                    setPaperList(mapped);
+                })
+                .catch(() => setPaperList([]));
+        }
+    }, [conferenceId]);
 
     const openAssign = (idx) => {
         console.log("OPEN MODAL FOR PAPER INDEX", idx);
@@ -70,7 +94,7 @@ const SubmittedOrga = () => {
                 </div>
                 <div className="flex flex-1 items-center justify-center">
                     <div className="w-full max-w-6xl mt-8 bg-white">
-                        <h5 className="mt-6 mb-3 font-medium text-sm text-left">History Submission</h5>
+                        <h5 className="mt-6 mb-3 font-medium text-sm text-left">Paper Submission</h5>
                         <div className="overflow-x-auto">
                             <table className="w-full border-collapse text-base bg-white mx-auto">
                                 <thead>
@@ -92,7 +116,18 @@ const SubmittedOrga = () => {
                                             <td className={tdClass}>{idx + 1}</td>
                                             <td className={tdClass}>{p.author}</td>
                                             <td className={tdClass}>{p.title}</td>
-                                            <td className={tdClass}><a href="#" className="text-blue-600 underline">{p.paper}</a></td>
+                                            <td className={tdClass}>
+                                                {p.filePath ? (
+                                                    <a
+                                                        href={p.filePath}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-blue-600 underline"
+                                                    >
+                                                        View PDF
+                                                    </a>
+                                                ) : "No file"}
+                                            </td>
                                             <td className={tdClass}>
                                                 {p.assigned.length > 0 ? (
                                                     <>
@@ -103,10 +138,20 @@ const SubmittedOrga = () => {
                                                     <button className="text-2xl border border-gray-400 rounded px-2" title="Assign reviewer" onClick={() => openAssign(idx)}>+</button>
                                                 )}
                                             </td>
-                                            <td className={tdClass}>{p.updated ? "✔️" : ""}</td>
+                                            <td className={tdClass}>{p.status}</td>
                                             <td className={tdClass}>{p.topic}</td>
                                             <td className={tdClass}>{p.resubmits}</td>
-                                            <td className={tdClass}>{p.time}</td>
+                                            <td className={tdClass}>
+                                                {p.submitDate
+                                                    ? new Date(p.submitDate).toLocaleString("en-GB", {
+                                                        day: "2-digit",
+                                                        month: "2-digit",
+                                                        year: "numeric",
+                                                        hour: "2-digit",
+                                                        minute: "2-digit",
+                                                    })
+                                                    : ""}
+                                            </td>
                                         </tr>
                                     ))}
                                 </tbody>

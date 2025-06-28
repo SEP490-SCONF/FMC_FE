@@ -1,11 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useConference } from "../../context/ConferenceContext";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 
 import favLogo from "../../assets/images/fav-2.png";
 import logoText from "../../assets/images/logo-text.png";
 import "../../assets/css/style.min.css";
-import { Link } from "react-router-dom";
 import UserDropdown from "../header/UserDropdown";
 import { useUser } from "../../context/UserContext";
 
@@ -91,6 +90,17 @@ const Header = () => {
                       data-splitting
                     >
                       PAPER REVIEW
+                      <span className="dropdown-arrow ms-2"></span>
+                    </Link>
+                  </li>
+                  {/* SUBMITTED PAPERS - Mới thêm vào */}
+                  <li className="menu-item position-relative menu-link">
+                    <Link
+                      to={conferenceId ? `/conference/${conferenceId}/submitted-papers` : "#"}
+                      className="position-relative pe-5 z-1 slide-third text-uppercase slide-vertical menu-link"
+                      data-splitting
+                    >
+                      SUBMITTED PAPERS
                       <span className="dropdown-arrow ms-2"></span>
                     </Link>
                   </li>

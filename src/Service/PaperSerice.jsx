@@ -27,3 +27,8 @@ export const updatePaperPublishStatus = async (paperId, isPublished) => {
     // isPublished là boolean
     return apiService.put(`/Papers/${paperId}/publish`, { isPublished });
 };
+
+// Lấy danh sách paper đã submitted theo conferenceId
+export const getSubmittedPapersByConferenceId = async (conferenceId) => {
+    return apiService.get(`/Papers/conference/${conferenceId}/status/submitted`);
+};
