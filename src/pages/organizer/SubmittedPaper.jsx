@@ -7,11 +7,7 @@ import SubmittedOrga from "../../components/layout/SubmittedOrga";
 const SubOrganizer = () => {
     return (
         <>
-           
-            
-                <SubmittedOrga />
-            
-           
+            <SubmittedOrga />
         </>
     );
 };

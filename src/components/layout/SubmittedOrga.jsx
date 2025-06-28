@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import Modal from "../ui/Modal";
-import { getSubmittedPapersByConferenceId } from "../../Service/PaperSerice";
+import { getSubmittedPapersByConferenceId } from "../../service/PaperSerice";
 import { getConferenceReviewers } from "../../service/UserConferenceRoleService"; // import hàm mới
 import { useParams } from "react-router-dom";
 
@@ -11,7 +11,9 @@ const SubmittedOrga = () => {
     const [assignIdx, setAssignIdx] = useState(null);
     const [search, setSearch] = useState("");
     const [selectedReviewers, setSelectedReviewers] = useState([]);
-    const [reviewers, setReviewers] = useState([]); // reviewers từ API
+    const [reviewers, setReviewers] = useState([]);
+    const [reviewerPage, setReviewerPage] = useState(1);
+    const reviewersPerPage = 2;
 
     // Lấy danh sách paper
     useEffect(() => {
@@ -74,10 +76,20 @@ const SubmittedOrga = () => {
         closeModal();
     };
 
+    useEffect(() => {
+        setReviewerPage(1); // Reset về trang 1 khi search thay đổi
+    }, [search, assignIdx]);
+
     // Lọc reviewer theo search
     const filteredReviewers = reviewers.filter((r) =>
         (r.name || "").toLowerCase().includes(search.toLowerCase()) ||
         (r.email || "").toLowerCase().includes(search.toLowerCase())
+    );
+
+    const totalReviewerPages = Math.ceil(filteredReviewers.length / reviewersPerPage);
+    const paginatedReviewers = filteredReviewers.slice(
+        (reviewerPage - 1) * reviewersPerPage,
+        reviewerPage * reviewersPerPage
     );
 
     const getReviewerIcons = (assigned) => {
@@ -111,7 +123,7 @@ const SubmittedOrga = () => {
                                         <th className={thClass}>Assignment</th>
                                         <th className={thClass}>Update</th>
                                         <th className={thClass}>Topic</th>
-                                       
+
                                         <th className={thClass}>Last Submitted</th>
                                     </tr>
                                 </thead>
@@ -145,7 +157,7 @@ const SubmittedOrga = () => {
                                             </td>
                                             <td className={tdClass}>{p.status}</td>
                                             <td className={tdClass}>{p.topic}</td>
-                                            
+
                                             <td className={tdClass}>
                                                 {p.submitDate
                                                     ? new Date(p.submitDate).toLocaleString("en-GB", {
@@ -188,14 +200,23 @@ const SubmittedOrga = () => {
                         <table className="w-full border-collapse text-xs">
                             <thead>
                                 <tr>
+                                    <th className="border px-2 py-1 font-semibold text-center">Chọn</th>
                                     <th className="border px-2 py-1 font-semibold text-left">Avatar</th>
                                     <th className="border px-2 py-1 font-semibold text-left">Name</th>
                                     <th className="border px-2 py-1 font-semibold">Email</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredReviewers.length > 0 ? filteredReviewers.map((r) => (
+                                {paginatedReviewers.length > 0 ? paginatedReviewers.map((r) => (
                                     <tr key={r.userId} className="hover:bg-gray-100">
+                                        <td className="border px-2 py-1 text-center">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedReviewers.includes(r.userId)}
+                                                onChange={() => toggleReviewer(r.userId)}
+                                                className="accent-blue-500"
+                                            />
+                                        </td>
                                         <td className="border px-2 py-1 text-center">
                                             {r.avatarUrl ? (
                                                 <img src={r.avatarUrl} alt={r.name} className="w-8 h-8 rounded-full mx-auto" />
@@ -205,24 +226,33 @@ const SubmittedOrga = () => {
                                                 </div>
                                             )}
                                         </td>
-                                        <td className="border px-2 py-1">
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedReviewers.includes(r.userId)}
-                                                    onChange={() => toggleReviewer(r.userId)}
-                                                    className="accent-blue-500"
-                                                />
-                                                <span>{r.name}</span>
-                                            </label>
-                                        </td>
+                                        <td className="border px-2 py-1">{r.name}</td>
                                         <td className="border px-2 py-1">{r.email}</td>
                                     </tr>
                                 )) : (
-                                    <tr><td colSpan={3} className="text-center py-2 text-gray-400">No reviewer found</td></tr>
+                                    <tr><td colSpan={4} className="text-center py-2 text-gray-400">No reviewer found</td></tr>
                                 )}
                             </tbody>
                         </table>
+                    </div>
+                    <div className="flex justify-between items-center mt-4">
+                        <button
+                            onClick={() => setReviewerPage((prev) => Math.max(prev - 1, 1))}
+                            disabled={reviewerPage === 1}
+                            className="px-4 py-2 bg-gray-200 border border-gray-400 rounded disabled:opacity-50"
+                        >
+                            Previous
+                        </button>
+                        <span className="text-sm text-gray-500">
+                            Page {reviewerPage} of {totalReviewerPages}
+                        </span>
+                        <button
+                            onClick={() => setReviewerPage((prev) => Math.min(prev + 1, totalReviewerPages))}
+                            disabled={reviewerPage === totalReviewerPages}
+                            className="px-4 py-2 bg-gray-200 border border-gray-400 rounded disabled:opacity-50"
+                        >
+                            Next
+                        </button>
                     </div>
                 </Modal>
             )}

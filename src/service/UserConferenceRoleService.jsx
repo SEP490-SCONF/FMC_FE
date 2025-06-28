@@ -1,4 +1,4 @@
-import { apiService } from "../service/ApiService";
+import { apiService } from "./ApiService";
 
 // Lấy tất cả UserConferenceRole
 export const getAllUserConferenceRoles = async () => {
