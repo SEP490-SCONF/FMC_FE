@@ -1,30 +1,40 @@
-import React, { useState } from "react";
-import { Table, Input } from "antd";
-import { FiEye, FiDownload } from "react-icons/fi";
+import React, { useState, useEffect } from "react";
+import { Table, Input, Button } from "antd";
+import { FiEye, FiDownload, FiEdit } from "react-icons/fi";
+import { useNavigate } from "react-router-dom";
+import { getReviewerAssignments } from "../../Service/ReviewerAssignmentService";
+import { useUser } from "../../context/UserContext";
 
 const { Search } = Input;
 
-const papers = [
-    {
-        key: "1",
-        name: "Bài báo 1",
-        pdfUrl: "https://example.com/paper1.pdf",
-        topic: "AI",
-        assignedDate: "2025-06-20",
-    },
-    {
-        key: "2",
-        name: "Bài báo 2",
-        pdfUrl: "https://example.com/paper2.pdf",
-        topic: "Machine Learning",
-        assignedDate: "2025-06-22",
-    },
-    // ... thêm dữ liệu nếu cần
-];
-
 const PaperAssign = () => {
+    const { user } = useUser();
+    const [papers, setPapers] = useState([]);
     const [searchText, setSearchText] = useState("");
-    const [filteredData, setFilteredData] = useState(papers);
+    const [filteredData, setFilteredData] = useState([]);
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (user && user.userId) {
+            getReviewerAssignments(user.userId)
+                .then(res => {
+                    const mapped = (res.data || res).map(item => ({
+                        key: item.assignmentId,
+                        assignmentId: item.assignmentId,
+                        name: item.title,
+                        pdfUrl: item.revisions?.[0]?.filePath || "",
+                        topic: item.topicName,
+                        assignedDate: item.assignedAt ? new Date(item.assignedAt).toLocaleDateString("vi-VN") : "",
+                    }));
+                    setPapers(mapped);
+                    setFilteredData(mapped);
+                })
+                .catch(() => {
+                    setPapers([]);
+                    setFilteredData([]);
+                });
+        }
+    }, [user]);
 
     const onSearch = (value) => {
         setSearchText(value);
@@ -35,6 +45,10 @@ const PaperAssign = () => {
                     paper.topic.toLowerCase().includes(value.toLowerCase())
             )
         );
+    };
+
+    const handleReview = (assignmentId) => {
+        navigate(`/review/paper/${assignmentId}`);
     };
 
     const columns = [
@@ -48,7 +62,7 @@ const PaperAssign = () => {
             title: "File PDF",
             dataIndex: "pdfUrl",
             key: "pdfUrl",
-            render: (url) => (
+            render: (url) => url ? (
                 <div className="flex gap-3">
                     <a
                         href={url}
@@ -68,7 +82,7 @@ const PaperAssign = () => {
                         <span className="hidden sm:inline">Tải</span>
                     </a>
                 </div>
-            ),
+            ) : <span className="text-gray-400">No file</span>,
         },
         {
             title: "Chủ đề",
@@ -81,6 +95,19 @@ const PaperAssign = () => {
             dataIndex: "assignedDate",
             key: "assignedDate",
             render: (text) => <span className="text-gray-500">{text}</span>,
+        },
+        {
+            title: "Review",
+            key: "review",
+            render: (_, record) => (
+                <Button
+                    type="primary"
+                    icon={<FiEdit />}
+                    onClick={() => handleReview(record.assignmentId)}
+                >
+                    Review
+                </Button>
+            ),
         },
     ];
 

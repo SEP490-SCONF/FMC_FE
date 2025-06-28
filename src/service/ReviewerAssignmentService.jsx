@@ -1,9 +1,11 @@
 import { apiService } from "./ApiService";
 
-// Lấy danh sách reviewer (role 3) của hội thảo
-export const getConferenceReviewers = async (conferenceId, params = {}, options = {}) => {
+
+
+// Lấy danh sách bài báo được giao cho reviewer
+export const getReviewerAssignments = async (reviewerId, params = {}, options = {}) => {
     return apiService.get(
-        `/UserConferenceRoles/conference/${conferenceId}/roles-reviewer`,
+        `/ReviewerAssignment/reviewer/${reviewerId}`,
         params,
         options
     );
