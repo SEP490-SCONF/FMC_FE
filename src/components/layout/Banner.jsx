@@ -56,7 +56,6 @@ const Banner = ({ conference }) => (
                     </div>
                 </div>
             </div>
-            {/* Đã bỏ slider-btn */}
         </div>
     </section>
 );

@@ -1,4 +1,4 @@
-import { apiService } from "./ApiService";
+import { apiService } from "../service/ApiService";
 
 // Lấy tất cả UserConferenceRole
 export const getAllUserConferenceRoles = async () => {
@@ -26,7 +26,6 @@ export const getConferenceMembersByRoles = async (conferenceId) => {
     return apiService.get(`/UserConferenceRoles/conference/${conferenceId}/roles/members`);
 };
 
-
 export const changeUserConferenceRole = async (data) => {
     // data là UserConferenceRoleChangeRoleDto
     return apiService.put("/UserConferenceRoles/change-role", data);
@@ -35,4 +34,9 @@ export const changeUserConferenceRole = async (data) => {
 // Xóa UserConferenceRole theo id
 export const deleteUserConferenceRole = async (id) => {
     return apiService.delete(`/UserConferenceRoles/${id}`);
+};
+
+// Lấy danh sách conference theo userId và roleName
+export const getConferencesByUserAndRole = async (userId, roleName) => {
+    return apiService.get(`/UserConferenceRoles/user/${userId}/conferences/${roleName}`);
 };

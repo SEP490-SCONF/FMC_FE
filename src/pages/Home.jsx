@@ -9,7 +9,7 @@ import Solution from "../components/layout/Solution";
 import HomeBody from "../components/layout/HomeScreen";
 import TechMarquee from "../components/layout/Marque";
 import { getConferences, getConferenceById } from "../service/ConferenceService";
-import { getConferenceTopics } from "../Service/ConferenceTopic";
+import { getConferenceTopicsByConferenceId } from "../Service/ConferenceTopicService";
 
 const Home = () => {
     const { id } = useParams();
@@ -37,11 +37,8 @@ const Home = () => {
             setLoadingTopics(true);
             const fetchTopics = async () => {
                 try {
-                    const allTopics = await getConferenceTopics();
-                    const filtered = allTopics.filter(
-                        t => t.conferenceId === selectedConference.conferenceId
-                    );
-                    setTopics(filtered);
+                    const topicsData = await getConferenceTopicsByConferenceId(selectedConference.conferenceId);
+                    setTopics(topicsData);
                 } finally {
                     setLoadingTopics(false);
                 }

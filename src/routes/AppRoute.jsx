@@ -13,6 +13,8 @@ import ResultPaper from "../pages/author/ResultPaper";
 import PaperPay from "../pages/author/Payment";
 import PaperReview from "../pages/PaperReview";
 import ConferenceLayout from "../layouts/ConferenceLayout";
+import PaperAss from "../pages/reviewer/PaperAss";
+import OrganizerView from "../pages/organizer/OrganizerView";
 
 export default function AppRoutes() {
   return (
@@ -20,7 +22,7 @@ export default function AppRoutes() {
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<App />}>
-          <Route index element={<Screen  />} />
+          <Route index element={<OrganizerView />} />
           <Route path="/login" element={<Login />} />
           <Route path="user" element={<UserP />} />
         </Route>
