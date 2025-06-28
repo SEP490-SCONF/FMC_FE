@@ -1,9 +1,12 @@
 import React from "react";
 import { Card, List, Avatar, Typography } from "antd";
+import { useNavigate } from "react-router-dom";
 
 const { Title, Text } = Typography;
 
 const OrganizerListView = ({ conferences }) => {
+    const navigate = useNavigate();
+
     return (
         <div style={{ padding: 24 }}>
             <Title level={2}>List of conference you organize</Title>
@@ -20,6 +23,9 @@ const OrganizerListView = ({ conferences }) => {
                                     {item.status ? "Đang mở" : "Đã đóng"}
                                 </Text>
                             }
+                            hoverable
+                            onClick={() => navigate(`/manage-conference/${item.conferenceId}/submitted-papers`)}
+                            style={{ cursor: "pointer" }}
                         >
                             <Card.Meta
                                 avatar={

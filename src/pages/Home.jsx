@@ -9,7 +9,7 @@ import Solution from "../components/layout/Solution";
 import HomeBody from "../components/layout/HomeScreen";
 import TechMarquee from "../components/layout/Marque";
 import { getConferences, getConferenceById } from "../service/ConferenceService";
-import { getConferenceTopicsByConferenceId } from "../Service/ConferenceTopicService";
+import { getConferenceTopicsByConferenceId } from "../service/ConferenceTopicService";
 
 const Home = () => {
     const { id } = useParams();

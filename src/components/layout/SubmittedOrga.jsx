@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import Modal from "../ui/Modal";
 import { getSubmittedPapersByConferenceId } from "../../Service/PaperSerice";
 import { useParams } from "react-router-dom";
-import { useConference } from "../../context/ConferenceContext";
 
 const reviewerDB = [
     { id: 1, name: "Giacomo Guilizzoni", email: "giacomo@gmail.com", job: "Founder & CEO", age: 40, nickname: "Peldi", employee: true },
@@ -12,9 +11,7 @@ const reviewerDB = [
 ];
 
 const SubmittedOrga = () => {
-    const { selectedConference } = useConference();
-    const conferenceId = selectedConference?.conferenceId;
-    console.log("conferenceId:", conferenceId); // In ra để kiểm tra
+    const { id: conferenceId } = useParams();
 
     const [paperList, setPaperList] = useState([]);
     const [assignIdx, setAssignIdx] = useState(null);
@@ -25,7 +22,8 @@ const SubmittedOrga = () => {
         if (conferenceId) {
             getSubmittedPapersByConferenceId(conferenceId)
                 .then(res => {
-                    const mapped = (res.data || []).map((p, idx) => ({
+                    console.log("Submitted papers:", res);
+                    const mapped = (res || []).map((p) => ({
                         id: p.paperId,
                         title: p.title,
                         abstract: p.abstract,
@@ -34,8 +32,7 @@ const SubmittedOrga = () => {
                         filePath: p.filePath,
                         status: p.status,
                         submitDate: p.submitDate,
-                        // Các trường giả lập cho bảng
-                        author: "", // Nếu backend trả về thì lấy, không thì để rỗng
+                        author: p.name,
                         assigned: [],
                         updated: false,
                         resubmits: "",
@@ -47,7 +44,6 @@ const SubmittedOrga = () => {
     }, [conferenceId]);
 
     const openAssign = (idx) => {
-        console.log("OPEN MODAL FOR PAPER INDEX", idx);
         setAssignIdx(idx);
         setSelectedReviewers(paperList[idx].assigned);
         setSearch("");
@@ -89,14 +85,16 @@ const SubmittedOrga = () => {
     return (
         <>
             <div className="bg-white min-h-screen pb-10 flex flex-col">
-                <div className="border-b border-gray-800 py-4 text-center">
-                    <h2 className="m-0 font-semibold text-xl">AI Conference</h2>
+                <div className="border-b border-gray-200 py-6 px-8">
+                    <h2 className="font-bold text-3xl text-left">Paper Submission</h2>
                 </div>
-                <div className="flex flex-1 items-center justify-center">
-                    <div className="w-full max-w-6xl mt-8 bg-white">
-                        <h5 className="mt-6 mb-3 font-medium text-sm text-left">Paper Submission</h5>
+                <div className="flex flex-1 items-start justify-start px-8 py-6">
+                    <div className="w-full max-w-6xl bg-white rounded-lg shadow-md p-6">
+                        <div className="mb-6">
+                            <h5 className="font-semibold text-lg text-gray-700">Danh sách bài nộp</h5>
+                        </div>
                         <div className="overflow-x-auto">
-                            <table className="w-full border-collapse text-base bg-white mx-auto">
+                            <table className="w-full border-collapse text-base bg-white">
                                 <thead>
                                     <tr>
                                         <th className={thClass}>#</th>
@@ -106,13 +104,13 @@ const SubmittedOrga = () => {
                                         <th className={thClass}>Assignment</th>
                                         <th className={thClass}>Update</th>
                                         <th className={thClass}>Topic</th>
-                                        <th className={thClass}>Resubmits</th>
+                                       
                                         <th className={thClass}>Last Submitted</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {paperList.map((p, idx) => (
-                                        <tr key={p.id}>
+                                        <tr key={p.id} className="hover:bg-gray-50">
                                             <td className={tdClass}>{idx + 1}</td>
                                             <td className={tdClass}>{p.author}</td>
                                             <td className={tdClass}>{p.title}</td>
@@ -140,7 +138,7 @@ const SubmittedOrga = () => {
                                             </td>
                                             <td className={tdClass}>{p.status}</td>
                                             <td className={tdClass}>{p.topic}</td>
-                                            <td className={tdClass}>{p.resubmits}</td>
+                                            
                                             <td className={tdClass}>
                                                 {p.submitDate
                                                     ? new Date(p.submitDate).toLocaleString("en-GB", {
@@ -226,7 +224,7 @@ const SubmittedOrga = () => {
     );
 };
 
-const thClass = "border border-gray-800 px-3 py-2 font-semibold bg-white text-xs";
-const tdClass = "border border-gray-800 px-3 py-2 text-center bg-white text-xs";
+const thClass = "border border-gray-200 px-3 py-2 font-semibold bg-gray-50 text-xs";
+const tdClass = "border border-gray-100 px-3 py-2 text-center bg-white text-xs";
 
 export default SubmittedOrga;
