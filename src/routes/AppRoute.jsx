@@ -13,7 +13,7 @@ import ResultPaper from "../pages/author/ResultPaper";
 import PaperPay from "../pages/author/Payment";
 import PaperReview from "../pages/PaperReview";
 import ConferenceLayout from "../layouts/ConferenceLayout";
-
+import SubmittedOrga from "../components/layout/SubmittedOrga";
 export default function AppRoutes() {
   return (
     <BrowserRouter>
@@ -31,7 +31,10 @@ export default function AppRoutes() {
           <Route path="/conference/:id/call-for-paper" element={<CallForPaper />} />
           <Route path="/conference/:id/paper-submition" element={<PaperSubmition />} />
           <Route path="/conference/:id/paper-review" element={<PaperReview />} />
+          <Route path="/conference/:id/submitted-papers" element={<SubmittedOrga />} />
+          <Route path="/manage-conference" element={<SubmittedOrga />} />
         </Route>
+        
       </Routes>
     </BrowserRouter>
   );
