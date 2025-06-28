@@ -15,6 +15,7 @@ import PaperReview from "../pages/PaperReview";
 import ConferenceLayout from "../layouts/ConferenceLayout";
 import PaperAss from "../pages/reviewer/PaperAss";
 import OrganizerView from "../pages/organizer/OrganizerView";
+import ManageConferenceLayout from "../layouts/ManageConferenceLayout";
 import SubmittedOrga from "../components/layout/SubmittedOrga";
 import ConferenceOrganizer from "../components/layout/organizer/ConferenceOrganizer";
 
@@ -32,14 +33,31 @@ export default function AppRoutes() {
         <Route element={<ConferenceLayout />}>
           <Route path="/conference/:id" element={<Home />} />
           <Route path="/conference/:id/committee" element={<CommitteeList />} />
-          <Route path="/conference/:id/call-for-paper" element={<CallForPaper />} />
-          <Route path="/conference/:id/paper-submition" element={<PaperSubmition />} />
-          <Route path="/conference/:id/paper-review" element={<PaperReview />} />
-          <Route path="/conference/:id/submitted-papers" element={<SubmittedOrga />} />
+          <Route
+            path="/conference/:id/call-for-paper"
+            element={<CallForPaper />}
+          />
+          <Route
+            path="/conference/:id/paper-submition"
+            element={<PaperSubmition />}
+          />
+          <Route
+            path="/conference/:id/paper-review"
+            element={<PaperReview />}
+          />
+          <Route
+            path="/conference/:id/submitted-papers"
+            element={<SubmittedOrga />}
+          />
           <Route path="/manage-conference" element={<OrganizerView />} />
+        </Route>
+        <Route element={<ManageConferenceLayout />}>
+          <Route
+            path="/manage-conference/:id/submitted-papers"
+            element={<SubOrganizer />}
+          />
           <Route path="/manage-conference/:conferenceId" element={<ConferenceOrganizer />} />
         </Route>
-
       </Routes>
     </BrowserRouter>
   );

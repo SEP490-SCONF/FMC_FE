@@ -25,6 +25,14 @@ export const createUserConferenceRole = async (data) => {
 export const getConferenceMembersByRoles = async (conferenceId) => {
     return apiService.get(`/UserConferenceRoles/conference/${conferenceId}/roles/members`);
 };
+// Lấy danh sách reviewer (role 3) của hội thảo
+export const getConferenceReviewers = async (conferenceId, { page = 1, pageSize = 10, search = "" } = {}) => {
+    let url = `/UserConferenceRoles/conference/${conferenceId}/roles-reviewer?$top=${pageSize}&$skip=${(page - 1) * pageSize}`;
+    if (search) {
+        url += `&$filter=contains(Name,'${encodeURIComponent(search)}') or contains(Email,'${encodeURIComponent(search)}')`;
+    }
+    return apiService.get(url);
+};
 
 export const changeUserConferenceRole = async (data) => {
     // data là UserConferenceRoleChangeRoleDto

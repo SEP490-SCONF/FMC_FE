@@ -25,6 +25,9 @@ const OrganizerListView = ({ conferences }) => {
                                     {item.status ? "Đang mở" : "Đã đóng"}
                                 </Text>
                             }
+                            hoverable
+                            onClick={() => navigate(`/manage-conference/${item.conferenceId}/submitted-papers`)}
+                            style={{ cursor: "pointer" }}
                         >
                             <Card.Meta
                                 avatar={
