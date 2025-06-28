@@ -5,7 +5,7 @@ import { useConference } from "../../context/ConferenceContext";
 import { getConferenceTopicsByConferenceId } from "../../service/ConferenceTopicService";
 import { useParams } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
-import { uploadPaperPdf } from "../../Service/PaperSerice";
+import { uploadPaperPdf } from "../../service/PaperSerice";
 
 const rules = [
     "Papers must be original and not under consideration elsewhere.",
