@@ -2,6 +2,41 @@ import React, { useState } from "react";
 
 const Submited = ({ submissions = [] }) => {
   const [openIdx, setOpenIdx] = useState(null);
+  const [message, setMessage] = useState(""); // State for showing messages
+
+  const handleResubmit = (status) => {
+    // Kiểm tra trạng thái và hiển thị thông báo phù hợp
+    if (status === "Needs Revision") {
+      setMessage(""); // Clear any previous messages and allow resubmission
+      console.log("Resubmit functionality here");
+      // TODO: Thêm logic nộp lại bài tại đây
+    } else {
+      // Nếu không phải "Needs Revision", hiển thị thông báo
+      switch (status) {
+        case "Submitted":
+          setMessage(
+            "You cannot resubmit this paper because it has already been submitted."
+          );
+          break;
+        case "Under Review":
+          setMessage(
+            "You cannot resubmit this paper while it is under review."
+          );
+          break;
+        case "Rejected":
+          setMessage("This paper was rejected. Please revise and resubmit.");
+          break;
+        case "Accepted":
+          setMessage("This paper is accepted. No need to resubmit.");
+          break;
+        default:
+          setMessage("Unknown status. You cannot resubmit this paper.");
+      }
+    }
+    setTimeout(() => {
+      setMessage(""); // Clear the message after 3 seconds
+    }, 3000); // 3000ms = 3 seconds
+  };
 
   return (
     <div className="bg-white min-h-screen pb-10 flex flex-col">
@@ -59,9 +94,7 @@ const Submited = ({ submissions = [] }) => {
                         </button>
                         <button
                           className="inline-flex items-center gap-1 px-3 py-1 border border-yellow-500 text-yellow-700 bg-yellow-50 rounded-full hover:bg-yellow-100 transition text-xs font-medium"
-                          onClick={() => {
-                            // TODO: Xử lý nộp lại bài tại đây
-                          }}
+                          onClick={() => handleResubmit(s.status)} // Gọi hàm handleResubmit với trạng thái
                         >
                           <span className="mr-1">🔄</span>
                           Resubmit
@@ -85,6 +118,12 @@ const Submited = ({ submissions = [] }) => {
         </div>
       </div>
 
+      {/* Hiển thị thông báo nếu không thể nộp lại bài */}
+      {message && (
+        <div className="fixed top-20 right-4 bg-red-100 text-red-700 py-2 px-4 rounded-lg shadow-lg text-center max-w-xs z-50">
+          {message}
+        </div>
+      )}
       {/* Popup hiển thị danh sách revision */}
       {openIdx !== null && (
         <div className="fixed inset-0 flex items-center justify-center z-50">
@@ -101,7 +140,9 @@ const Submited = ({ submissions = [] }) => {
                 <tr>
                   <th className="border px-3 py-2 font-semibold">#</th>
                   <th className="border px-3 py-2 font-semibold">Status</th>
-                  <th className="border px-3 py-2 font-semibold">Submitted At</th>
+                  <th className="border px-3 py-2 font-semibold">
+                    Submitted At
+                  </th>
                   <th className="border px-3 py-2 font-semibold">File</th>
                 </tr>
               </thead>
@@ -109,7 +150,9 @@ const Submited = ({ submissions = [] }) => {
                 {(submissions[openIdx]?.paperRevisions || []).map((rev, i) => (
                   <tr key={rev.revisionId || i}>
                     <td className="border px-3 py-2 text-center">{i + 1}</td>
-                    <td className="border px-3 py-2 text-center">{rev.status}</td>
+                    <td className="border px-3 py-2 text-center">
+                      {rev.status}
+                    </td>
                     <td className="border px-3 py-2 text-center">
                       {rev.submittedAt
                         ? new Date(rev.submittedAt).toLocaleString("en-GB", {
