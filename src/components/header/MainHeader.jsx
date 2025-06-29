@@ -2,14 +2,15 @@ import React from 'react';
 import { Link } from "react-router-dom";
 import NotificationDropdown from "./NotificationDropdown";
 import UserDropdown from "./UserDropdown";
-import { useUser } from "../../context/UserContext"; 
+import { useUser } from "../../context/UserContext";
+import fptLogo from '../../assets/images/fptlogo.png'; // Đường dẫn tùy vị trí file ảnh
 
 
 const MainHeader = ({ onClick, onToggle }) => {
-    const { user } = useUser(); 
+    const { user } = useUser();
     const [isApplicationMenuOpen, setApplicationMenuOpen] = React.useState(false);
 
-   
+
 
     const toggleApplicationMenu = () => {
         setApplicationMenuOpen(!isApplicationMenuOpen);
@@ -35,17 +36,17 @@ const MainHeader = ({ onClick, onToggle }) => {
                         </svg>
                     </button>
                     {/* Logo */}
-                    <Link to="/" className="flex-shrink-0">
+                    <Link to="/" className="flex-shrink-0 overflow-hidden">
                         <img
-                            className="h-8 dark:hidden"
-                            src="/images/logo/logo.svg"
+                            className="max-h-8 max-w-24 w-auto object-contain dark:hidden"
+                            src={fptLogo}
                             alt="Logo"
                         />
-                        <img
-                            className="h-8 hidden dark:block"
+                        {/* <img
+                            className="max-h-8 max-w-24 w-auto object-contain hidden dark:block"
                             src="/images/logo/logo-dark.svg"
                             alt="Logo"
-                        />
+                        /> */}
                     </Link>
                     {/* Search */}
                     <form className="flex items-center flex-1 max-w-xl ml-4">

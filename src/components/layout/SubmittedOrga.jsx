@@ -2,22 +2,28 @@ import React, { useState, useEffect } from "react";
 import Modal from "../ui/Modal";
 import { getSubmittedPapersByConferenceId } from "../../services/PaperSerice";
 import { getConferenceReviewers } from "../../services/UserConferenceRoleService"; // import hàm mới
+import { assignReviewerToPaper, updateReviewerAssignment } from "../../services/ReviewerAssignmentService";
+import { useUser } from "../../context/UserContext";
 import { useParams } from "react-router-dom";
 
 const SubmittedOrga = () => {
     const { id: conferenceId } = useParams();
+    const { user } = useUser();
 
     const [paperList, setPaperList] = useState([]);
     const [assignIdx, setAssignIdx] = useState(null);
     const [search, setSearch] = useState("");
     const [selectedReviewers, setSelectedReviewers] = useState([]);
-    const [reviewers, setReviewers] = useState([]); // reviewers từ API
+    const [reviewers, setReviewers] = useState([]);
+    const [reviewerPage, setReviewerPage] = useState(1);
+    const reviewersPerPage = 2;
 
     // Lấy danh sách paper
     useEffect(() => {
         if (conferenceId) {
             getSubmittedPapersByConferenceId(conferenceId)
                 .then(res => {
+                    console.log("Submitted papers from API:", res); // Thêm dòng này
                     const mapped = (res || []).map((p) => ({
                         id: p.paperId,
                         title: p.title,
@@ -28,7 +34,10 @@ const SubmittedOrga = () => {
                         status: p.status,
                         submitDate: p.submitDate,
                         author: p.name,
-                        assigned: [],
+                        assignedReviewerName: p.assignedReviewerName,
+                        isAssigned: p.isAssigned,
+                        assigned: p.assignedReviewers || [],
+                        assignmentId: p.assignmentId, // nhớ lấy assignmentId từ API nếu có
                         updated: false,
                         resubmits: "",
                     }));
@@ -42,7 +51,10 @@ const SubmittedOrga = () => {
     useEffect(() => {
         if (conferenceId) {
             getConferenceReviewers(conferenceId)
-                .then(res => setReviewers(res || []))
+                .then(res => {
+                    console.log("Reviewers from API:", res); // Thêm dòng này
+                    setReviewers(res || []);
+                })
                 .catch(() => setReviewers([]));
         }
     }, [conferenceId]);
@@ -60,24 +72,58 @@ const SubmittedOrga = () => {
     };
 
     const toggleReviewer = (id) => {
-        setSelectedReviewers((prev) =>
-            prev.includes(id) ? prev.filter((rid) => rid !== id) : [...prev, id]
-        );
+        setSelectedReviewers([id]);
     };
 
-    const handleAssign = () => {
-        setPaperList((list) =>
-            list.map((p, i) =>
-                i === assignIdx ? { ...p, assigned: selectedReviewers } : p
-            )
-        );
+    const handleAssign = async () => {
+        const paper = paperList[assignIdx];
+        const reviewerId = selectedReviewers[0];
+        // Nếu đã có reviewer (isAssigned), gọi PUT để update
+        if (paper.isAssigned && paper.assignmentId) {
+            await updateReviewerAssignment(paper.assignmentId, paper.id, reviewerId);
+        } else {
+            await assignReviewerToPaper(paper.id, reviewerId);
+        }
+        // Sau khi gán, reload lại danh sách paper hoặc cập nhật state cho phù hợp
+        // Gợi ý: gọi lại getSubmittedPapersByConferenceId(conferenceId) để lấy dữ liệu mới nhất
+        getSubmittedPapersByConferenceId(conferenceId)
+            .then(res => {
+                const mapped = (res || []).map((p) => ({
+                    id: p.paperId,
+                    title: p.title,
+                    abstract: p.abstract,
+                    keywords: p.keywords,
+                    topic: p.topicName,
+                    filePath: p.filePath,
+                    status: p.status,
+                    submitDate: p.submitDate,
+                    author: p.name,
+                    assignedReviewerName: p.assignedReviewerName,
+                    isAssigned: p.isAssigned,
+                    assigned: p.assignedReviewers || [],
+                    assignmentId: p.assignmentId, // nhớ lấy assignmentId từ API nếu có
+                    updated: false,
+                    resubmits: "",
+                }));
+                setPaperList(mapped);
+            });
         closeModal();
     };
+
+    useEffect(() => {
+        setReviewerPage(1); // Reset về trang 1 khi search thay đổi
+    }, [search, assignIdx]);
 
     // Lọc reviewer theo search
     const filteredReviewers = reviewers.filter((r) =>
         (r.name || "").toLowerCase().includes(search.toLowerCase()) ||
         (r.email || "").toLowerCase().includes(search.toLowerCase())
+    );
+
+    const totalReviewerPages = Math.ceil(filteredReviewers.length / reviewersPerPage);
+    const paginatedReviewers = filteredReviewers.slice(
+        (reviewerPage - 1) * reviewersPerPage,
+        reviewerPage * reviewersPerPage
     );
 
     const getReviewerIcons = (assigned) => {
@@ -108,10 +154,10 @@ const SubmittedOrga = () => {
                                         <th className={thClass}>Author</th>
                                         <th className={thClass}>Title</th>
                                         <th className={thClass}>Paper</th>
-                                        <th className={thClass}>Assignment</th>
-                                        <th className={thClass}>Update</th>
+                                        <th className={thClass}>Assigned To</th>
+                                        <th className={thClass}>Assign</th>
+                                        <th className={thClass}>Status</th>
                                         <th className={thClass}>Topic</th>
-                                       
                                         <th className={thClass}>Last Submitted</th>
                                     </tr>
                                 </thead>
@@ -133,19 +179,42 @@ const SubmittedOrga = () => {
                                                     </a>
                                                 ) : "No file"}
                                             </td>
+
+                                            <td className={tdClass}>
+                                                {p.isAssigned ? (
+                                                    <span className="text-sm text-green-600 font-medium" title={p.assignedReviewerName}>
+                                                        👤 {p.assignedReviewerName || "Assigned"}
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-gray-400 italic">Unassigned</span>
+                                                )}
+                                            </td>
+
                                             <td className={tdClass}>
                                                 {p.assigned.length > 0 ? (
                                                     <>
                                                         {getReviewerIcons(p.assigned)}
-                                                        <button className="ml-2 text-2xl border border-gray-400 rounded px-2" title="Edit assignment" onClick={() => openAssign(idx)}>+</button>
+                                                        <button
+                                                            className="ml-2 text-2xl border border-gray-400 rounded px-2"
+                                                            title="Edit assignment"
+                                                            onClick={() => openAssign(idx)}
+                                                        >
+                                                            +
+                                                        </button>
                                                     </>
                                                 ) : (
-                                                    <button className="text-2xl border border-gray-400 rounded px-2" title="Assign reviewer" onClick={() => openAssign(idx)}>+</button>
+                                                    <button
+                                                        className="text-2xl border border-gray-400 rounded px-2"
+                                                        title="Assign reviewer"
+                                                        onClick={() => openAssign(idx)}
+                                                    >
+                                                        +
+                                                    </button>
                                                 )}
                                             </td>
+
                                             <td className={tdClass}>{p.status}</td>
                                             <td className={tdClass}>{p.topic}</td>
-                                            
                                             <td className={tdClass}>
                                                 {p.submitDate
                                                     ? new Date(p.submitDate).toLocaleString("en-GB", {
@@ -160,6 +229,7 @@ const SubmittedOrga = () => {
                                         </tr>
                                     ))}
                                 </tbody>
+
                             </table>
                         </div>
                     </div>
@@ -188,14 +258,24 @@ const SubmittedOrga = () => {
                         <table className="w-full border-collapse text-xs">
                             <thead>
                                 <tr>
+                                    <th className="border px-2 py-1 font-semibold text-center">Chọn</th>
                                     <th className="border px-2 py-1 font-semibold text-left">Avatar</th>
                                     <th className="border px-2 py-1 font-semibold text-left">Name</th>
                                     <th className="border px-2 py-1 font-semibold">Email</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredReviewers.length > 0 ? filteredReviewers.map((r) => (
+                                {paginatedReviewers.length > 0 ? paginatedReviewers.map((r) => (
                                     <tr key={r.userId} className="hover:bg-gray-100">
+                                        <td className="border px-2 py-1 text-center">
+                                            <input
+                                                type="radio"
+                                                name="reviewer"
+                                                checked={selectedReviewers.includes(r.userId)}
+                                                onChange={() => toggleReviewer(r.userId)}
+                                                className="accent-blue-500"
+                                            />
+                                        </td>
                                         <td className="border px-2 py-1 text-center">
                                             {r.avatarUrl ? (
                                                 <img src={r.avatarUrl} alt={r.name} className="w-8 h-8 rounded-full mx-auto" />
@@ -205,24 +285,33 @@ const SubmittedOrga = () => {
                                                 </div>
                                             )}
                                         </td>
-                                        <td className="border px-2 py-1">
-                                            <label className="flex items-center gap-2 cursor-pointer">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={selectedReviewers.includes(r.userId)}
-                                                    onChange={() => toggleReviewer(r.userId)}
-                                                    className="accent-blue-500"
-                                                />
-                                                <span>{r.name}</span>
-                                            </label>
-                                        </td>
+                                        <td className="border px-2 py-1">{r.name}</td>
                                         <td className="border px-2 py-1">{r.email}</td>
                                     </tr>
                                 )) : (
-                                    <tr><td colSpan={3} className="text-center py-2 text-gray-400">No reviewer found</td></tr>
+                                    <tr><td colSpan={4} className="text-center py-2 text-gray-400">No reviewer found</td></tr>
                                 )}
                             </tbody>
                         </table>
+                    </div>
+                    <div className="flex justify-between items-center mt-4">
+                        <button
+                            onClick={() => setReviewerPage((prev) => Math.max(prev - 1, 1))}
+                            disabled={reviewerPage === 1}
+                            className="px-4 py-2 bg-gray-200 border border-gray-400 rounded disabled:opacity-50"
+                        >
+                            Previous
+                        </button>
+                        <span className="text-sm text-gray-500">
+                            Page {reviewerPage} of {totalReviewerPages}
+                        </span>
+                        <button
+                            onClick={() => setReviewerPage((prev) => Math.min(prev + 1, totalReviewerPages))}
+                            disabled={reviewerPage === totalReviewerPages}
+                            className="px-4 py-2 bg-gray-200 border border-gray-400 rounded disabled:opacity-50"
+                        >
+                            Next
+                        </button>
                     </div>
                 </Modal>
             )}

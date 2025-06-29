@@ -17,6 +17,8 @@ import PaperAss from "../pages/reviewer/PaperAss";
 import OrganizerView from "../pages/organizer/OrganizerView";
 import ManageConferenceLayout from "../layouts/ManageConferenceLayout";
 import SubmittedOrga from "../components/layout/SubmittedOrga";
+import ConferenceOrganizer from "../components/layout/organizer/ConferenceOrganizer";
+import Submitted from "../pages/author/Submittedpaper";
 import SubmittedPaperAuthor from "../pages/author/Submittedpaper";
 import AuthorConference from "../pages/author/AuthorConference";
 
@@ -55,15 +57,16 @@ export default function AppRoutes() {
             path="/conference/:id/submitted-papers"
             element={<SubmittedOrga />}
           />
-          
-          
+
+
         </Route>
         <Route element={<ManageConferenceLayout />}>
           <Route
             path="/manage-conference/:id/submitted-papers"
             element={<SubOrganizer />}
           />
-          
+          <Route path="/manage-conference/:conferenceId" element={<ConferenceOrganizer />} />
+
           {/* Thêm các route con khác nếu cần */}
         </Route>
       </Routes>
