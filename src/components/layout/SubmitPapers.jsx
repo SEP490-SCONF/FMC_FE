@@ -19,7 +19,7 @@ const rules = [
 
 const SubmitPapers = () => {
     const { selectedConference, fetchConferenceDetail } = useConference();
-    const { user } = useUser(); // Lấy user từ context
+    const { user } = useUser();
     const { id } = useParams();
     const [file, setFile] = useState(null);
     const [title, setTitle] = useState("");
@@ -98,6 +98,14 @@ const SubmitPapers = () => {
             console.error(error);
         }
     };
+
+    // In ra userId để kiểm tra
+    useEffect(() => {
+        console.log("Current user:", user);
+        if (user && user.userId) {
+            console.log("UserId:", user.userId);
+        }
+    }, [user]);
 
     return (
         <section className="pt-120 pb-120 n1-bg-color">

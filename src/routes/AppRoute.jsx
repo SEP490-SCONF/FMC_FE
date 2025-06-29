@@ -19,9 +19,8 @@ import ManageConferenceLayout from "../layouts/ManageConferenceLayout";
 import SubmittedOrga from "../components/layout/SubmittedOrga";
 import ConferenceOrganizer from "../components/layout/organizer/ConferenceOrganizer";
 import Submitted from "../pages/author/Submittedpaper";
-
-
-
+import SubmittedPaperAuthor from "../pages/author/Submittedpaper";
+import AuthorConference from "../pages/author/AuthorConference";
 
 export default function AppRoutes() {
   return (
@@ -32,6 +31,11 @@ export default function AppRoutes() {
           <Route index element={<Screen />} />
           <Route path="/login" element={<Login />} />
           <Route path="user" element={<UserP />} />
+          <Route path="/reviewer/assigned-papers" element={<PaperAss />} />
+          <Route path="/review/paper/:assignmentId" element={<PaperReview />} />
+          <Route path="/manage-conference" element={<OrganizerView />} />
+          <Route path="/author/conference/:conferenceId/submittedPaper" element={<SubmittedPaperAuthor />} />
+          <Route path="/author/conference" element={<AuthorConference />} />
         </Route>
 
         <Route element={<ConferenceLayout />}>
@@ -53,8 +57,8 @@ export default function AppRoutes() {
             path="/conference/:id/submitted-papers"
             element={<SubmittedOrga />}
           />
-          <Route path="/manage-conference" element={<OrganizerView />} />
-          <Route path="/reviewer/assigned-papers" element={<PaperAss />} />
+
+
         </Route>
         <Route element={<ManageConferenceLayout />}>
           <Route
@@ -62,6 +66,8 @@ export default function AppRoutes() {
             element={<SubOrganizer />}
           />
           <Route path="/manage-conference/:conferenceId" element={<ConferenceOrganizer />} />
+
+          {/* Thêm các route con khác nếu cần */}
         </Route>
       </Routes>
     </BrowserRouter>
