@@ -18,6 +18,10 @@ import OrganizerView from "../pages/organizer/OrganizerView";
 import ManageConferenceLayout from "../layouts/ManageConferenceLayout";
 import SubmittedOrga from "../components/layout/SubmittedOrga";
 import ConferenceOrganizer from "../components/layout/organizer/ConferenceOrganizer";
+import Submitted from "../pages/author/Submittedpaper";
+
+
+
 
 export default function AppRoutes() {
   return (

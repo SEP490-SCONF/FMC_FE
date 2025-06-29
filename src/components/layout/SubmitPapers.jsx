@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import "../../assets/styles/pages/_section.scss";
 import Buttonsubmit from "../ui/button/Button";
 import { useConference } from "../../context/ConferenceContext";
-import { getConferenceTopicsByConferenceId } from "../../service/ConferenceTopicService";
+import { getConferenceTopicsByConferenceId } from "../../services/ConferenceTopicService";
 import { useParams } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
-import { uploadPaperPdf } from "../../service/PaperSerice";
+import { uploadPaperPdf } from "../../services/PaperSerice";
 
 const rules = [
     "Papers must be original and not under consideration elsewhere.",

@@ -8,8 +8,8 @@ import Service from "../components/layout/Service";
 import Solution from "../components/layout/Solution";
 import HomeBody from "../components/layout/HomeScreen";
 import TechMarquee from "../components/layout/Marque";
-import { getConferences, getConferenceById } from "../service/ConferenceService";
-import { getConferenceTopicsByConferenceId } from "../service/ConferenceTopicService";
+import { getConferences, getConferenceById } from "../services/ConferenceService";
+import { getConferenceTopicsByConferenceId } from "../services/ConferenceTopicService";
 
 const Home = () => {
     const { id } = useParams();

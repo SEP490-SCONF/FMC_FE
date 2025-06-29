@@ -18,15 +18,13 @@ const OrganizerListView = ({ conferences }) => {
                     <List.Item>
                         <Card
                             hoverable
-                            onClick={() => navigate(`/manage-conference/${item.conferenceId}`)}
+                            onClick={() => navigate(`/manage-conference/${item.conferenceId}/submitted-papers`)}
                             title={item.title}
                             extra={
                                 <Text type={item.status ? "success" : "danger"}>
                                     {item.status ? "Đang mở" : "Đã đóng"}
                                 </Text>
                             }
-                            hoverable
-                            onClick={() => navigate(`/manage-conference/${item.conferenceId}/submitted-papers`)}
                             style={{ cursor: "pointer" }}
                         >
                             <Card.Meta

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { getConferences, getConferenceById } from "../service/ConferenceService";
+import { getConferences, getConferenceById } from "../services/ConferenceService";
 
 const ConferenceContext = createContext();
 
