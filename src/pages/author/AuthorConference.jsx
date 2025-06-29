@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from "react";
-import OrganizerListView from "../../components/layout/organizer/Organizerlistview";
+import AuthorListView from "../../components/author/AuthorListView";
 import { getConferencesByUserAndRole } from "../../services/UserConferenceRoleService";
 import { useUser } from "../../context/UserContext";
 
-const OrganizerView = () => {
+const AuthorConference = () => {
     const [conferences, setConferences] = useState([]);
     const { user } = useUser();
 
     useEffect(() => {
         if (user && user.userId) {
-            getConferencesByUserAndRole(user.userId, "Organizer")
+            getConferencesByUserAndRole(user.userId, "Author")
                 .then((res) => {
                     setConferences(res.data || res);
                 })
@@ -20,10 +20,10 @@ const OrganizerView = () => {
     return (
         <>
             <main className="pt-20">
-                <OrganizerListView conferences={conferences} />
+                <AuthorListView conferences={conferences} />
             </main>
         </>
     );
 };
 
-export default OrganizerView;
+export default AuthorConference;

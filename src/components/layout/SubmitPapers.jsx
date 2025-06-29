@@ -2,10 +2,10 @@ import React, { useState, useEffect } from "react";
 import "../../assets/styles/pages/_section.scss";
 import Buttonsubmit from "../ui/button/Button";
 import { useConference } from "../../context/ConferenceContext";
-import { getConferenceTopicsByConferenceId } from "../../service/ConferenceTopicService";
+import { getConferenceTopicsByConferenceId } from "../../services/ConferenceTopicService";
 import { useParams } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
-import { uploadPaperPdf } from "../../service/PaperSerice";
+import { uploadPaperPdf } from "../../services/PaperSerice";
 
 const rules = [
     "Papers must be original and not under consideration elsewhere.",
@@ -19,7 +19,7 @@ const rules = [
 
 const SubmitPapers = () => {
     const { selectedConference, fetchConferenceDetail } = useConference();
-    const { user } = useUser(); // Lấy user từ context
+    const { user } = useUser();
     const { id } = useParams();
     const [file, setFile] = useState(null);
     const [title, setTitle] = useState("");
@@ -98,6 +98,14 @@ const SubmitPapers = () => {
             console.error(error);
         }
     };
+
+    // In ra userId để kiểm tra
+    useEffect(() => {
+        console.log("Current user:", user);
+        if (user && user.userId) {
+            console.log("UserId:", user.userId);
+        }
+    }, [user]);
 
     return (
         <section className="pt-120 pb-120 n1-bg-color">

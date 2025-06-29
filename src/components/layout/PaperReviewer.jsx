@@ -2,8 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Table, Input, Button } from "antd";
 import { FiEye, FiDownload, FiEdit } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
-import { getReviewerAssignments } from "../../Service/ReviewerAssignmentService";
+import { getReviewerAssignments } from "../../services/ReviewerAssignmentService";
 import { useUser } from "../../context/UserContext";
+import { addReview } from "../../services/ReviewService";  // Import phương thức addReview từ service
 
 const { Search } = Input;
 
@@ -25,11 +26,15 @@ const PaperAssign = () => {
                         pdfUrl: item.revisions?.[0]?.filePath || "",
                         topic: item.topicName,
                         assignedDate: item.assignedAt ? new Date(item.assignedAt).toLocaleDateString("vi-VN") : "",
+                        revisionId: item.revisions?.[0]?.revisionId || "",
+                        paperId: item.paperId,           // Thêm dòng này
+                        reviewerId: item.reviewerId,     // Thêm dòng này
                     }));
                     setPapers(mapped);
                     setFilteredData(mapped);
                 })
-                .catch(() => {
+                .catch((err) => {
+                    console.error(err);
                     setPapers([]);
                     setFilteredData([]);
                 });
@@ -47,8 +52,22 @@ const PaperAssign = () => {
         );
     };
 
-    const handleReview = (assignmentId) => {
-        navigate(`/review/paper/${assignmentId}`);
+    const handleReview = (record) => {
+        const formData = new FormData();
+        formData.append("PaperId", record.paperId);
+        formData.append("ReviewerId", record.reviewerId);
+        formData.append("RevisionId", record.revisionId);
+        formData.append("Score", 0); // hoặc lấy từ input
+        formData.append("Comments", ""); // hoặc lấy từ input
+
+        addReview(formData)
+            .then((response) => {
+                console.log("Review added successfully:", response.data);
+                navigate(`/review/paper/${record.assignmentId}`);
+            })
+            .catch((error) => {
+                console.error("Error adding review:", error);
+            });
     };
 
     const columns = [
@@ -103,7 +122,7 @@ const PaperAssign = () => {
                 <Button
                     type="primary"
                     icon={<FiEdit />}
-                    onClick={() => handleReview(record.assignmentId)}
+                    onClick={() => handleReview(record)}  // Gọi handleReview khi nhấn vào nút
                 >
                     Review
                 </Button>

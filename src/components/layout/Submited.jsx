@@ -1,88 +1,153 @@
-import React from "react";
+import React, { useState } from "react";
 
-const submissions = [
-    {
-        title: "AI",
-        abstract: "Work",
-        file: "AI.PDF",
-        topic: "AI",
-        reviewer: "Waiting for assignment",
-        status: "Submitted",
-        option: "View",
-        time: "30/05/2025 11:10 AM"
-    },
-    {
-        title: "AI Alpha",
-        abstract: "Alpha",
-        file: "AIAlpha.PDF",
-        topic: "AI",
-        reviewer: "Done",
-        status: "Need Revision",
-        option: "View",
-        time: "30/05/2025 11:10 AM"
-    }
-];
+const Submited = ({ submissions = [] }) => {
+  const [openIdx, setOpenIdx] = useState(null);
 
-const Submited = () => (
-    <div style={{ background: "#fff", minHeight: "100vh", padding: "0 0 40px 0" }}>
-        <div style={{ borderBottom: "1px solid #222", padding: "16px 0 8px 0", textAlign: "center" }}>
-            <h2 style={{ margin: 0, fontWeight: 600 }}>AI Conference</h2>
+  return (
+    <div className="bg-white min-h-screen pb-10 flex flex-col">
+      <div className="border-b border-gray-200 py-6 px-8">
+        <h2 className="font-bold text-3xl text-center">AI Conference</h2>
+      </div>
+      <div className="w-full max-w-6xl mx-auto mt-8 bg-white">
+        <h5 className="my-6 font-semibold text-lg text-gray-700">
+          History Submission
+        </h5>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-base bg-white">
+            <thead>
+              <tr>
+                <th className={thClass}>Title</th>
+                <th className={thClass}>Topic</th>
+                <th className={thClass}>Status</th>
+                <th className={thClass}>Last Submitted</th>
+                <th className={thClass}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {submissions.map((s, idx) => {
+                const lastRevision =
+                  s.paperRevisions && s.paperRevisions.length > 0
+                    ? s.paperRevisions[s.paperRevisions.length - 1]
+                    : null;
+                return (
+                  <tr key={s.paperId || idx} className="hover:bg-gray-50">
+                    <td className={tdClass}>{s.title}</td>
+                    <td className={tdClass}>{s.topicName || "N/A"}</td>
+                    <td className={tdClass}>{s.status}</td>
+                    <td className={tdClass}>
+                      {lastRevision && lastRevision.submittedAt
+                        ? new Date(lastRevision.submittedAt).toLocaleString(
+                            "en-GB",
+                            {
+                              day: "2-digit",
+                              month: "2-digit",
+                              year: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            }
+                          )
+                        : ""}
+                    </td>
+                    <td className={tdClass}>
+                      <div className="flex flex-col gap-2 items-center">
+                        <button
+                          className="inline-flex items-center gap-1 px-3 py-1 border border-blue-500 text-blue-700 bg-blue-50 rounded-full hover:bg-blue-100 transition text-xs font-medium shadow-sm"
+                          onClick={() => setOpenIdx(idx)}
+                        >
+                          <span className="mr-1">🕑</span>
+                          View Revisions
+                        </button>
+                        <button
+                          className="inline-flex items-center gap-1 px-3 py-1 border border-yellow-500 text-yellow-700 bg-yellow-50 rounded-full hover:bg-yellow-100 transition text-xs font-medium"
+                          onClick={() => {
+                            // TODO: Xử lý nộp lại bài tại đây
+                          }}
+                        >
+                          <span className="mr-1">🔄</span>
+                          Resubmit
+                        </button>
+                        <button
+                          className="inline-flex items-center gap-1 px-3 py-1 border border-green-500 text-green-700 bg-green-50 rounded-full hover:bg-green-100 transition text-xs font-medium"
+                          onClick={() => {
+                            // TODO: Xử lý xem review tại đây
+                          }}
+                        >
+                          <span className="mr-1">📝</span>
+                          View Review
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-        <div style={{ maxWidth: 1200, margin: "32px auto 0 auto", background: "#fff" }}>
-            <h5 style={{ margin: "24px 0 12px 0", fontWeight: 500 }}>History Submission</h5>
-            <div style={{ overflowX: "auto" }}>
-                <table style={{
-                    width: "100%",
-                    borderCollapse: "collapse",
-                    fontSize: 16,
-                    background: "#fff"
-                }}>
-                    <thead>
-                        <tr>
-                            <th style={thStyle}>Title</th>
-                            <th style={thStyle}>Abstract</th>
-                            <th style={thStyle}>File PDF for submit</th>
-                            <th style={thStyle}>Topic</th>
-                            <th style={thStyle}>Reviewer</th>
-                            <th style={thStyle}>Status</th>
-                            <th style={thStyle}>Option</th>
-                            <th style={thStyle}>Last time submitted</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {submissions.map((s, idx) => (
-                            <tr key={idx}>
-                                <td style={tdStyle}>{s.title}</td>
-                                <td style={tdStyle}>{s.abstract}</td>
-                                <td style={tdStyle}>{s.file}</td>
-                                <td style={tdStyle}>{s.topic}</td>
-                                <td style={tdStyle}>{s.reviewer}</td>
-                                <td style={tdStyle}>{s.status}</td>
-                                <td style={tdStyle}>
-                                    <a href="#" style={{ color: "#1976d2", textDecoration: "underline" }}>{s.option}</a>
-                                </td>
-                                <td style={tdStyle}>{s.time}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
+      </div>
+
+      {/* Popup hiển thị danh sách revision */}
+      {openIdx !== null && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl shadow-2xl p-10 min-w-[500px] max-w-2xl relative border border-gray-200">
+            <button
+              className="absolute top-3 right-5 text-2xl font-bold text-gray-500 hover:text-gray-700"
+              onClick={() => setOpenIdx(null)}
+            >
+              ×
+            </button>
+            <h3 className="text-2xl font-semibold mb-6">Paper Revisions</h3>
+            <table className="w-full border-collapse text-base bg-white">
+              <thead>
+                <tr>
+                  <th className="border px-3 py-2 font-semibold">#</th>
+                  <th className="border px-3 py-2 font-semibold">Status</th>
+                  <th className="border px-3 py-2 font-semibold">Submitted At</th>
+                  <th className="border px-3 py-2 font-semibold">File</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(submissions[openIdx]?.paperRevisions || []).map((rev, i) => (
+                  <tr key={rev.revisionId || i}>
+                    <td className="border px-3 py-2 text-center">{i + 1}</td>
+                    <td className="border px-3 py-2 text-center">{rev.status}</td>
+                    <td className="border px-3 py-2 text-center">
+                      {rev.submittedAt
+                        ? new Date(rev.submittedAt).toLocaleString("en-GB", {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : ""}
+                    </td>
+                    <td className="border px-3 py-2 text-center">
+                      {rev.filePath ? (
+                        <a
+                          href={rev.filePath}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-600 underline"
+                        >
+                          View
+                        </a>
+                      ) : (
+                        "No file"
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
+      )}
     </div>
-);
-
-const thStyle = {
-    border: "1px solid #222",
-    padding: "8px 10px",
-    fontWeight: 600,
-    background: "#fff"
+  );
 };
 
-const tdStyle = {
-    border: "1px solid #222",
-    padding: "8px 10px",
-    textAlign: "center",
-    background: "#fff"
-};
+const thClass =
+  "border border-gray-200 px-3 py-2 font-semibold bg-gray-50 text-xs";
+const tdClass = "border border-gray-100 px-3 py-2 text-center";
 
 export default Submited;
