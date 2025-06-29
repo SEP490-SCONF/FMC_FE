@@ -37,7 +37,13 @@ const PaperReview = () => {
                         <ReviewSidebar review={review} onChange={setReview} />
                     </div>
                     <div className="w-3/4 h-[95vh] p-10">
-                        <ReviewContent />
+                        {review ? (
+                            <ReviewContent review={review} />
+                        ) : (
+                            <div className="flex items-center justify-center h-full text-gray-400 text-lg">
+                                Loading review...
+                            </div>
+                        )}
                     </div>
                 </div>
                 

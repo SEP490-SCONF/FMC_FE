@@ -1,18 +1,39 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useContext, useRef, useState, useEffect } from 'react';
 import { Button, DocumentLoadEvent, PdfJs, Position, PrimaryButton, Tooltip, Viewer, Worker } from '@react-pdf-viewer/core';
 import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
 import {
     highlightPlugin,
     MessageIcon,
 } from '@react-pdf-viewer/highlight';
+import { getPdfUrlByReviewId } from '../../../services/PaperRevisionService'; // import service
+import { addReviewWithHighlightAndComment, getReviewWithHighlightAndComment } from '../../../services/ReviewWithHighlightService';
+
+import { useUser } from '../../../context/UserContext'; // Đổi đường dẫn nếu cần
 
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 
-const ReviewContent = () => {
-    const fileUrl = 'https://myconferencepapers.blob.core.windows.net/paper/b0db7b86-5175-4bb4-a9ac-cc67e11936ba.pdf';
+const ReviewContent = ({ review }) => {
+    const { user } = useUser(); // user chứa thông tin đăng nhập
+
+    const [fileUrl, setFileUrl] = useState('');
     const [message, setMessage] = useState('');
-    const [notes, setNotes] = useState([]);
+    const [notes, setNotes] = useState([
+        {
+            id: 1,
+            content: "hahaa",
+            quote: "Vì thế Tuấn quyết định code thật nhiều để kiểm chứng hàm gcd có hoạt động tốt hay không",
+            highlightAreas: [
+                {
+                    pageIndex: 0,
+                    left: 7.889083440124753,
+                    top: 23.747380774475992,
+                    width: 74.86615689846838,
+                    height: 1.453529080671501
+                }
+            ]
+        }
+    ]);
     const notesContainerRef = useRef(null);
     let noteId = notes.length;
 
@@ -55,7 +76,7 @@ const ReviewContent = () => {
     );
 
     const renderHighlightContent = (props) => {
-        const addNote = () => {
+        const addNote = async () => {
             if (message !== '') {
                 const note = {
                     id: ++noteId,
@@ -63,9 +84,29 @@ const ReviewContent = () => {
                     highlightAreas: props.highlightAreas,
                     quote: props.selectedText,
                 };
-                setNotes((prev) => prev.concat([note]));
-                setMessage('');
-                props.cancel();
+
+                try {
+                    const formData = new FormData();
+                    formData.append("ReviewId", review.reviewId);
+                    formData.append("RevisionId", review.revisionId);
+                    formData.append("ReviewerId", user.userId);
+                    formData.append("PageNumber", props.highlightAreas[0]?.pageIndex + 1);
+                    formData.append("OffsetStart", props.highlightAreas[0]?.offsetStart || 0);
+                    formData.append("OffsetEnd", props.highlightAreas[0]?.offsetEnd || 0);
+                    formData.append("TextHighlighted", props.selectedText);
+                    formData.append("UserId", user.userId);
+                    formData.append("CommentText", message);
+                    formData.append("Status", "Draft");
+
+                    console.log("FormData gửi lên:", Object.fromEntries(formData.entries()));
+                    await addReviewWithHighlightAndComment(formData);
+
+                    setNotes((prev) => prev.concat([note]));
+                    setMessage('');
+                    props.cancel();
+                } catch (err) {
+                    alert("Lưu ghi chú thất bại!");
+                }
             }
         };
 
@@ -122,25 +163,23 @@ const ReviewContent = () => {
         {notes.map((note) => (
             <React.Fragment key={note.id}>
                 {note.highlightAreas
-                    .filter((area) => area.pageIndex === props.pageIndex)
+                    .filter((area) => area.pageIndex === props.pageIndex) // Chỉ render trên trang hiện tại
                     .map((area, idx) => (
                         <div
                             key={idx}
-                            style={Object.assign(
-                                {},
-                                {
-                                    background: 'red',
-                                    opacity: 0.4,
-                                    cursor: 'pointer',
-                                    position: 'absolute', // Đảm bảo highlight nằm trên text
-                                    zIndex: 2,            // Đảm bảo highlight nổi lên trên
-                                    pointerEvents: 'auto' // Cho phép click
-                                },
-                                props.getCssProperties(area, props.rotation)
-                            )}
+                            style={{
+                                position: 'absolute',
+                                background: 'rgba(255, 255, 0, 0.4)', // Màu của highlight (vàng nhạt)
+                                left: `${area.left}%`, // Vị trí x của highlight (tính từ trái)
+                                top: `${area.top}%`,   // Vị trí y của highlight (tính từ trên)
+                                width: `${area.width}%`,  // Chiều rộng của highlight
+                                height: `${area.height}%`, // Chiều cao của highlight
+                                pointerEvents: 'auto',  // Cho phép click vào highlight
+                                zIndex: 2, // Đảm bảo highlight nổi lên trên text
+                            }}
                             onClick={e => {
                                 e.stopPropagation();
-                                setSelectedHighlight({ note, area, pageIndex: props.pageIndex, position: area });
+                                setSelectedHighlight({ note, area, pageIndex: props.pageIndex });
                                 setHighlightEditContent(note.content);
                             }}
                         />
@@ -149,6 +188,7 @@ const ReviewContent = () => {
         ))}
     </div>
 );
+
 
     const highlightPluginInstance = highlightPlugin({
         renderHighlightTarget,
@@ -260,7 +300,49 @@ const ReviewContent = () => {
             }),
     });
 
-    
+    useEffect(() => {
+    if (review && review.reviewId) {
+        // Lấy file PDF
+        getPdfUrlByReviewId(review.reviewId)
+            .then(res => {
+                if (res && res.pdfUrl) {
+                    setFileUrl(res.pdfUrl);
+                } else {
+                    setFileUrl('');
+                }
+            })
+            .catch(() => setFileUrl(''));
+
+        // Lấy highlight và comment từ backend
+        getReviewWithHighlightAndComment(review.reviewId)
+            .then(res => {
+                console.log("Dữ liệu BE trả về:", res); // Kiểm tra kết quả từ BE
+                // if (res && res.highlights && res.comments) {
+                //     // Kết hợp highlight và comment
+                //     const notes = res.highlights.map(h => {
+                //         // Tìm các comment liên quan đến highlight này
+                //         const relatedComments = res.comments.filter(c => c.highlightId === h.highlightId);
+                //         return {
+                //             id: h.highlightId,
+                //             content: relatedComments.length > 0 ? relatedComments[0].commentText : '',
+                //             highlightAreas: [
+                //                 {
+                //                     pageIndex: h.pageNumber - 1, // Chuyển từ 1-based sang 0-based
+                //                     // Nếu cần thêm các thông tin khác về highlight như top, left, width, height thì bạn có thể thêm vào đây
+                //                 }
+                //             ],
+                //             quote: h.textHighlighted,
+                //             comments: relatedComments, // Lưu các comment liên quan đến highlight
+                //         };
+                //     });
+                //     setNotes(notes); // Lưu notes vào state
+                // } else {
+                //     setNotes([]); // Nếu không có dữ liệu, set danh sách rỗng
+                // }
+            })
+            .catch(() => setNotes([])); // Xử lý lỗi nếu không lấy được dữ liệu
+    }
+}, [review]);
 
     return (
         <div style={{ height: '100%' }}>
@@ -276,13 +358,15 @@ const ReviewContent = () => {
                         border: '1px solid #ccc',
                         padding: 12,
                         zIndex: 9999,
+                        minWidth: 250,
                     }}
                 >
                     <textarea
                         value={highlightEditContent}
                         onChange={e => setHighlightEditContent(e.target.value)}
+                        style={{ width: '100%', marginBottom: 8 }}
                     />
-                    <div style={{ marginTop: 8 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         <button
                             onClick={() => {
                                 setNotes(notes =>
@@ -302,13 +386,11 @@ const ReviewContent = () => {
                                 setNotes(notes => notes.filter(n => n.id !== selectedHighlight.note.id));
                                 setSelectedHighlight(null);
                             }}
-                            style={{ marginLeft: 8 }}
                         >
                             Delete
                         </button>
                         <button
                             onClick={() => setSelectedHighlight(null)}
-                            style={{ marginLeft: 8 }}
                         >
                             Cancel
                         </button>
@@ -317,11 +399,17 @@ const ReviewContent = () => {
             )}
 
             <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-                <Viewer
-                    fileUrl={fileUrl}
-                    plugins={[highlightPluginInstance, defaultLayoutPluginInstance]}
-                    onDocumentLoad={handleDocumentLoad}
-                />
+                {fileUrl ? (
+                    <Viewer
+                        fileUrl={fileUrl}
+                        plugins={[highlightPluginInstance, defaultLayoutPluginInstance]}
+                        onDocumentLoad={handleDocumentLoad}
+                    />
+                ) : (
+                    <div style={{ textAlign: 'center', marginTop: 40, color: '#888' }}>
+                        PDF not found or loading...
+                    </div>
+                )}
             </Worker>
         </div>
     );

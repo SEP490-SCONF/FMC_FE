@@ -1,27 +1,30 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
+import { uploadRevision } from "../../services/PaperRevisionService";
 
 const Submited = ({ submissions = [] }) => {
   const [openIdx, setOpenIdx] = useState(null);
-  const [message, setMessage] = useState(""); // State for showing messages
+  const [message, setMessage] = useState("");
+  const [uploadingIdx, setUploadingIdx] = useState(null);
+  const fileInputRef = useRef();
 
-  const handleResubmit = (status) => {
-    // Kiểm tra trạng thái và hiển thị thông báo phù hợp
-    if (status === "Needs Revision") {
-      setMessage(""); // Clear any previous messages and allow resubmission
-      console.log("Resubmit functionality here");
-      // TODO: Thêm logic nộp lại bài tại đây
+  // Lưu paperId đang muốn nộp lại
+  const [pendingPaperId, setPendingPaperId] = useState(null);
+
+  // Xử lý khi bấm nút Resubmit
+  const handleResubmit = (status, paperId) => {
+    if (status === "Need Revision") {
+      setMessage("");
+      setPendingPaperId(paperId);
+      // Mở file input để chọn file PDF
+      fileInputRef.current.value = "";
+      fileInputRef.current.click();
     } else {
-      // Nếu không phải "Needs Revision", hiển thị thông báo
       switch (status) {
         case "Submitted":
-          setMessage(
-            "You cannot resubmit this paper because it has already been submitted."
-          );
+          setMessage("You cannot resubmit this paper because it has already been submitted.");
           break;
         case "Under Review":
-          setMessage(
-            "You cannot resubmit this paper while it is under review."
-          );
+          setMessage("You cannot resubmit this paper while it is under review.");
           break;
         case "Rejected":
           setMessage("This paper was rejected. Please revise and resubmit.");
@@ -32,14 +35,47 @@ const Submited = ({ submissions = [] }) => {
         default:
           setMessage("Unknown status. You cannot resubmit this paper.");
       }
+      setTimeout(() => setMessage(""), 3000);
     }
-    setTimeout(() => {
-      setMessage(""); // Clear the message after 3 seconds
-    }, 3000); // 3000ms = 3 seconds
+  };
+
+  // Xử lý khi chọn file xong
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.type !== "application/pdf") {
+      setMessage("Only PDF files are allowed.");
+      setTimeout(() => setMessage(""), 3000);
+      return;
+    }
+    if (!pendingPaperId) return;
+
+    setUploadingIdx(pendingPaperId);
+    const formData = new FormData();
+    formData.append("PdfFile", file);
+    formData.append("PaperId", pendingPaperId);
+
+    try {
+      await uploadRevision(formData);
+      setMessage("Resubmission successful!");
+    } catch (err) {
+      setMessage(err.message || "Resubmission failed!");
+    } finally {
+      setUploadingIdx(null);
+      setPendingPaperId(null);
+      setTimeout(() => setMessage(""), 3000);
+    }
   };
 
   return (
     <div className="bg-white min-h-screen pb-10 flex flex-col">
+      <input
+        type="file"
+        accept="application/pdf"
+        ref={fileInputRef}
+        style={{ display: "none" }}
+        onChange={handleFileChange}
+      />
       <div className="border-b border-gray-200 py-6 px-8">
         <h2 className="font-bold text-3xl text-center">AI Conference</h2>
       </div>
@@ -94,10 +130,11 @@ const Submited = ({ submissions = [] }) => {
                         </button>
                         <button
                           className="inline-flex items-center gap-1 px-3 py-1 border border-yellow-500 text-yellow-700 bg-yellow-50 rounded-full hover:bg-yellow-100 transition text-xs font-medium"
-                          onClick={() => handleResubmit(s.status)} // Gọi hàm handleResubmit với trạng thái
+                          onClick={() => handleResubmit(s.status, s.paperId)}
+                          disabled={uploadingIdx === s.paperId}
                         >
                           <span className="mr-1">🔄</span>
-                          Resubmit
+                          {uploadingIdx === s.paperId ? "Uploading..." : "Resubmit"}
                         </button>
                         <button
                           className="inline-flex items-center gap-1 px-3 py-1 border border-green-500 text-green-700 bg-green-50 rounded-full hover:bg-green-100 transition text-xs font-medium"
@@ -120,7 +157,7 @@ const Submited = ({ submissions = [] }) => {
 
       {/* Hiển thị thông báo nếu không thể nộp lại bài */}
       {message && (
-        <div className="fixed top-20 right-4 bg-red-100 text-red-700 py-2 px-4 rounded-lg shadow-lg text-center max-w-xs z-50">
+        <div className="fixed bottom-4 right-4 bg-red-100 text-red-700 py-2 px-4 rounded-lg shadow-lg text-center max-w-xs z-50">
           {message}
         </div>
       )}
@@ -140,19 +177,14 @@ const Submited = ({ submissions = [] }) => {
                 <tr>
                   <th className="border px-3 py-2 font-semibold">#</th>
                   <th className="border px-3 py-2 font-semibold">Status</th>
-                  <th className="border px-3 py-2 font-semibold">
-                    Submitted At
-                  </th>
-                  <th className="border px-3 py-2 font-semibold">File</th>
+                  <th className="border px-3 py-2 font-semibold">Submitted At</th>
                 </tr>
               </thead>
               <tbody>
                 {(submissions[openIdx]?.paperRevisions || []).map((rev, i) => (
                   <tr key={rev.revisionId || i}>
                     <td className="border px-3 py-2 text-center">{i + 1}</td>
-                    <td className="border px-3 py-2 text-center">
-                      {rev.status}
-                    </td>
+                    <td className="border px-3 py-2 text-center">{rev.status}</td>
                     <td className="border px-3 py-2 text-center">
                       {rev.submittedAt
                         ? new Date(rev.submittedAt).toLocaleString("en-GB", {
@@ -163,20 +195,6 @@ const Submited = ({ submissions = [] }) => {
                             minute: "2-digit",
                           })
                         : ""}
-                    </td>
-                    <td className="border px-3 py-2 text-center">
-                      {rev.filePath ? (
-                        <a
-                          href={rev.filePath}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-600 underline"
-                        >
-                          View
-                        </a>
-                      ) : (
-                        "No file"
-                      )}
                     </td>
                   </tr>
                 ))}
