@@ -4,7 +4,7 @@ import { FiEye, FiDownload, FiEdit } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import { getReviewerAssignments } from "../../services/ReviewerAssignmentService";
 import { useUser } from "../../context/UserContext";
-import { addReview } from "../../services/ReviewService";  // Import phương thức addReview từ service
+import { addReview } from "../../services/ReviewService";
 
 const { Search } = Input;
 
@@ -25,10 +25,10 @@ const PaperAssign = () => {
                         name: item.title,
                         pdfUrl: item.revisions?.[0]?.filePath || "",
                         topic: item.topicName,
-                        assignedDate: item.assignedAt ? new Date(item.assignedAt).toLocaleDateString("vi-VN") : "",
+                        assignedDate: item.assignedAt ? new Date(item.assignedAt).toLocaleDateString("en-GB") : "",
                         revisionId: item.revisions?.[0]?.revisionId || "",
-                        paperId: item.paperId,           // Thêm dòng này
-                        reviewerId: item.reviewerId,     // Thêm dòng này
+                        paperId: item.paperId,
+                        reviewerId: item.reviewerId,
                     }));
                     setPapers(mapped);
                     setFilteredData(mapped);
@@ -57,8 +57,8 @@ const PaperAssign = () => {
         formData.append("PaperId", record.paperId);
         formData.append("ReviewerId", record.reviewerId);
         formData.append("RevisionId", record.revisionId);
-        formData.append("Score", 0); // hoặc lấy từ input
-        formData.append("Comments", ""); // hoặc lấy từ input
+        formData.append("Score", 0);
+        formData.append("Comments", "");
 
         addReview(formData)
             .then((response) => {
@@ -72,7 +72,7 @@ const PaperAssign = () => {
 
     const columns = [
         {
-            title: "Tên bài báo",
+            title: "Paper Title",
             dataIndex: "name",
             key: "name",
             render: (text) => <span className="font-medium text-gray-800">{text}</span>,
@@ -90,7 +90,7 @@ const PaperAssign = () => {
                         className="flex items-center gap-1 text-blue-600 hover:text-blue-800 transition"
                     >
                         <FiEye className="text-lg" />
-                        <span className="hidden sm:inline">Đọc</span>
+                        <span className="hidden sm:inline">View</span>
                     </a>
                     <a
                         href={url}
@@ -98,19 +98,19 @@ const PaperAssign = () => {
                         className="flex items-center gap-1 text-green-600 hover:text-green-800 transition"
                     >
                         <FiDownload className="text-lg" />
-                        <span className="hidden sm:inline">Tải</span>
+                        <span className="hidden sm:inline">Download</span>
                     </a>
                 </div>
             ) : <span className="text-gray-400">No file</span>,
         },
         {
-            title: "Chủ đề",
+            title: "Topic",
             dataIndex: "topic",
             key: "topic",
             render: (text) => <span className="text-gray-700">{text}</span>,
         },
         {
-            title: "Ngày được giao",
+            title: "Assigned Date",
             dataIndex: "assignedDate",
             key: "assignedDate",
             render: (text) => <span className="text-gray-500">{text}</span>,
@@ -122,7 +122,7 @@ const PaperAssign = () => {
                 <Button
                     type="primary"
                     icon={<FiEdit />}
-                    onClick={() => handleReview(record)}  // Gọi handleReview khi nhấn vào nút
+                    onClick={() => handleReview(record)}
                 >
                     Review
                 </Button>
@@ -133,10 +133,10 @@ const PaperAssign = () => {
     return (
         <div className="p-6 bg-white rounded-xl shadow-md max-w-5xl mx-auto mt-6">
             <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                📄 Danh sách bài báo được giao
+                📄 Assigned Papers List
             </h2>
             <Search
-                placeholder="🔍 Tìm kiếm theo tên bài báo hoặc chủ đề"
+                placeholder="🔍 Search by paper title or topic"
                 onSearch={onSearch}
                 onChange={(e) => onSearch(e.target.value)}
                 value={searchText}

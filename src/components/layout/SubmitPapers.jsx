@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from "react";
-import "../../assets/styles/pages/_section.scss";
 import Buttonsubmit from "../ui/button/Button";
 import { useConference } from "../../context/ConferenceContext";
 import { getConferenceTopicsByConferenceId } from "../../services/ConferenceTopicService";
@@ -27,10 +26,10 @@ const SubmitPapers = () => {
     const [keywords, setKeywords] = useState("");
     const [topic, setTopic] = useState("");
     const [topics, setTopics] = useState([]);
-    // Mặc định chọn chính user hiện tại làm tác giả
     const [authorIds, setAuthorIds] = useState(user ? [user.userId] : []);
+    const [message, setMessage] = useState("");
+    const [messageType, setMessageType] = useState("success"); // "success" or "error"
 
-    // Chỉ lấy user hiện tại làm tác giả
     const authors = user ? [{ id: user.userId, name: user.name }] : [];
 
     useEffect(() => {
@@ -51,11 +50,6 @@ const SubmitPapers = () => {
         setFile(e.target.files[0]);
     };
 
-    const handleAuthorChange = (e) => {
-        const options = Array.from(e.target.selectedOptions, option => Number(option.value));
-        setAuthorIds(options);
-    };
-
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (
@@ -67,19 +61,11 @@ const SubmitPapers = () => {
             !selectedConference?.conferenceId ||
             authorIds.length === 0
         ) {
-            console.log({
-                file,
-                title,
-                abstract,
-                keywords,
-                topic,
-                conferenceId: selectedConference?.conferenceId,
-                authorIds
-            });
-            alert("Please fill in all required fields and select a file.");
+            setMessageType("error");
+            setMessage("Please fill in all required fields and select a file.");
+            setTimeout(() => setMessage(""), 3000);
             return;
         }
-        // Tạo formData để gửi lên server
         const formData = new FormData();
         formData.append("ConferenceId", selectedConference.conferenceId);
         formData.append("Title", title);
@@ -90,75 +76,70 @@ const SubmitPapers = () => {
         formData.append("PdfFile", file);
 
         try {
-            const res = await uploadPaperPdf(formData);
-            alert("Paper submitted successfully!");
-            // Reset form nếu cần
+            await uploadPaperPdf(formData);
+            setMessageType("success");
+            setMessage("Paper submitted successfully!");
+            // Optionally reset form here
         } catch (error) {
-            alert("Failed to submit paper.");
+            setMessageType("error");
+            setMessage("Failed to submit paper.");
             console.error(error);
         }
+        setTimeout(() => setMessage(""), 3000);
     };
 
-    // In ra userId để kiểm tra
-    useEffect(() => {
-        console.log("Current user:", user);
-        if (user && user.userId) {
-            console.log("UserId:", user.userId);
-        }
-    }, [user]);
-
     return (
-        <section className="pt-120 pb-120 n1-bg-color">
-            <div className="container">
-                <div className="row justify-content-center">
-                    <div className="col-lg-7">
-                        <div className="section-area d-grid gap-3 gap-md-4 mb-6">
-                            <h2 className="fs-two fw-bold p7-color mb-2">Submit Your Paper</h2>
-                            <p className="n3-color fs-seven">
+        <section className="py-20 min-h-[80vh] bg-gray-50 relative">
+            <div className="container mx-auto px-4">
+                <div className="flex justify-center">
+                    <div className="w-full max-w-2xl">
+                        <div className="grid gap-4 mb-8 text-center">
+                            <h2 className="text-3xl font-bold text-blue-700 mb-2">Submit Your Paper</h2>
+                            <p className="text-gray-600">
                                 Please read the submission rules carefully before uploading your paper.
                             </p>
                         </div>
-                        <div className="box-style second-alt alt-two p-5 mb-6">
-                            <ul className="cfp-rules-list" style={{ textAlign: "left", marginLeft: 0 }}>
+                        <div className="bg-white rounded-lg shadow p-6 mb-6">
+                            <ul className="list-disc pl-5 text-gray-700 text-left space-y-2">
                                 {rules.map((rule, idx) => (
-                                    <li key={idx} className="mb-2">{rule}</li>
+                                    <li key={idx}>{rule}</li>
                                 ))}
                             </ul>
                         </div>
-                        <form onSubmit={handleSubmit} className="d-grid gap-4">
-                            <div className="mb-3">
-                                <label htmlFor="title" className="fw-semibold mb-2 d-block">
+                        <form onSubmit={handleSubmit} className="grid gap-4">
+                            <div>
+                                <label htmlFor="title" className="font-semibold mb-2 block">
                                     Title
                                 </label>
                                 <input
                                     type="text"
                                     id="title"
-                                    className="form-control"
+                                    className="w-full border border-gray-300 rounded px-3 py-2"
                                     value={title}
                                     onChange={e => setTitle(e.target.value)}
                                     required
                                 />
                             </div>
-                            <div className="mb-3">
-                                <label htmlFor="abstract" className="fw-semibold mb-2 d-block">
+                            <div>
+                                <label htmlFor="abstract" className="font-semibold mb-2 block">
                                     Abstract
                                 </label>
                                 <input
                                     type="text"
                                     id="abstract"
-                                    className="form-control"
+                                    className="w-full border border-gray-300 rounded px-3 py-2"
                                     value={abstract}
                                     onChange={e => setAbstract(e.target.value)}
                                     required
                                 />
                             </div>
-                            <div className="mb-3">
-                                <label htmlFor="topic" className="fw-semibold mb-2 d-block">
+                            <div>
+                                <label htmlFor="topic" className="font-semibold mb-2 block">
                                     Topic
                                 </label>
                                 <select
                                     id="topic"
-                                    className="form-control"
+                                    className="w-full border border-gray-300 rounded px-3 py-2"
                                     value={topic}
                                     onChange={e => setTopic(e.target.value)}
                                     required
@@ -169,55 +150,35 @@ const SubmitPapers = () => {
                                     ))}
                                 </select>
                             </div>
-                            <div className="mb-3">
-                                <label htmlFor="keywords" className="fw-semibold mb-2 d-block">
+                            <div>
+                                <label htmlFor="keywords" className="font-semibold mb-2 block">
                                     Keywords
                                 </label>
                                 <input
                                     type="text"
                                     id="keywords"
-                                    className="form-control"
+                                    className="w-full border border-gray-300 rounded px-3 py-2"
                                     value={keywords}
                                     onChange={e => setKeywords(e.target.value)}
                                     maxLength={500}
                                     placeholder="Enter keywords separated by commas"
                                 />
                             </div>
-                            {/* Ẩn phần chọn tác giả, chỉ lấy user hiện tại */}
-                            {/* 
-                            <div className="mb-3">
-                                <label htmlFor="authors" className="fw-semibold mb-2 d-block">
-                                    Authors
-                                </label>
-                                <select
-                                    id="authors"
-                                    className="form-control"
-                                    multiple
-                                    value={authorIds}
-                                    onChange={handleAuthorChange}
-                                    required
-                                >
-                                    {authors.map(a => (
-                                        <option key={a.id} value={a.id}>{a.name}</option>
-                                    ))}
-                                </select>
-                                <small className="text-muted">Hold Ctrl (Windows) hoặc Cmd (Mac) để chọn nhiều tác giả.</small>
-                            </div>
-                            */}
-                            <div className="mb-3">
-                                <label htmlFor="paperFile" className="fw-semibold mb-2 d-block">
+                            {/* Author selection is hidden, only current user is used */}
+                            <div>
+                                <label htmlFor="paperFile" className="font-semibold mb-2 block">
                                     Upload Paper (PDF only, max 30MB)
                                 </label>
                                 <input
                                     type="file"
                                     id="paperFile"
                                     accept=".pdf"
-                                    className="form-control"
+                                    className="w-full border border-gray-300 rounded px-3 py-2"
                                     onChange={handleFileChange}
                                     required
                                 />
                                 {file && (
-                                    <div className="mt-2 n3-color fs-eight">
+                                    <div className="mt-2 text-gray-600 text-sm">
                                         Selected file: <strong>{file.name}</strong>
                                     </div>
                                 )}
@@ -227,6 +188,17 @@ const SubmitPapers = () => {
                     </div>
                 </div>
             </div>
+            {message && (
+                <div
+                    className={`fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg text-center max-w-xs z-50
+                        ${messageType === "success"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
+                >
+                    {message}
+                </div>
+            )}
         </section>
     );
 };

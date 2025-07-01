@@ -6,9 +6,6 @@ import 'swiper/css/navigation';
 import 'swiper/css/pagination';
 import { useNavigate } from "react-router-dom";
 
-import about1 from '../../assets/images/about-us-img-1.webp';
-// import { getConferenceById, getConferences } from '../../service/ConferenceService';
-
 const ConferenceSlider = ({ title, conferences, onConferenceClick }) => {
     const navigate = useNavigate();
     const now = new Date();
@@ -49,7 +46,11 @@ const ConferenceSlider = ({ title, conferences, onConferenceClick }) => {
                                 }}
                             >
                                 <img
-                                    src={conf.bannerUrl || about1}
+                                    src={
+                                        conf.bannerUrl && typeof conf.bannerUrl === "string" && conf.bannerUrl.trim() !== ""
+                                            ? conf.bannerUrl
+                                            : "https://placehold.co/600x200"
+                                    }
                                     alt={conf.title}
                                     className="card-img-top"
                                     style={{ height: '200px', objectFit: 'cover' }}
@@ -68,8 +69,7 @@ const ConferenceSlider = ({ title, conferences, onConferenceClick }) => {
 };
 
 const HomeBody = ({ conferences, loading }) => {
-    if (loading) return <div className="text-center py-5">Đang tải dữ liệu...</div>;
-    console.log("conferences:", conferences, "loading:", loading);
+    if (loading) return <div className="text-center py-5">Loading data...</div>;
     return (
         <div className="bg-white py-5">
             <ConferenceSlider

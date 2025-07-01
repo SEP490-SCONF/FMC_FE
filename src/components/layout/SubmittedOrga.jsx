@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Modal from "../ui/Modal";
 import { getSubmittedPapersByConferenceId } from "../../services/PaperSerice";
-import { getConferenceReviewers } from "../../services/UserConferenceRoleService"; // import hàm mới
+import { getConferenceReviewers } from "../../services/UserConferenceRoleService";
 import { assignReviewerToPaper, updateReviewerAssignment } from "../../services/ReviewerAssignmentService";
 import { useUser } from "../../context/UserContext";
 import { useParams } from "react-router-dom";
@@ -18,12 +18,11 @@ const SubmittedOrga = () => {
     const [reviewerPage, setReviewerPage] = useState(1);
     const reviewersPerPage = 2;
 
-    // Lấy danh sách paper
+    // Fetch paper list
     useEffect(() => {
         if (conferenceId) {
             getSubmittedPapersByConferenceId(conferenceId)
                 .then(res => {
-                    console.log("Submitted papers from API:", res); // Thêm dòng này
                     const mapped = (res || []).map((p) => ({
                         id: p.paperId,
                         title: p.title,
@@ -37,7 +36,7 @@ const SubmittedOrga = () => {
                         assignedReviewerName: p.assignedReviewerName,
                         isAssigned: p.isAssigned,
                         assigned: p.assignedReviewers || [],
-                        assignmentId: p.assignmentId, // nhớ lấy assignmentId từ API nếu có
+                        assignmentId: p.assignmentId,
                         updated: false,
                         resubmits: "",
                     }));
@@ -47,12 +46,11 @@ const SubmittedOrga = () => {
         }
     }, [conferenceId]);
 
-    // Lấy danh sách reviewer
+    // Fetch reviewers
     useEffect(() => {
         if (conferenceId) {
             getConferenceReviewers(conferenceId)
                 .then(res => {
-                    console.log("Reviewers from API:", res); // Thêm dòng này
                     setReviewers(res || []);
                 })
                 .catch(() => setReviewers([]));
@@ -78,14 +76,11 @@ const SubmittedOrga = () => {
     const handleAssign = async () => {
         const paper = paperList[assignIdx];
         const reviewerId = selectedReviewers[0];
-        // Nếu đã có reviewer (isAssigned), gọi PUT để update
         if (paper.isAssigned && paper.assignmentId) {
             await updateReviewerAssignment(paper.assignmentId, paper.id, reviewerId);
         } else {
             await assignReviewerToPaper(paper.id, reviewerId);
         }
-        // Sau khi gán, reload lại danh sách paper hoặc cập nhật state cho phù hợp
-        // Gợi ý: gọi lại getSubmittedPapersByConferenceId(conferenceId) để lấy dữ liệu mới nhất
         getSubmittedPapersByConferenceId(conferenceId)
             .then(res => {
                 const mapped = (res || []).map((p) => ({
@@ -101,7 +96,7 @@ const SubmittedOrga = () => {
                     assignedReviewerName: p.assignedReviewerName,
                     isAssigned: p.isAssigned,
                     assigned: p.assignedReviewers || [],
-                    assignmentId: p.assignmentId, // nhớ lấy assignmentId từ API nếu có
+                    assignmentId: p.assignmentId,
                     updated: false,
                     resubmits: "",
                 }));
@@ -111,10 +106,10 @@ const SubmittedOrga = () => {
     };
 
     useEffect(() => {
-        setReviewerPage(1); // Reset về trang 1 khi search thay đổi
+        setReviewerPage(1);
     }, [search, assignIdx]);
 
-    // Lọc reviewer theo search
+    // Filter reviewers by search
     const filteredReviewers = reviewers.filter((r) =>
         (r.name || "").toLowerCase().includes(search.toLowerCase()) ||
         (r.email || "").toLowerCase().includes(search.toLowerCase())
@@ -139,12 +134,12 @@ const SubmittedOrga = () => {
         <>
             <div className="bg-white min-h-screen pb-10 flex flex-col">
                 <div className="border-b border-gray-200 py-6 px-8">
-                    <h2 className="font-bold text-3xl text-left">Paper Submission</h2>
+                    <h2 className="font-bold text-3xl text-left">Paper Submissions</h2>
                 </div>
                 <div className="flex flex-1 items-start justify-start px-8 py-6">
                     <div className="w-full max-w-6xl bg-white rounded-lg shadow-md p-6">
                         <div className="mb-6">
-                            <h5 className="font-semibold text-lg text-gray-700">Danh sách bài nộp</h5>
+                            <h5 className="font-semibold text-lg text-gray-700">Submitted Papers List</h5>
                         </div>
                         <div className="overflow-x-auto">
                             <table className="w-full border-collapse text-base bg-white">
@@ -179,7 +174,6 @@ const SubmittedOrga = () => {
                                                     </a>
                                                 ) : "No file"}
                                             </td>
-
                                             <td className={tdClass}>
                                                 {p.isAssigned ? (
                                                     <span className="text-sm text-green-600 font-medium" title={p.assignedReviewerName}>
@@ -189,7 +183,6 @@ const SubmittedOrga = () => {
                                                     <span className="text-gray-400 italic">Unassigned</span>
                                                 )}
                                             </td>
-
                                             <td className={tdClass}>
                                                 {p.assigned.length > 0 ? (
                                                     <>
@@ -212,7 +205,6 @@ const SubmittedOrga = () => {
                                                     </button>
                                                 )}
                                             </td>
-
                                             <td className={tdClass}>{p.status}</td>
                                             <td className={tdClass}>{p.topic}</td>
                                             <td className={tdClass}>
@@ -229,7 +221,6 @@ const SubmittedOrga = () => {
                                         </tr>
                                     ))}
                                 </tbody>
-
                             </table>
                         </div>
                     </div>
@@ -242,7 +233,7 @@ const SubmittedOrga = () => {
                     <div className="flex items-center mb-4">
                         <input
                             className="border border-gray-400 rounded px-3 py-1 flex-1"
-                            placeholder="🔍 search"
+                            placeholder="🔍 Search reviewer"
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                         />
@@ -258,7 +249,7 @@ const SubmittedOrga = () => {
                         <table className="w-full border-collapse text-xs">
                             <thead>
                                 <tr>
-                                    <th className="border px-2 py-1 font-semibold text-center">Chọn</th>
+                                    <th className="border px-2 py-1 font-semibold text-center">Select</th>
                                     <th className="border px-2 py-1 font-semibold text-left">Avatar</th>
                                     <th className="border px-2 py-1 font-semibold text-left">Name</th>
                                     <th className="border px-2 py-1 font-semibold">Email</th>

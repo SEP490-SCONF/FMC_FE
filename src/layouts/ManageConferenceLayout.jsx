@@ -11,7 +11,7 @@ export default function ManageConferenceLayout() {
         <MainHeader />
         <div className="flex flex-1 h-full">
           <ManageConferenceSidebar className="h-full" />
-          <main className="flex-1 pt-20 h-full">
+          <main className="flex-1  h-full">
             <Outlet />
           </main>
         </div>

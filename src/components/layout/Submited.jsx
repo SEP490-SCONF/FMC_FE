@@ -1,14 +1,37 @@
 import React, { useState, useRef } from "react";
 import { uploadRevision } from "../../services/PaperRevisionService";
 
+const ITEMS_PER_PAGE = 3;
+
 const Submited = ({ submissions = [] }) => {
   const [openIdx, setOpenIdx] = useState(null);
   const [message, setMessage] = useState("");
   const [uploadingIdx, setUploadingIdx] = useState(null);
   const fileInputRef = useRef();
-
-  // Lưu paperId đang muốn nộp lại
   const [pendingPaperId, setPendingPaperId] = useState(null);
+
+  // Pagination state
+  const [page, setPage] = useState(1);
+
+  // Sort submissions by latest submittedAt (descending)
+  const sortedSubmissions = [...submissions].sort((a, b) => {
+    const aTime =
+      a.paperRevisions && a.paperRevisions.length > 0
+        ? new Date(a.paperRevisions[a.paperRevisions.length - 1].submittedAt).getTime()
+        : 0;
+    const bTime =
+      b.paperRevisions && b.paperRevisions.length > 0
+        ? new Date(b.paperRevisions[b.paperRevisions.length - 1].submittedAt).getTime()
+        : 0;
+    return bTime - aTime;
+  });
+
+  // Pagination logic
+  const totalPages = Math.ceil(sortedSubmissions.length / ITEMS_PER_PAGE);
+  const pagedSubmissions = sortedSubmissions.slice(
+    (page - 1) * ITEMS_PER_PAGE,
+    page * ITEMS_PER_PAGE
+  );
 
   // Xử lý khi bấm nút Resubmit
   const handleResubmit = (status, paperId) => {
@@ -95,7 +118,7 @@ const Submited = ({ submissions = [] }) => {
               </tr>
             </thead>
             <tbody>
-              {submissions.map((s, idx) => {
+              {pagedSubmissions.map((s, idx) => {
                 const lastRevision =
                   s.paperRevisions && s.paperRevisions.length > 0
                     ? s.paperRevisions[s.paperRevisions.length - 1]
@@ -123,7 +146,7 @@ const Submited = ({ submissions = [] }) => {
                       <div className="flex flex-col gap-2 items-center">
                         <button
                           className="inline-flex items-center gap-1 px-3 py-1 border border-blue-500 text-blue-700 bg-blue-50 rounded-full hover:bg-blue-100 transition text-xs font-medium shadow-sm"
-                          onClick={() => setOpenIdx(idx)}
+                          onClick={() => setOpenIdx((page - 1) * ITEMS_PER_PAGE + idx)}
                         >
                           <span className="mr-1">🕑</span>
                           View Revisions
@@ -153,6 +176,22 @@ const Submited = ({ submissions = [] }) => {
             </tbody>
           </table>
         </div>
+        {/* Pagination controls */}
+        <div className="flex justify-center mt-6 gap-2">
+          {Array.from({ length: totalPages }, (_, i) => (
+            <button
+              key={i}
+              className={`px-3 py-1 rounded border text-sm font-medium ${
+                page === i + 1
+                  ? "bg-blue-600 text-white border-blue-600"
+                  : "bg-white text-blue-700 border-blue-300 hover:bg-blue-50"
+              }`}
+              onClick={() => setPage(i + 1)}
+            >
+              {i + 1}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Hiển thị thông báo nếu không thể nộp lại bài */}
@@ -163,29 +202,42 @@ const Submited = ({ submissions = [] }) => {
       )}
       {/* Popup hiển thị danh sách revision */}
       {openIdx !== null && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-10 min-w-[500px] max-w-2xl relative border border-gray-200">
+        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/20">
+          <div className="bg-white rounded-2xl shadow-2xl p-8 min-w-[350px] max-w-lg w-full relative border border-gray-200 animate-fadeIn">
             <button
-              className="absolute top-3 right-5 text-2xl font-bold text-gray-500 hover:text-gray-700"
+              className="absolute top-3 right-5 text-2xl font-bold text-gray-400 hover:text-gray-700 transition"
               onClick={() => setOpenIdx(null)}
+              aria-label="Close"
             >
               ×
             </button>
-            <h3 className="text-2xl font-semibold mb-6">Paper Revisions</h3>
-            <table className="w-full border-collapse text-base bg-white">
+            <h3 className="text-2xl font-bold mb-6 text-center text-blue-900 tracking-wide">Paper Revisions</h3>
+            <table className="w-full border-collapse text-base bg-white rounded-lg overflow-hidden shadow">
               <thead>
                 <tr>
-                  <th className="border px-3 py-2 font-semibold">#</th>
-                  <th className="border px-3 py-2 font-semibold">Status</th>
-                  <th className="border px-3 py-2 font-semibold">Submitted At</th>
+                  <th className="bg-blue-50 border-b px-4 py-2 font-semibold text-blue-900 text-center rounded-tl-lg">#</th>
+                  <th className="bg-blue-50 border-b px-4 py-2 font-semibold text-blue-900 text-center">Status</th>
+                  <th className="bg-blue-50 border-b px-4 py-2 font-semibold text-blue-900 text-center rounded-tr-lg">Submitted At</th>
                 </tr>
               </thead>
               <tbody>
-                {(submissions[openIdx]?.paperRevisions || []).map((rev, i) => (
-                  <tr key={rev.revisionId || i}>
-                    <td className="border px-3 py-2 text-center">{i + 1}</td>
-                    <td className="border px-3 py-2 text-center">{rev.status}</td>
-                    <td className="border px-3 py-2 text-center">
+                {(sortedSubmissions[openIdx]?.paperRevisions || []).map((rev, i) => (
+                  <tr key={rev.revisionId || i} className="hover:bg-blue-50 transition">
+                    <td className="border-b px-4 py-2 text-center">{i + 1}</td>
+                    <td className="border-b px-4 py-2 text-center">
+                      <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                        rev.status === "Submitted"
+                          ? "bg-green-100 text-green-700"
+                          : rev.status === "Need Revision"
+                          ? "bg-yellow-100 text-yellow-700"
+                          : rev.status === "Rejected"
+                          ? "bg-red-100 text-red-700"
+                          : "bg-gray-100 text-gray-700"
+                      }`}>
+                        {rev.status}
+                      </span>
+                    </td>
+                    <td className="border-b px-4 py-2 text-center">
                       {rev.submittedAt
                         ? new Date(rev.submittedAt).toLocaleString("en-GB", {
                             day: "2-digit",

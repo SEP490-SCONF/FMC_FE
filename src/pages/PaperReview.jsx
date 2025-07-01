@@ -9,12 +9,13 @@ const PaperReview = () => {
     const { assignmentId } = useParams();
     const [review, setReview] = useState(null);
     const [comment, setComment] = useState('');
+    const [message, setMessage] = useState('');
+    const [messageType, setMessageType] = useState('success'); // "success" or "error"
 
     useEffect(() => {
         if (assignmentId) {
             getReviewByAssignmentId(assignmentId)
                 .then(res => {
-                    console.log("Review data:", res); // In ra dữ liệu review
                     setReview(res);
                 })
                 .catch(() => setReview(null));
@@ -22,11 +23,15 @@ const PaperReview = () => {
     }, [assignmentId]);
 
     const handleSave = () => {
-        alert('Saved!');
+        setMessageType('success');
+        setMessage('Review updated!');
+        setTimeout(() => setMessage(''), 2500);
     };
 
     const handleSendFeedback = () => {
-        alert('Feedback sent!');
+        setMessageType('success');
+        setMessage('Feedback sent!');
+        setTimeout(() => setMessage(''), 2500);
     };
 
     return (
@@ -46,7 +51,18 @@ const PaperReview = () => {
                         )}
                     </div>
                 </div>
-                
+                {/* Notification message */}
+                {message && (
+                    <div
+                        className={`fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg text-center max-w-xs z-50
+                        ${messageType === "success"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
+                    >
+                        {message}
+                    </div>
+                )}
             </div>
         </main>
     );
