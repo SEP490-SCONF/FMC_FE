@@ -1,5 +1,15 @@
 import React, { useEffect, useState } from "react";
-import { Form, Input, Button, message, Switch, Upload, Avatar, DatePicker, AutoComplete } from "antd";
+import {
+    Form,
+    Input,
+    Button,
+    message,
+    Switch,
+    Upload,
+    Avatar,
+    DatePicker,
+    AutoComplete,
+} from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 
@@ -24,40 +34,76 @@ const locationOptions = [
 
 const ConferenceOrganizer = ({ conference, loading, onUpdate }) => {
     const [form] = Form.useForm();
-    const [bannerImage, setBannerImage] = useState(conference?.bannerImage || "");
+    const [bannerFile, setBannerFile] = useState(null);
+    const [previewImage, setPreviewImage] = useState("");
+
+    const toCamelCase = (obj) => {
+    return Object.entries(obj).reduce((acc, [key, value]) => {
+        const camelKey = key.charAt(0).toLowerCase() + key.slice(1);
+        acc[camelKey] = value;
+        return acc;
+    }, {});
+};
+
 
     useEffect(() => {
-        if (conference) {
-            form.setFieldsValue({
-                ...conference,
-                startDate: conference.startDate ? dayjs(conference.startDate) : null,
-                endDate: conference.endDate ? dayjs(conference.endDate) : null,
-                status: !!conference.status,
-            });
-            setBannerImage(conference.bannerImage || "");
-        }
-    }, [conference, form]);
+    if (conference) {
+                console.log("Form conference data:", conference); // 👈 Xem giá trị truyền xuống
+
+        const data = toCamelCase(conference);
+        data.startDate = data.startDate ? dayjs(data.startDate) : null;
+        data.endDate = data.endDate ? dayjs(data.endDate) : null;
+        data.status = !!data.status;
+        form.setFieldsValue(data);
+
+        setPreviewImage(conference.BannerUrl || "");
+    }
+}, [conference, form]);
+
+
 
     const onFinish = async (values) => {
-        try {
-            await onUpdate({
-                ...values,
-                bannerImage,
-                startDate: values.startDate ? values.startDate.toISOString() : null,
-                endDate: values.endDate ? values.endDate.toISOString() : null,
-            });
-            message.success("Update successful!");
-        } catch {
-            message.error("Update failed!");
-        }
-    };
+    try {
+        await onUpdate({
+            ...values,
+            bannerImage: bannerFile || null,
+        });
+        message.success("Update successful!");
+    } catch (err) {
+        console.error(err);
+        message.error("Update failed!");
+    }
+};
+
 
     const handleUpload = (info) => {
-        const file = info.file.originFileObj;
-        const reader = new FileReader();
-        reader.onload = (e) => setBannerImage(e.target.result);
-        reader.readAsDataURL(file);
+    console.log("Upload info:", info);
+
+    const file = info.file?.originFileObj;
+
+    if (!file) {
+        message.error("Không tìm thấy file hợp lệ.");
+        return;
+    }
+
+    const isImage = file.type.startsWith("image/");
+    if (!isImage) {
+        message.error("Chỉ chấp nhận file ảnh (jpg, png, jpeg...)");
+        return;
+    }
+
+    form.setFieldsValue({ bannerImage: file });
+    setBannerFile(file);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        setPreviewImage(e.target.result);
     };
+    reader.readAsDataURL(file);
+};
+
+
+
 
     if (loading) return <div>Loading...</div>;
 
@@ -80,27 +126,51 @@ const ConferenceOrganizer = ({ conference, loading, onUpdate }) => {
                         }
                     />
                 </Form.Item>
+                <Form.Item name="callForPaper" label="Call For Paper">
+                <Input.TextArea placeholder="Enter call for paper content..." />
+                </Form.Item>
                 <Form.Item name="startDate" label="Start Date" rules={[{ required: true }]}>
                     <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" style={{ width: "100%" }} />
                 </Form.Item>
                 <Form.Item name="endDate" label="End Date" rules={[{ required: true }]}>
                     <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" style={{ width: "100%" }} />
                 </Form.Item>
+
                 <Form.Item label="Banner Image">
-                    <Upload
-                        showUploadList={false}
-                        beforeUpload={() => false}
-                        onChange={handleUpload}
-                        accept="image/*"
-                    >
-                        <Button icon={<UploadOutlined />}>Choose Image</Button>
-                    </Upload>
-                    {bannerImage && (
-                        <div style={{ marginTop: 10 }}>
-                            <Avatar shape="square" size={128} src={bannerImage} alt="banner" />
-                        </div>
-                    )}
-                </Form.Item>
+  <Upload
+    name="bannerImage"
+    accept="image/*"
+    showUploadList={false}
+    beforeUpload={(file) => {
+      const isImage = file.type.startsWith("image/");
+      if (!isImage) {
+        message.error("Chỉ chấp nhận file ảnh (jpg, png, jpeg...)");
+        return false;
+      }
+
+      form.setFieldsValue({ bannerImage: file });
+      setBannerFile(file);
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewImage(e.target.result);
+      };
+      reader.readAsDataURL(file);
+
+      return false; // Ngăn không upload tự động
+    }}
+  >
+    <Button icon={<UploadOutlined />}>Choose Image</Button>
+  </Upload>
+</Form.Item>
+
+
+                {previewImage && (
+                    <div style={{ marginTop: 10 }}>
+                        <Avatar shape="square" size={128} src={previewImage} alt="banner" />
+                    </div>
+                )}
+
                 <Form.Item name="status" label="Status" valuePropName="checked">
                     <Switch checkedChildren="Open" unCheckedChildren="Closed" />
                 </Form.Item>

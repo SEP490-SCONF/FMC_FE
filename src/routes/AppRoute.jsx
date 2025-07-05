@@ -21,6 +21,8 @@ import ConferenceOrganizer from "../components/layout/organizer/ConferenceOrgani
 import Submitted from "../pages/author/Submittedpaper";
 import SubmittedPaperAuthor from "../pages/author/Submittedpaper";
 import AuthorConference from "../pages/author/AuthorConference";
+import EditConferencePage from "../pages/organizer/EditConferencePage";
+
 
 export default function AppRoutes() {
   return (
@@ -66,6 +68,8 @@ export default function AppRoutes() {
             element={<SubOrganizer />}
           />
           <Route path="/manage-conference/:conferenceId" element={<ConferenceOrganizer />} />
+          <Route path="/manage-conference/:id/edit" element={<EditConferencePage />} />
+
 
           {/* Thêm các route con khác nếu cần */}
         </Route>
