@@ -13,8 +13,10 @@ const UserP = () => {
     const fetchUser = async () => {
       try {
         const res = await getUserProfile(contextUser.userId);
+console.log("📥 Response:", res);
+setUser(res.data || res);
 
-        setUser(res);
+
       } catch (err) {
         console.error("❌ Error fetching user information:", err);
       }

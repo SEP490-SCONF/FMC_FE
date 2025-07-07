@@ -11,8 +11,10 @@ const EditConferencePage = () => {
     useEffect(() => {
         const fetchConference = async () => {
             try {
-                const res = await getConferenceById(id);
-                setConference(res.data);
+                const data = await getConferenceById(id);
+                console.log("📦 API response from getConferenceById:", data);
+                setConference(data);
+
             } catch (error) {
                 console.error("Failed to fetch conference:", error);
             } finally {
@@ -27,10 +29,15 @@ const EditConferencePage = () => {
         formData.append("Title", updatedData.title);
         formData.append("Description", updatedData.description || "");
         formData.append("Location", updatedData.location || "");
-        formData.append("StartDate", updatedData.startDate);
-        formData.append("EndDate", updatedData.endDate);
+        formData.append("StartDate", updatedData.startDate?.toISOString() || "");
+formData.append("EndDate", updatedData.endDate?.toISOString() || "");
+
         formData.append("Status", updatedData.status ? "true" : "false");
         formData.append("CallForPaper", updatedData.callForPaper || "");
+
+          if (updatedData.topicIds && updatedData.topicIds.length > 0) {
+        updatedData.topicIds.forEach(id => formData.append("TopicIds", id));
+    }
 
 
         if (updatedData.bannerImage instanceof File) {

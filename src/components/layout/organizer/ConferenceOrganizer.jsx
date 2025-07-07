@@ -9,9 +9,11 @@ import {
     Avatar,
     DatePicker,
     AutoComplete,
+    Select,
 } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
+import { getAllTopics } from "../../../services/TopicService"; // ⚠️ đảm bảo path đúng
 
 const locationOptions = [
     { value: "Ha Noi" },
@@ -36,74 +38,81 @@ const ConferenceOrganizer = ({ conference, loading, onUpdate }) => {
     const [form] = Form.useForm();
     const [bannerFile, setBannerFile] = useState(null);
     const [previewImage, setPreviewImage] = useState("");
+    const [topics, setTopics] = useState([]);
 
-    const toCamelCase = (obj) => {
-    return Object.entries(obj).reduce((acc, [key, value]) => {
-        const camelKey = key.charAt(0).toLowerCase() + key.slice(1);
-        acc[camelKey] = value;
-        return acc;
-    }, {});
-};
+    useEffect(() => {
+  const fetchTopics = async () => {
+    try {
+      const res = await getAllTopics();
+      console.log("📦 All Topics:", res);
+      setTopics(res || []);
+    } catch (error) {
+      message.error("Failed to load topics.");
+    }
+  };
+  fetchTopics();
+}, []);
+
 
 
     useEffect(() => {
-    if (conference) {
-                console.log("Form conference data:", conference); // 👈 Xem giá trị truyền xuống
+        if (conference) {
+            
+            const data = Object.entries(conference).reduce((acc, [key, value]) => {
+                const camelKey = key.charAt(0).toLowerCase() + key.slice(1);
+                acc[camelKey] = value;
+                return acc;
+            }, {});
+            data.startDate = data.startDate ? dayjs(data.startDate) : null;
+            data.endDate = data.endDate ? dayjs(data.endDate) : null;
+            data.status = !!data.status;
+            data.topicIds = data.topics?.map(t => t.topicId) || [];
+            console.log("🎯 Mapped topicIds:", data.topicIds);
+            console.log("🎯 Conference.Topics:", conference.topics);
 
-        const data = toCamelCase(conference);
-        data.startDate = data.startDate ? dayjs(data.startDate) : null;
-        data.endDate = data.endDate ? dayjs(data.endDate) : null;
-        data.status = !!data.status;
-        form.setFieldsValue(data);
 
-        setPreviewImage(conference.BannerUrl || "");
-    }
-}, [conference, form]);
+            console.log("🎯 Conference object nhận từ prop:", conference);
 
+            form.setFieldsValue(data);
+            console.log("📋 Dữ liệu đã map để set vào form:", data);
 
+            setPreviewImage(conference.BannerUrl || "");
+        }
+    }, [conference, form]);
 
     const onFinish = async (values) => {
-    try {
-        await onUpdate({
-            ...values,
-            bannerImage: bannerFile || null,
-        });
-        message.success("Update successful!");
-    } catch (err) {
-        console.error(err);
-        message.error("Update failed!");
-    }
-};
-
+        try {
+            await onUpdate({
+                ...values,
+                bannerImage: bannerFile || null,
+            });
+            message.success("Update successful!");
+        } catch (err) {
+            console.error(err);
+            message.error("Update failed!");
+        }
+    };
 
     const handleUpload = (info) => {
-    console.log("Upload info:", info);
+        const file = info.file?.originFileObj;
+        if (!file) {
+            message.error("Không tìm thấy file hợp lệ.");
+            return;
+        }
+        if (!file.type.startsWith("image/")) {
+            message.error("Chỉ chấp nhận file ảnh (jpg, png, jpeg...)");
+            return;
+        }
 
-    const file = info.file?.originFileObj;
+        form.setFieldsValue({ bannerImage: file });
+        setBannerFile(file);
 
-    if (!file) {
-        message.error("Không tìm thấy file hợp lệ.");
-        return;
-    }
-
-    const isImage = file.type.startsWith("image/");
-    if (!isImage) {
-        message.error("Chỉ chấp nhận file ảnh (jpg, png, jpeg...)");
-        return;
-    }
-
-    form.setFieldsValue({ bannerImage: file });
-    setBannerFile(file);
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-        setPreviewImage(e.target.result);
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            setPreviewImage(e.target.result);
+        };
+        reader.readAsDataURL(file);
     };
-    reader.readAsDataURL(file);
-};
-
-
-
 
     if (loading) return <div>Loading...</div>;
 
@@ -114,9 +123,11 @@ const ConferenceOrganizer = ({ conference, loading, onUpdate }) => {
                 <Form.Item name="title" label="Conference Title" rules={[{ required: true }]}>
                     <Input />
                 </Form.Item>
+
                 <Form.Item name="description" label="Description">
                     <Input.TextArea />
                 </Form.Item>
+
                 <Form.Item name="location" label="Location">
                     <AutoComplete
                         options={locationOptions}
@@ -126,44 +137,58 @@ const ConferenceOrganizer = ({ conference, loading, onUpdate }) => {
                         }
                     />
                 </Form.Item>
+
                 <Form.Item name="callForPaper" label="Call For Paper">
-                <Input.TextArea placeholder="Enter call for paper content..." />
+                    <Input.TextArea placeholder="Enter call for paper content..." />
                 </Form.Item>
+
                 <Form.Item name="startDate" label="Start Date" rules={[{ required: true }]}>
                     <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" style={{ width: "100%" }} />
                 </Form.Item>
+
                 <Form.Item name="endDate" label="End Date" rules={[{ required: true }]}>
                     <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" style={{ width: "100%" }} />
                 </Form.Item>
 
+                <Form.Item name="topicIds" label="Topics">
+                    <Select
+                        mode="multiple"
+                        allowClear
+                        placeholder="Select topics"
+                        options={topics.map(topic => ({
+                            label: topic.topicName,
+                            value: topic.topicId,
+                            
+                        }))}
+                            onChange={(value) => console.log("Selected topicIds:", value)}
+
+                    />
+                </Form.Item>
+
                 <Form.Item label="Banner Image">
-  <Upload
-    name="bannerImage"
-    accept="image/*"
-    showUploadList={false}
-    beforeUpload={(file) => {
-      const isImage = file.type.startsWith("image/");
-      if (!isImage) {
-        message.error("Chỉ chấp nhận file ảnh (jpg, png, jpeg...)");
-        return false;
-      }
-
-      form.setFieldsValue({ bannerImage: file });
-      setBannerFile(file);
-
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setPreviewImage(e.target.result);
-      };
-      reader.readAsDataURL(file);
-
-      return false; // Ngăn không upload tự động
-    }}
-  >
-    <Button icon={<UploadOutlined />}>Choose Image</Button>
-  </Upload>
-</Form.Item>
-
+                    <Upload
+                        name="bannerImage"
+                        accept="image/*"
+                        showUploadList={false}
+                        beforeUpload={(file) => {
+                            const isImage = file.type.startsWith("image/");
+                            if (!isImage) {
+                                message.error("Chỉ chấp nhận file ảnh (jpg, png, jpeg...)");
+                                return false;
+                            }
+                            form.setFieldsValue({ bannerImage: file });
+                            setBannerFile(file);
+                            const reader = new FileReader();
+                            reader.onload = (e) => {
+                                setPreviewImage(e.target.result);
+                            };
+                            reader.readAsDataURL(file);
+                            return false;
+                        }}
+                    >
+                        <Button icon={<UploadOutlined />}>Choose Image</Button>
+                    </Upload>
+                </Form.Item>
 
                 {previewImage && (
                     <div style={{ marginTop: 10 }}>
@@ -174,6 +199,7 @@ const ConferenceOrganizer = ({ conference, loading, onUpdate }) => {
                 <Form.Item name="status" label="Status" valuePropName="checked">
                     <Switch checkedChildren="Open" unCheckedChildren="Closed" />
                 </Form.Item>
+
                 <Form.Item>
                     <Button type="primary" htmlType="submit">
                         Save Changes
