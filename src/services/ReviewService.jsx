@@ -58,6 +58,11 @@ export const getReviewByAssignmentId = async (assignmentId) => {
     return apiService.get(`/Review/assignment/${assignmentId}`);
 };
 
+// Lấy review theo revisionId
+export const getReviewByRevisionId = async (revisionId) => {
+    return apiService.get(`/Review/revision/${revisionId}`);
+};
+
 export const sendFeedback = async (reviewId) => {
     const formData = new FormData();
     formData.append("reviewId", reviewId);

@@ -1,5 +1,6 @@
 import React, { useState, useRef } from "react";
 import { uploadRevision } from "../../services/PaperRevisionService";
+import { useNavigate } from "react-router-dom";
 
 const ITEMS_PER_PAGE = 3;
 
@@ -9,6 +10,7 @@ const Submited = ({ submissions = [] }) => {
   const [uploadingIdx, setUploadingIdx] = useState(null);
   const fileInputRef = useRef();
   const [pendingPaperId, setPendingPaperId] = useState(null);
+  const navigate = useNavigate();
 
   // Pagination state
   const [page, setPage] = useState(1);
@@ -89,6 +91,9 @@ const Submited = ({ submissions = [] }) => {
     try {
       await uploadRevision(formData);
       setMessage("Resubmission successful!");
+      setTimeout(() => {
+        window.location.reload(); // Reload trang sau khi nộp lại thành công
+      }, 2000); // Đợi 2s cho user thấy thông báo
     } catch (err) {
       setMessage(err.message || "Resubmission failed!");
     } finally {
@@ -110,7 +115,7 @@ const Submited = ({ submissions = [] }) => {
       <div className="border-b border-gray-200 py-6 px-8">
         <h2 className="font-bold text-3xl text-center"> History Submission</h2>
       </div>
-      <div className="w-full max-w-6xl mx-auto mt-8 bg-white">
+      <div className="w-full max-w-6xl mx-auto mt-8 bg-white flex-1 flex flex-col">
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-base bg-white">
             <thead>
@@ -202,17 +207,17 @@ const Submited = ({ submissions = [] }) => {
           </table>
         </div>
         {/* Pagination controls */}
-        <div className="flex justify-center mt-6 gap-2">
+        <div className="flex justify-center mt-6 gap-2 mb-4">
           {Array.from({ length: totalPages }, (_, i) => (
             <button
               key={i}
               className={`w-10 h-10 flex items-center justify-center rounded border text-base font-semibold transition
-        ${
-          page === i + 1
-            ? "bg-blue-600 text-green border-blue-600"
-            : "bg-white text-blue-600 border-gray-300 hover:bg-blue-50"
-        }
-      `}
+              ${
+                page === i + 1
+                  ? "bg-blue-600 text-green border-blue-600"
+                  : "bg-white text-blue-600 border-gray-300 hover:bg-blue-50"
+              }
+            `}
               onClick={() => setPage(i + 1)}
             >
               {i + 1}
@@ -250,8 +255,11 @@ const Submited = ({ submissions = [] }) => {
                   <th className="bg-blue-50 border-b px-4 py-2 font-semibold text-blue-900 text-center">
                     Status
                   </th>
-                  <th className="bg-blue-50 border-b px-4 py-2 font-semibold text-blue-900 text-center rounded-tr-lg">
+                  <th className="bg-blue-50 border-b px-4 py-2 font-semibold text-blue-900 text-center">
                     Submitted At
+                  </th>
+                  <th className="bg-blue-50 border-b px-4 py-2 font-semibold text-blue-900 text-center rounded-tr-lg">
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -290,6 +298,14 @@ const Submited = ({ submissions = [] }) => {
                               minute: "2-digit",
                             })
                           : ""}
+                      </td>
+                      <td className="border-b px-4 py-2 text-center">
+                        <button
+                          className="px-3 py-1 bg-blue-500 text-green-500 rounded hover:bg-blue-600 transition"
+                          onClick={() => navigate(`/author/view-paper-review/${rev.revisionId}`)}
+                        >
+                          View Review
+                        </button>
                       </td>
                     </tr>
                   )

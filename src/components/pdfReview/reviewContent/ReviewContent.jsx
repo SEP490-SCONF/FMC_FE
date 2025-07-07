@@ -397,6 +397,13 @@ const ReviewContent = ({ review }) => {
         }
     }, [review]);
 
+    useEffect(() => {
+        if (popup.open) {
+            const timer = setTimeout(() => setPopup((p) => ({ ...p, open: false })), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [popup.open]);
+
     return (
         <div style={{ height: '100%' }}>
             {/* Popup Edit/Delete when selecting highlight */}
