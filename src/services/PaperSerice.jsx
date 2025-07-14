@@ -37,3 +37,8 @@ export const getSubmittedPapersByConferenceId = async (conferenceId) => {
 export const getPapersByUserAndConference = async (userId, conferenceId) => {
     return apiService.get(`/Papers/user/${userId}/conference/${conferenceId}`);
 };
+// Lấy danh sách paper đã được publish theo conferenceId
+export const getPublishedPapersByConferenceId = (conferenceId) => {
+  return apiService.get(`/Papers/conference/${conferenceId}/published`);
+};
+

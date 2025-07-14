@@ -118,7 +118,7 @@ const ConferenceOrganizer = ({ conference, loading, onUpdate }) => {
 
     return (
         <div style={{ maxWidth: 600, margin: "0 auto", padding: 24 }}>
-            <h2>Edit Conference</h2>
+            <h2>Update Conference</h2>
             <Form form={form} layout="vertical" onFinish={onFinish}>
                 <Form.Item name="title" label="Conference Title" rules={[{ required: true }]}>
                     <Input />
@@ -166,29 +166,45 @@ const ConferenceOrganizer = ({ conference, loading, onUpdate }) => {
                 </Form.Item>
 
                 <Form.Item label="Banner Image">
-                    <Upload
-                        name="bannerImage"
-                        accept="image/*"
-                        showUploadList={false}
-                        beforeUpload={(file) => {
-                            const isImage = file.type.startsWith("image/");
-                            if (!isImage) {
-                                message.error("Chỉ chấp nhận file ảnh (jpg, png, jpeg...)");
-                                return false;
-                            }
-                            form.setFieldsValue({ bannerImage: file });
-                            setBannerFile(file);
-                            const reader = new FileReader();
-                            reader.onload = (e) => {
-                                setPreviewImage(e.target.result);
-                            };
-                            reader.readAsDataURL(file);
-                            return false;
-                        }}
-                    >
-                        <Button icon={<UploadOutlined />}>Choose Image</Button>
-                    </Upload>
-                </Form.Item>
+  <Upload
+    name="bannerImage"
+    accept=".jpg,.jpeg,.png,.gif" 
+    showUploadList={false}
+    beforeUpload={(file) => {
+      const isImage =
+        file.type === "image/jpeg" ||
+        file.type === "image/png" ||
+        file.type === "image/gif" ||
+        file.type === "image/jpg";
+
+      if (!isImage) {
+        message.error("❌ File không hợp lệ. Chỉ chấp nhận .jpg, .jpeg, .png, .gif.");
+        return false; 
+      }
+
+      // ✅ Nếu hợp lệ, tiến hành preview và set state
+      form.setFieldsValue({ bannerImage: file });
+      setBannerFile(file);
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setPreviewImage(e.target.result);
+      };
+      reader.readAsDataURL(file);
+
+      return false; 
+    }}
+  >
+    <Button icon={<UploadOutlined />}>Choose Image</Button>
+  </Upload>
+
+  {previewImage && (
+    <div style={{ marginTop: 10 }}>
+      <Avatar shape="square" size={128} src={previewImage} alt="banner" />
+    </div>
+  )}
+</Form.Item>
+
 
                 {previewImage && (
                     <div style={{ marginTop: 10 }}>

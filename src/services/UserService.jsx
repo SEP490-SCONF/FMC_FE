@@ -15,3 +15,7 @@ export const getUserProfile = (id) => {
 export const updateUserProfile = (id, profileData) => {
   return apiService.put(`/UserProfile/${id}/profile`, profileData);
 };
+
+export const getUsersByRole = (roleId) => {
+  return apiService.get(`/CRUDUser/role/${roleId}`);
+};
