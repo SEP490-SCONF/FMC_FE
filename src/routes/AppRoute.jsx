@@ -22,14 +22,14 @@ import Submitted from "../pages/author/Submittedpaper";
 import SubmittedPaperAuthor from "../pages/author/Submittedpaper";
 import AuthorConference from "../pages/author/AuthorConference";
 import ViewPaperReview from "../pages/author/ViewPaperReview"; // Thêm import ở đầu file
-
+import MainHomePage from "../pages/MainHomePage";
 export default function AppRoutes() {
   return (
     <BrowserRouter>
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<App />}>
-          <Route index element={<Screen />} />
+          <Route index element={<MainHomePage />} />
           <Route path="/login" element={<Login />} />
           <Route path="user" element={<UserP />} />
           <Route path="/reviewer/assigned-papers" element={<PaperAss />} />
