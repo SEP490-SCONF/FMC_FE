@@ -62,7 +62,7 @@ const PaperAssign = () => {
 
         addReview(formData)
             .then((response) => {
-                console.log("Review added successfully:", response.data);
+               
                 navigate(`/review/paper/${record.assignmentId}`);
             })
             .catch((error) => {

@@ -25,23 +25,32 @@ import EditConferencePage from "../pages/organizer/EditConferencePage";
 import ReviewerListPage from "../pages/organizer/ReviewerListPage"; 
 import PublishedPaperList from "../pages/organizer/PublishedPaperList";
 
-
-
-
+import ViewPaperReview from "../pages/author/ViewPaperReview"; // Thêm import ở đầu file
+import MainHomePage from "../pages/MainHomePage";
+import ConferenceSearch from "../pages/ConferenceSearch"; // Import ConferenceSearch component
 export default function AppRoutes() {
   return (
     <BrowserRouter>
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<App />}>
-          <Route index element={<Screen />} />
+          <Route index element={<MainHomePage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/conferences" element={<ConferenceSearch />} />
           <Route path="user" element={<UserP />} />
           <Route path="/reviewer/assigned-papers" element={<PaperAss />} />
           <Route path="/review/paper/:assignmentId" element={<PaperReview />} />
           <Route path="/manage-conference" element={<OrganizerView />} />
-          <Route path="/author/conference/:conferenceId/submittedPaper" element={<SubmittedPaperAuthor />} />
+          <Route
+            path="/author/conference/:conferenceId/submittedPaper"
+            element={<SubmittedPaperAuthor />}
+          />
           <Route path="/author/conference" element={<AuthorConference />} />
+          <Route
+            path="/author/view-paper-review/:revisionId"
+            element={<ViewPaperReview />}
+          />{" "}
+          {/* Thêm dòng này */}
         </Route>
 
         <Route element={<ConferenceLayout />}>
@@ -63,8 +72,6 @@ export default function AppRoutes() {
             path="/conference/:id/submitted-papers"
             element={<SubmittedOrga />}
           />
-
-
         </Route>
         <Route element={<ManageConferenceLayout />}>
           <Route

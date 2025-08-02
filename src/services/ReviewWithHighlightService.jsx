@@ -15,3 +15,7 @@ export const updateReviewWithHighlightAndComment = (reviewId, data) =>
 // Lấy chi tiết Review + Highlight + Comment theo reviewId
 export const getReviewWithHighlightAndComment = (reviewId) =>
     apiService.get(`/Review/WithHighlightAndComment/${reviewId}`);
+
+// Xóa Highlight + Comment theo highlightId
+export const deleteReviewWithHighlightAndComment = (highlightId) =>
+    apiService.delete(`/Review/DeletWithHighlightAndComment/${highlightId}`);

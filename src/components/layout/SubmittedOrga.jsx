@@ -17,6 +17,7 @@ const SubmittedOrga = () => {
     const [reviewers, setReviewers] = useState([]);
     const [reviewerPage, setReviewerPage] = useState(1);
     const reviewersPerPage = 2;
+    const [successPopup, setSuccessPopup] = useState(false); // Thêm state cho popup
 
     // Fetch paper list
     useEffect(() => {
@@ -103,6 +104,8 @@ const SubmittedOrga = () => {
                 setPaperList(mapped);
             });
         closeModal();
+        setSuccessPopup(true); // Hiện popup
+        setTimeout(() => setSuccessPopup(false), 3000); // Ẩn sau 3s
     };
 
     useEffect(() => {
@@ -305,6 +308,12 @@ const SubmittedOrga = () => {
                         </button>
                     </div>
                 </Modal>
+            )}
+
+            {successPopup && (
+                <div className="fixed bottom-4 right-4 bg-green-100 text-green-700 py-2 px-4 rounded-lg shadow-lg text-center max-w-xs z-50">
+                    Assign reviewer successfully!
+                </div>
             )}
         </>
     );

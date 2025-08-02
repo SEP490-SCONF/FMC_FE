@@ -1,44 +1,39 @@
-import React, { useContext, useRef, useState, useEffect } from 'react';
-import { Button, DocumentLoadEvent, PdfJs, Position, PrimaryButton, Tooltip, Viewer, Worker } from '@react-pdf-viewer/core';
-import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
+import React, { useRef, useState, useEffect } from 'react';
 import {
-    highlightPlugin,
-    MessageIcon,
-} from '@react-pdf-viewer/highlight';
-import { getPdfUrlByReviewId } from '../../../services/PaperRevisionService'; // import service
-import { addReviewWithHighlightAndComment, getReviewWithHighlightAndComment } from '../../../services/ReviewWithHighlightService';
-
-import { useUser } from '../../../context/UserContext'; // Đổi đường dẫn nếu cần
+    Button,
+    Position,
+    PrimaryButton,
+    Tooltip,
+    Viewer,
+    Worker,
+} from '@react-pdf-viewer/core';
+import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
+import { highlightPlugin, MessageIcon } from '@react-pdf-viewer/highlight';
+import { getPdfUrlByReviewId } from '../../../services/PaperRevisionService';
+import {
+    addReviewWithHighlightAndComment,
+    getReviewWithHighlightAndComment,
+    updateReviewWithHighlightAndComment,
+    deleteReviewWithHighlightAndComment, // Thêm dòng này
+} from '../../../services/ReviewWithHighlightService';
+import { useUser } from '../../../context/UserContext';
 
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 
 const ReviewContent = ({ review }) => {
-    const { user } = useUser(); // user chứa thông tin đăng nhập
+    const { user } = useUser();
 
     const [fileUrl, setFileUrl] = useState('');
     const [message, setMessage] = useState('');
-    const [notes, setNotes] = useState([
-        {
-            id: 1,
-            content: "hahaa",
-            quote: "Vì thế Tuấn quyết định code thật nhiều để kiểm chứng hàm gcd có hoạt động tốt hay không",
-            highlightAreas: [
-                {
-                    pageIndex: 0,
-                    left: 7.889083440124753,
-                    top: 23.747380774475992,
-                    width: 74.86615689846838,
-                    height: 1.453529080671501
-                }
-            ]
-        }
-    ]);
+    const [notes, setNotes] = useState([]);
     const notesContainerRef = useRef(null);
     let noteId = notes.length;
 
     const [selectedHighlight, setSelectedHighlight] = useState(null);
     const [highlightEditContent, setHighlightEditContent] = useState('');
+
+    const [popup, setPopup] = useState({ open: false, text: '', type: 'error' }); // type: 'error' | 'success'
 
     const noteEles = useRef(new Map());
     const [currentDoc, setCurrentDoc] = useState(null);
@@ -75,6 +70,7 @@ const ReviewContent = ({ review }) => {
         </div>
     );
 
+    // Call API when adding a new note
     const renderHighlightContent = (props) => {
         const addNote = async () => {
             if (message !== '') {
@@ -86,63 +82,60 @@ const ReviewContent = ({ review }) => {
                 };
 
                 try {
+                    const area = props.highlightAreas[0] || {};
                     const formData = new FormData();
                     formData.append("ReviewId", review.reviewId);
                     formData.append("RevisionId", review.revisionId);
                     formData.append("ReviewerId", user.userId);
-                    formData.append("PageNumber", props.highlightAreas[0]?.pageIndex + 1);
-                    formData.append("OffsetStart", props.highlightAreas[0]?.offsetStart || 0);
-                    formData.append("OffsetEnd", props.highlightAreas[0]?.offsetEnd || 0);
+                    formData.append("PageIndex", area.pageIndex);
+                    formData.append("Left", area.left || 0);
+                    formData.append("Top", area.top || 0);
+                    formData.append("Width", area.width || 0);
+                    formData.append("Height", area.height || 0);
                     formData.append("TextHighlighted", props.selectedText);
                     formData.append("UserId", user.userId);
                     formData.append("CommentText", message);
                     formData.append("Status", "Draft");
 
-                    console.log("FormData gửi lên:", Object.fromEntries(formData.entries()));
                     await addReviewWithHighlightAndComment(formData);
 
                     setNotes((prev) => prev.concat([note]));
                     setMessage('');
                     props.cancel();
+                    setPopup({ open: true, text: 'Note added successfully!', type: 'success' });
                 } catch (err) {
-                    alert("Lưu ghi chú thất bại!");
+                    setPopup({ open: true, text: 'Failed to save note!', type: 'error' });
                 }
             }
         };
 
         return (
             <div
+                className="bg-white border border-gray-300 rounded-lg p-4 absolute z-10"
                 style={{
-                    background: '#fff',
-                    border: '1px solid rgba(0, 0, 0, .3)',
-                    borderRadius: '2px',
-                    padding: '8px',
-                    position: 'absolute',
                     left: `${props.selectionRegion.left}%`,
                     top: `${props.selectionRegion.top + props.selectionRegion.height}%`,
-                    zIndex: 1,
                 }}
             >
-                <div>
-                    <textarea
-                        rows={3}
-                        style={{
-                            border: '1px solid rgba(0, 0, 0, .3)',
-                        }}
-                        value={message}
-                        onChange={(e) => setMessage(e.target.value)}
-                    ></textarea>
-                </div>
-                <div
-                    style={{
-                        display: 'flex',
-                        marginTop: '8px',
-                    }}
-                >
-                    <div style={{ marginRight: '8px' }}>
-                        <PrimaryButton onClick={addNote}>Add</PrimaryButton>
-                    </div>
-                    <Button onClick={props.cancel}>Cancel</Button>
+                <textarea
+                    rows={3}
+                    className="w-full border border-gray-300 rounded p-2 mb-3"
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                ></textarea>
+                <div className="flex flex-row gap-3 justify-end">
+                    <button
+                        className="bg-blue-600 text-green rounded-lg px-4 py-1 font-semibold hover:bg-blue-700 transition"
+                        onClick={addNote}
+                    >
+                        Add
+                    </button>
+                    <button
+                        className="bg-gray-100 text-gray-700 rounded-lg px-4 py-1 font-semibold hover:bg-gray-200 transition"
+                        onClick={props.cancel}
+                    >
+                        Cancel
+                    </button>
                 </div>
             </div>
         );
@@ -159,36 +152,39 @@ const ReviewContent = ({ review }) => {
     };
 
     const renderHighlights = (props) => (
-    <div>
-        {notes.map((note) => (
-            <React.Fragment key={note.id}>
-                {note.highlightAreas
-                    .filter((area) => area.pageIndex === props.pageIndex) // Chỉ render trên trang hiện tại
-                    .map((area, idx) => (
-                        <div
-                            key={idx}
-                            style={{
-                                position: 'absolute',
-                                background: 'rgba(255, 255, 0, 0.4)', // Màu của highlight (vàng nhạt)
-                                left: `${area.left}%`, // Vị trí x của highlight (tính từ trái)
-                                top: `${area.top}%`,   // Vị trí y của highlight (tính từ trên)
-                                width: `${area.width}%`,  // Chiều rộng của highlight
-                                height: `${area.height}%`, // Chiều cao của highlight
-                                pointerEvents: 'auto',  // Cho phép click vào highlight
-                                zIndex: 2, // Đảm bảo highlight nổi lên trên text
-                            }}
-                            onClick={e => {
-                                e.stopPropagation();
-                                setSelectedHighlight({ note, area, pageIndex: props.pageIndex });
-                                setHighlightEditContent(note.content);
-                            }}
-                        />
-                    ))}
-            </React.Fragment>
-        ))}
-    </div>
-);
-
+        <div>
+            {notes.map((note) => (
+                <React.Fragment key={note.id}>
+                    {note.highlightAreas
+                        .filter((area) => area.pageIndex === props.pageIndex)
+                        .map((area, idx) => (
+                            <div
+                                key={idx}
+                                style={{
+                                    position: 'absolute',
+                                    background: 'rgba(255, 255, 0, 0.4)',
+                                    left: `${area.left}%`,
+                                    top: `${area.top}%`,
+                                    width: `${area.width}%`,
+                                    height: `${area.height}%`,
+                                    pointerEvents: 'auto',
+                                    zIndex: 2,
+                                }}
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedHighlight({
+                                        note,
+                                        area,
+                                        pageIndex: props.pageIndex,
+                                    });
+                                    setHighlightEditContent(note.content);
+                                }}
+                            />
+                        ))}
+                </React.Fragment>
+            ))}
+        </div>
+    );
 
     const highlightPluginInstance = highlightPlugin({
         renderHighlightTarget,
@@ -204,79 +200,133 @@ const ReviewContent = ({ review }) => {
         };
     }, []);
 
-    const handleDeleteNote = (id) => {
-        setNotes(notes => notes.filter(note => note.id !== id));
+    // Call API when deleting a note
+    const handleDeleteNote = async (id) => {
+        try {
+            await deleteReviewWithHighlightAndComment(id);
+            setNotes((notes) => notes.filter((note) => note.id !== id));
+            setPopup({ open: true, text: 'Note deleted successfully!', type: 'success' });
+        } catch (err) {
+            setPopup({ open: true, text: 'Failed to delete note!', type: 'error' });
+        }
     };
 
     const [editingNoteId, setEditingNoteId] = useState(null);
     const [editingContent, setEditingContent] = useState('');
 
     const handleEditNote = (id) => {
-        const note = notes.find(n => n.id === id);
+        const note = notes.find((n) => n.id === id);
         setEditingNoteId(id);
         setEditingContent(note.content);
     };
 
-    // Khi render note, nếu đang edit thì show input
+    // Call API when updating a note
+    const handleUpdateNote = async (note, newContent) => {
+        if (!review || !review.reviewId) return;
+        try {
+            const area = note.highlightAreas[0] || {};
+            const formData = new FormData();
+            formData.append('HighlightId', note.id);
+            formData.append('ReviewId', review.reviewId);
+            formData.append('RevisionId', review.revisionId);
+            formData.append('PageIndex', area.pageIndex);
+            formData.append('Left', area.left || 0);
+            formData.append('Top', area.top || 0);
+            formData.append('Width', area.width || 0);
+            formData.append('Height', area.height || 0);
+            formData.append('TextHighlighted', note.quote);
+            formData.append('CommentText', newContent);
+
+            await updateReviewWithHighlightAndComment(review.reviewId, formData);
+            setPopup({ open: true, text: 'Note updated successfully!', type: 'success' });
+        } catch (err) {
+            setPopup({ open: true, text: 'Failed to update note!', type: 'error' });
+        }
+    };
+
+    // Sidebar notes đẹp với Tailwind
     const sidebarNotes = (
         <div
             ref={notesContainerRef}
-            style={{
-                overflow: 'auto',
-                width: '100%',
-            }}
+            className="overflow-auto w-full space-y-4"
         >
-            {notes.length === 0 && <div style={{ textAlign: 'center' }}>There is no note</div>}
-            {notes.map((note) => {
-                return (
-                    <div
-                        key={note.id}
-                        style={{
-                            borderBottom: '1px solid rgba(0, 0, 0, .3)',
-                            cursor: 'pointer',
-                            padding: '8px',
-                        }}
-                        onClick={() => jumpToHighlightArea(note.highlightAreas[0])}
-                        ref={(ref) => {
-                            noteEles.current.set(note.id, ref);
-                        }}
-                    >
-                        <blockquote
-                            style={{
-                                borderLeft: '2px solid rgba(0, 0, 0, 0.2)',
-                                fontSize: '.75rem',
-                                lineHeight: 1.5,
-                                margin: '0 0 8px 0',
-                                paddingLeft: '8px',
-                                textAlign: 'justify',
-                            }}
-                        >
-                            {note.quote}
-                        </blockquote>
-                        {editingNoteId === note.id ? (
-                            <div>
-                                <textarea
-                                    value={editingContent}
-                                    onChange={e => setEditingContent(e.target.value)}
-                                />
-                                <button onClick={() => {
-                                    setNotes(notes => notes.map(n => n.id === note.id ? { ...n, content: editingContent } : n));
-                                    setEditingNoteId(null);
-                                }}>Save</button>
-                                <button onClick={() => setEditingNoteId(null)}>Cancel</button>
+            {notes.length === 0 && (
+                <div className="text-center text-gray-400 py-8">There is no note</div>
+            )}
+            {notes.map((note) => (
+                <div
+                    key={note.id}
+                    className="bg-white rounded-xl shadow border border-gray-200 p-4 transition hover:shadow-lg"
+                    onClick={() => jumpToHighlightArea(note.highlightAreas[0])}
+                    ref={(ref) => {
+                        noteEles.current.set(note.id, ref);
+                    }}
+                >
+                    <blockquote className="border-l-4 border-blue-200 pl-3 mb-2 text-sm text-gray-700 italic bg-blue-50 rounded">
+                        {note.quote}
+                    </blockquote>
+                    {editingNoteId === note.id ? (
+                        <div className="flex flex-col gap-3 mt-2">
+                            <textarea
+                                value={editingContent}
+                                onChange={(e) => setEditingContent(e.target.value)}
+                                className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-gray-50"
+                                rows={3}
+                            />
+                            <div className="flex flex-row gap-3 justify-end">
+                                <button
+                                    className="bg-blue-600 text-green rounded-lg px-4 py-1 font-semibold shadow hover:bg-blue-700 transition"
+                                    onClick={async (e) => {
+                                        e.stopPropagation();
+                                        setNotes((notes) =>
+                                            notes.map((n) =>
+                                                n.id === note.id ? { ...n, content: editingContent } : n
+                                            )
+                                        );
+                                        setEditingNoteId(null);
+                                        await handleUpdateNote(note, editingContent);
+                                    }}
+                                >
+                                    Save
+                                </button>
+                                <button
+                                    className="bg-gray-100 text-gray-700 rounded-lg px-4 py-1 font-semibold shadow hover:bg-gray-200 transition"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setEditingNoteId(null);
+                                    }}
+                                >
+                                    Cancel
+                                </button>
                             </div>
-                        ) : (
-                            <>
-                                {note.content}
-                                <div style={{ marginTop: 8 }}>
-                                    <button onClick={e => { e.stopPropagation(); handleEditNote(note.id); }}>Edit</button>
-                                    <button onClick={e => { e.stopPropagation(); handleDeleteNote(note.id); }} style={{ marginLeft: 8 }}>Delete</button>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                );
-            })}
+                        </div>
+                    ) : (
+                        <>
+                            <div className="text-base text-gray-800 mb-2">{note.content}</div>
+                            <div className="flex flex-row gap-3 justify-end">
+                                <button
+                                    className="bg-yellow-100 text-yellow-700 rounded-lg px-4 py-1 font-semibold shadow hover:bg-yellow-200 transition"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleEditNote(note.id);
+                                    }}
+                                >
+                                    Edit
+                                </button>
+                                <button
+                                    className="bg-red-100 text-red-600 rounded-lg px-4 py-1 font-semibold shadow hover:bg-red-200 transition"
+                                    onClick={async (e) => {
+                                        e.stopPropagation();
+                                        await handleDeleteNote(note.id);
+                                    }}
+                                >
+                                    Delete
+                                </button>
+                            </div>
+                        </>
+                    )}
+                </div>
+            ))}
         </div>
     );
 
@@ -301,98 +351,136 @@ const ReviewContent = ({ review }) => {
     });
 
     useEffect(() => {
-    if (review && review.reviewId) {
-        // Lấy file PDF
-        getPdfUrlByReviewId(review.reviewId)
-            .then(res => {
-                if (res && res.pdfUrl) {
-                    setFileUrl(res.pdfUrl);
-                } else {
-                    setFileUrl('');
-                }
-            })
-            .catch(() => setFileUrl(''));
+        if (review && review.reviewId) {
+            getPdfUrlByReviewId(review.reviewId)
+                .then((res) => {
+                    if (res && res.pdfUrl) {
+                        setFileUrl(res.pdfUrl);
+                    } else {
+                        setFileUrl('');
+                    }
+                })
+                .catch(() => setFileUrl(''));
 
-        // Lấy highlight và comment từ backend
-        getReviewWithHighlightAndComment(review.reviewId)
-            .then(res => {
-                console.log("Dữ liệu BE trả về:", res); // Kiểm tra kết quả từ BE
-                // if (res && res.highlights && res.comments) {
-                //     // Kết hợp highlight và comment
-                //     const notes = res.highlights.map(h => {
-                //         // Tìm các comment liên quan đến highlight này
-                //         const relatedComments = res.comments.filter(c => c.highlightId === h.highlightId);
-                //         return {
-                //             id: h.highlightId,
-                //             content: relatedComments.length > 0 ? relatedComments[0].commentText : '',
-                //             highlightAreas: [
-                //                 {
-                //                     pageIndex: h.pageNumber - 1, // Chuyển từ 1-based sang 0-based
-                //                     // Nếu cần thêm các thông tin khác về highlight như top, left, width, height thì bạn có thể thêm vào đây
-                //                 }
-                //             ],
-                //             quote: h.textHighlighted,
-                //             comments: relatedComments, // Lưu các comment liên quan đến highlight
-                //         };
-                //     });
-                //     setNotes(notes); // Lưu notes vào state
-                // } else {
-                //     setNotes([]); // Nếu không có dữ liệu, set danh sách rỗng
-                // }
-            })
-            .catch(() => setNotes([])); // Xử lý lỗi nếu không lấy được dữ liệu
-    }
-}, [review]);
+            getReviewWithHighlightAndComment(review.reviewId)
+                .then((res) => {
+                    if (res && res.highlights && res.comments) {
+                        const notes = res.highlights.map((h) => {
+                            const relatedComments = res.comments.filter(
+                                (c) => c.highlightId === h.highlightId
+                            );
+                            return {
+                                id: h.highlightId,
+                                content:
+                                    relatedComments.length > 0
+                                        ? relatedComments[0].commentText
+                                        : '',
+                                highlightAreas: [
+                                    {
+                                        pageIndex: h.pageIndex,
+                                        left: h.left,
+                                        top: h.top,
+                                        width: h.width,
+                                        height: h.height,
+                                    },
+                                ],
+                                quote: h.textHighlighted,
+                                comments: relatedComments,
+                            };
+                        });
+                        setNotes(notes);
+                    } else {
+                        setNotes([]);
+                    }
+                })
+                .catch(() => setNotes([]));
+        }
+    }, [review]);
+
+    useEffect(() => {
+        if (popup.open) {
+            const timer = setTimeout(() => setPopup((p) => ({ ...p, open: false })), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [popup.open]);
 
     return (
         <div style={{ height: '100%' }}>
-            {/* Popup Edit/Delete khi chọn highlight */}
+            {/* Popup Edit/Delete when selecting highlight */}
             {selectedHighlight && (
+                <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30">
+                    <div className="bg-white rounded-xl shadow-2xl border border-gray-200 p-6 min-w-[300px] max-w-md w-full">
+                        <textarea
+                            value={highlightEditContent}
+                            onChange={(e) => setHighlightEditContent(e.target.value)}
+                            className="w-full mb-6 border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 text-base"
+                            rows={4}
+                        />
+                        <div className="flex flex-row gap-4 justify-end">
+                            <button
+                                className="bg-red-100 text-green-600 rounded-lg px-6 py-2 font-semibold shadow hover:bg-red-200 transition"
+                                onClick={async () => {
+                                    setNotes((notes) =>
+                                        notes.map((n) =>
+                                            n.id === selectedHighlight.note.id
+                                                ? { ...n, content: highlightEditContent }
+                                                : n
+                                        )
+                                    );
+                                    await handleUpdateNote(
+                                        selectedHighlight.note,
+                                        highlightEditContent
+                                    );
+                                    setSelectedHighlight(null);
+                                }}
+                            >
+                                Save
+                            </button>
+                            <button
+                                className="bg-red-100 text-red-600 rounded-lg px-6 py-2 font-semibold shadow hover:bg-red-200 transition"
+                                onClick={async () => {
+                                    try {
+                                        await deleteReviewWithHighlightAndComment(selectedHighlight.note.id);
+                                        setNotes((notes) =>
+                                            notes.filter((n) => n.id !== selectedHighlight.note.id)
+                                        );
+                                        setSelectedHighlight(null);
+                                        setPopup({ open: true, text: 'Note deleted successfully!', type: 'success' });
+                                    } catch (err) {
+                                        setPopup({ open: true, text: 'Failed to delete note!', type: 'error' });
+                                    }
+                                }}
+                            >
+                                Delete
+                            </button>
+                            <button
+                                className="bg-gray-100 text-gray-700 rounded-lg px-6 py-2 font-semibold shadow hover:bg-gray-200 transition"
+                                onClick={() => setSelectedHighlight(null)}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Popup message */}
+            {popup.open && (
                 <div
-                    style={{
-                        position: 'fixed',
-                        top: '50%',
-                        left: '50%',
-                        background: '#fff',
-                        transform: 'translate(-50%, -50%)',
-                        border: '1px solid #ccc',
-                        padding: 12,
-                        zIndex: 9999,
-                        minWidth: 250,
-                    }}
+                    className={`fixed bottom-6 right-6 z-50 px-6 py-3 rounded-lg shadow-lg text-base font-semibold
+                        ${popup.type === 'success'
+                            ? 'bg-green-100 text-green-700 border border-green-300'
+                            : 'bg-red-100 text-red-700 border border-red-300'
+                        }`}
+                    style={{ minWidth: 220, maxWidth: 320 }}
                 >
-                    <textarea
-                        value={highlightEditContent}
-                        onChange={e => setHighlightEditContent(e.target.value)}
-                        style={{ width: '100%', marginBottom: 8 }}
-                    />
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div className="flex items-center justify-between gap-4">
+                        <span>{popup.text}</span>
                         <button
-                            onClick={() => {
-                                setNotes(notes =>
-                                    notes.map(n =>
-                                        n.id === selectedHighlight.note.id
-                                            ? { ...n, content: highlightEditContent }
-                                            : n
-                                    )
-                                );
-                                setSelectedHighlight(null);
-                            }}
+                            className="ml-4 text-lg font-bold text-gray-400 hover:text-gray-700"
+                            onClick={() => setPopup({ ...popup, open: false })}
                         >
-                            Save
-                        </button>
-                        <button
-                            onClick={() => {
-                                setNotes(notes => notes.filter(n => n.id !== selectedHighlight.note.id));
-                                setSelectedHighlight(null);
-                            }}
-                        >
-                            Delete
-                        </button>
-                        <button
-                            onClick={() => setSelectedHighlight(null)}
-                        >
-                            Cancel
+                            ×
                         </button>
                     </div>
                 </div>

@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import ReviewSidebar from '../components/pdfReview/ReviewSidebar';
 import ReviewContent from '../components/pdfReview/reviewContent/ReviewContent';
-import ReviewActions from '../components/pdfReview/ReviewActions';
 import { getReviewByAssignmentId } from '../services/ReviewService';
 
 const PaperReview = () => {
@@ -16,23 +15,14 @@ const PaperReview = () => {
         if (assignmentId) {
             getReviewByAssignmentId(assignmentId)
                 .then(res => {
+                    console.log(res);
                     setReview(res);
                 })
                 .catch(() => setReview(null));
         }
     }, [assignmentId]);
 
-    const handleSave = () => {
-        setMessageType('success');
-        setMessage('Review updated!');
-        setTimeout(() => setMessage(''), 2500);
-    };
-
-    const handleSendFeedback = () => {
-        setMessageType('success');
-        setMessage('Feedback sent!');
-        setTimeout(() => setMessage(''), 2500);
-    };
+    
 
     return (
         <main className="pt-10">
