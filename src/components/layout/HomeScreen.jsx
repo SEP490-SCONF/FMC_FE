@@ -14,7 +14,7 @@ const ConferenceSlider = ({ title, conferences, onConferenceClick }) => {
     const now = new Date();
     const filtered = conferences.filter(
         (conf) =>
-            (!conf.status || conf.status === true) &&
+            conf.status === true &&
             (!conf.endDate || new Date(conf.endDate) >= now)
     );
 
