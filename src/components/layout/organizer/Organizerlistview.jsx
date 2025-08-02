@@ -27,7 +27,10 @@ const OrganizerListView = ({ conferences }) => {
                                     </Text>
                                     <EditOutlined
                                         onClick={(e) => {
+
                                             e.stopPropagation();
+                                            console.log("🔗 Navigating to conferenceId:", item.conferenceId); // ✅ log ở đây
+
                                             navigate(`/manage-conference/${item.conferenceId}/edit`);
                                         }}
                                         style={{ fontSize: 18, cursor: "pointer" }}
@@ -59,6 +62,8 @@ const OrganizerListView = ({ conferences }) => {
   type="primary"
   onClick={(e) => {
     e.stopPropagation();
+    console.log("👀 Going to reviewers page for:", item.conferenceId); // ✅ log
+
     console.log("👀 Going to reviewers page for:", item.conferenceId);
     navigate(`/manage-conference/${item.conferenceId}/reviewers`);
 }}

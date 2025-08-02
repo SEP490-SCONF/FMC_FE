@@ -72,7 +72,7 @@ export default function AppRoutes() {
             element={<SubOrganizer />}
           />
           <Route path="/manage-conference/:conferenceId" element={<ConferenceOrganizer />} />
-          <Route path="/manage-conference/:id/edit" element={<EditConferencePage />} />
+          <Route path="/manage-conference/:conferenceId/edit" element={<EditConferencePage />} />
           <Route path="/manage-conference/:conferenceId/reviewers" element={<ReviewerListPage />} />
           <Route path="/manage-conference/:conferenceId/published-papers" element={<PublishedPaperList />}
 />

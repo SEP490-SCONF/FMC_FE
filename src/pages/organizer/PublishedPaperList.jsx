@@ -42,9 +42,14 @@ export default function PublishedPaperList() {
   }, [confId]);
 
   // 🔍 Lọc papers theo tiêu đề
-  const filteredPapers = papers.filter((paper) =>
-    paper.title.toLowerCase().includes(searchText.toLowerCase())
-  );
+  const acceptedPapers = papers.filter(
+  (paper) => paper.paperRevisions?.some((rev) => rev.status === "Accepted")
+);
+
+const filteredPapers = acceptedPapers.filter((paper) =>
+  paper.title.toLowerCase().includes(searchText.toLowerCase())
+);
+
 
   // 📄 Pagination sau khi lọc
   const indexOfLast = currentPage * pageSize;

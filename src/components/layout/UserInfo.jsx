@@ -29,7 +29,7 @@ export default function UserInfo({ user }) {
         name: formData.name?.trim() || "",
         avatarUrl: formData.avatarUrl?.startsWith("data:image")
           ? formData.avatarUrl
-          : undefined,
+          : null,
       };
 
       await updateUserProfile(userId, safeFormData);

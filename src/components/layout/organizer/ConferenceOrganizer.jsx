@@ -138,9 +138,7 @@ const ConferenceOrganizer = ({ conference, loading, onUpdate }) => {
                     />
                 </Form.Item>
 
-                <Form.Item name="callForPaper" label="Call For Paper">
-                    <Input.TextArea placeholder="Enter call for paper content..." />
-                </Form.Item>
+                
 
                 <Form.Item name="startDate" label="Start Date" rules={[{ required: true }]}>
                     <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" style={{ width: "100%" }} />

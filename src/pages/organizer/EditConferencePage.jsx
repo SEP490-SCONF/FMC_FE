@@ -4,7 +4,7 @@ import ConferenceOrganizer from "../../components/layout/organizer/ConferenceOrg
 import { getConferenceById, updateConference } from "../../services/ConferenceService";
 
 const EditConferencePage = () => {
-  const { id } = useParams();
+  const { conferenceId  } = useParams();
   const [conference, setConference] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -12,7 +12,7 @@ const EditConferencePage = () => {
   useEffect(() => {
     const fetchConference = async () => {
       try {
-        const data = await getConferenceById(id);
+        const data = await getConferenceById(conferenceId);
         console.log("📦 API response:", data);
         setConference(data);
       } catch (error) {
@@ -23,7 +23,7 @@ const EditConferencePage = () => {
     };
 
     fetchConference();
-  }, [id]);
+  }, [conferenceId]);
 
   // Handle form submission
   const handleUpdate = async (updatedData) => {
@@ -35,7 +35,6 @@ const EditConferencePage = () => {
     formData.append("StartDate", updatedData.startDate?.toISOString() || "");
     formData.append("EndDate", updatedData.endDate?.toISOString() || "");
     formData.append("Status", updatedData.status ? "true" : "false");
-    formData.append("CallForPaper", updatedData.callForPaper || "");
 
     if (updatedData.topicIds?.length > 0) {
       updatedData.topicIds.forEach((topicId) =>
@@ -48,7 +47,7 @@ const EditConferencePage = () => {
     }
 
     try {
-      await updateConference(id, formData);
+      await updateConference(conferenceId, formData);
       console.log("✅ Conference updated successfully");
     } catch (error) {
       console.error("❌ Update failed:", error);
