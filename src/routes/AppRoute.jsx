@@ -23,6 +23,7 @@ import SubmittedPaperAuthor from "../pages/author/Submittedpaper";
 import AuthorConference from "../pages/author/AuthorConference";
 import ViewPaperReview from "../pages/author/ViewPaperReview"; // Thêm import ở đầu file
 import MainHomePage from "../pages/MainHomePage";
+import ConferenceSearch from "../pages/ConferenceSearch"; // Import ConferenceSearch component
 export default function AppRoutes() {
   return (
     <BrowserRouter>
@@ -31,6 +32,7 @@ export default function AppRoutes() {
         <Route path="/" element={<App />}>
           <Route index element={<MainHomePage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/conferences" element={<ConferenceSearch />} />
           <Route path="user" element={<UserP />} />
           <Route path="/reviewer/assigned-papers" element={<PaperAss />} />
           <Route path="/review/paper/:assignmentId" element={<PaperReview />} />
