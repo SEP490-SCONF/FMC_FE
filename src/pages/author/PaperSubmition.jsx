@@ -6,7 +6,7 @@ const PaperSubmition = () => {
     return (
         <>
 
-            <main className="pt-20">
+            <main className="pt-10">
                 <SubmitPapers />
             </main>
 

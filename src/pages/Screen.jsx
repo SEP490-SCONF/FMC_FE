@@ -7,7 +7,7 @@ const ScreenContent = () => {
     const { conferences, loading } = useConference();
 
     if (loading) return <div>Loading...</div>;
-    if (!conferences || conferences.length === 0) return <div>No conferences found.</div>;
+    
 
     return (
         <main className="pt-20">

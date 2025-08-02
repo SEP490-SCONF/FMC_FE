@@ -22,7 +22,7 @@ const SubmittedPaperAuthor = () => {
     }, [user, conferenceId]);
 
     return (
-        <main className="pt-20">
+        <main>
             <Submited submissions={papers} />
         </main>
     );

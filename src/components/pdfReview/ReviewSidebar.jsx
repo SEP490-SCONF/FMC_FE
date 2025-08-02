@@ -1,7 +1,19 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { updateReview, sendFeedback } from '../../services/ReviewService';
 
 const ReviewSidebar = ({ review, onChange, onSave, onSendFeedback }) => {
+    const [popup, setPopup] = useState({ open: false, text: '', type: 'success' });
+
+    // Auto close popup after 3s
+    useEffect(() => {
+        if (popup.open) {
+            const timer = setTimeout(() => {
+                setPopup((prev) => ({ ...prev, open: false }));
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [popup.open]);
+
     if (!review) {
         return (
             <div className="flex-1 p-6 border-r border-gray-200 bg-white">
@@ -24,26 +36,25 @@ const ReviewSidebar = ({ review, onChange, onSave, onSendFeedback }) => {
         formData.append("PaperStatus", review.paperStatus ?? "");
         try {
             await updateReview(review.reviewId, formData);
-            alert("Review updated!");
+            setPopup({ open: true, text: "Review updated!", type: "success" });
             if (onSave) onSave();
         } catch (err) {
-            alert("Update failed!");
+            setPopup({ open: true, text: "Update failed!", type: "error" });
         }
     };
 
-    // Gửi phản hồi: cập nhật review rồi gọi API gửi feedback
     const handleSendFeedback = async () => {
         const formData = new FormData();
         formData.append("Comments", review.comments ?? "");
         formData.append("Score", review.score ?? "");
         formData.append("PaperStatus", review.paperStatus ?? "");
         try {
-            await updateReview(review.reviewId, formData); // Cập nhật review trước
-            await sendFeedback(review.reviewId);           // Gọi API gửi feedback
-            alert('Feedback sent and statuses updated!');
+            await updateReview(review.reviewId, formData);
+            await sendFeedback(review.reviewId);
+            setPopup({ open: true, text: "Feedback sent and statuses updated!", type: "success" });
             if (onSendFeedback) onSendFeedback();
         } catch (err) {
-            alert('Error sending feedback');
+            setPopup({ open: true, text: "Error sending feedback", type: "error" });
         }
     };
 
@@ -94,6 +105,26 @@ const ReviewSidebar = ({ review, onChange, onSave, onSendFeedback }) => {
                     Send Feedback
                 </button>
             </div>
+            {popup.open && (
+                <div
+                    className={`fixed bottom-6 right-6 z-50 px-6 py-3 rounded-lg shadow-lg text-base font-semibold
+                        ${popup.type === 'success'
+                            ? 'bg-green-100 text-green-700 border border-green-300'
+                            : 'bg-red-100 text-red-700 border border-red-300'
+                        }`}
+                    style={{ minWidth: 220, maxWidth: 320 }}
+                >
+                    <div className="flex items-center justify-between gap-4">
+                        <span>{popup.text}</span>
+                        <button
+                            className="ml-4 text-lg font-bold text-gray-400 hover:text-gray-700"
+                            onClick={() => setPopup({ ...popup, open: false })}
+                        >
+                            ×
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

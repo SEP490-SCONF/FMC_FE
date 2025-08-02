@@ -62,7 +62,7 @@ class ApiService {
           }
         } catch (refreshError) {
           localStorage.removeItem("accessToken");
-          window.location.href = "/login";
+          
           throw refreshError;
         }
       }

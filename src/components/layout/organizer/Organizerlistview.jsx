@@ -9,7 +9,7 @@ const OrganizerListView = ({ conferences }) => {
 
     return (
         <div style={{ padding: 24 }}>
-            <Title level={2}>List of conference you organize</Title>
+            <Title level={2}>List of Conferences You Organize</Title>
             <List
                 rowKey="conferenceId"
                 grid={{ gutter: 16, column: 2 }}
@@ -22,7 +22,7 @@ const OrganizerListView = ({ conferences }) => {
                             title={item.title}
                             extra={
                                 <Text type={item.status ? "success" : "danger"}>
-                                    {item.status ? "Đang mở" : "Đã đóng"}
+                                    {item.status ? "Open" : "Closed"}
                                 </Text>
                             }
                             style={{ cursor: "pointer" }}
@@ -40,10 +40,10 @@ const OrganizerListView = ({ conferences }) => {
                                 title={item.title}
                                 description={
                                     <>
-                                        <Text strong>Mô tả:</Text> {item.description} <br />
-                                        <Text strong>Thời gian:</Text> {item.startDate} - {item.endDate} <br />
-                                        <Text strong>Địa điểm:</Text> {item.location} <br />
-                                        <Text strong>Call for Paper:</Text> {item.callForPaper ? "Có" : "Không"} <br />
+                                        <Text strong>Description:</Text> {item.description} <br />
+                                        <Text strong>Time:</Text> {item.startDate} - {item.endDate} <br />
+                                        <Text strong>Location:</Text> {item.location} <br />
+                                        <Text strong>Call for Paper:</Text> {item.callForPaper ? "Yes" : "No"} <br />
                                     </>
                                 }
                             />

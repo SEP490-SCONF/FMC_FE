@@ -2,32 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import ReviewSidebar from '../components/pdfReview/ReviewSidebar';
 import ReviewContent from '../components/pdfReview/reviewContent/ReviewContent';
-import ReviewActions from '../components/pdfReview/ReviewActions';
 import { getReviewByAssignmentId } from '../services/ReviewService';
 
 const PaperReview = () => {
     const { assignmentId } = useParams();
     const [review, setReview] = useState(null);
     const [comment, setComment] = useState('');
+    const [message, setMessage] = useState('');
+    const [messageType, setMessageType] = useState('success'); // "success" or "error"
 
     useEffect(() => {
         if (assignmentId) {
             getReviewByAssignmentId(assignmentId)
                 .then(res => {
-                    console.log("Review data:", res); // In ra dữ liệu review
+                    console.log(res);
                     setReview(res);
                 })
                 .catch(() => setReview(null));
         }
     }, [assignmentId]);
 
-    const handleSave = () => {
-        alert('Saved!');
-    };
-
-    const handleSendFeedback = () => {
-        alert('Feedback sent!');
-    };
+    
 
     return (
         <main className="pt-10">
@@ -37,10 +32,27 @@ const PaperReview = () => {
                         <ReviewSidebar review={review} onChange={setReview} />
                     </div>
                     <div className="w-3/4 h-[95vh] p-10">
-                        <ReviewContent />
+                        {review ? (
+                            <ReviewContent review={review} />
+                        ) : (
+                            <div className="flex items-center justify-center h-full text-gray-400 text-lg">
+                                Loading review...
+                            </div>
+                        )}
                     </div>
                 </div>
-                
+                {/* Notification message */}
+                {message && (
+                    <div
+                        className={`fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg text-center max-w-xs z-50
+                        ${messageType === "success"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
+                    >
+                        {message}
+                    </div>
+                )}
             </div>
         </main>
     );
