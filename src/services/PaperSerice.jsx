@@ -41,4 +41,8 @@ export const getPapersByUserAndConference = async (userId, conferenceId) => {
 export const getPublishedPapersByConferenceId = (conferenceId) => {
   return apiService.get(`/Papers/conference/${conferenceId}/published`);
 };
+export const getPapersByConferenceWithFilter = async (conferenceId, query = "") => {
+    return apiService.get(`/Papers/conference/${conferenceId}${query}`);
+};
+
 

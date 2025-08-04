@@ -24,6 +24,9 @@ import AuthorConference from "../pages/author/AuthorConference";
 import EditConferencePage from "../pages/organizer/EditConferencePage";
 import ReviewerListPage from "../pages/organizer/ReviewerListPage"; 
 import PublishedPaperList from "../pages/organizer/PublishedPaperList";
+import PaperListByConference from "../pages/organizer/PaperListByConference";
+import ManageCallForPaper from "../pages/organizer/ManageCallForPaper";
+
 
 import ViewPaperReview from "../pages/author/ViewPaperReview"; // Thêm import ở đầu file
 import MainHomePage from "../pages/MainHomePage";
@@ -81,8 +84,12 @@ export default function AppRoutes() {
           <Route path="/manage-conference/:conferenceId" element={<ConferenceOrganizer />} />
           <Route path="/manage-conference/:conferenceId/edit" element={<EditConferencePage />} />
           <Route path="/manage-conference/:conferenceId/reviewers" element={<ReviewerListPage />} />
-          <Route path="/manage-conference/:conferenceId/published-papers" element={<PublishedPaperList />}
-/>
+          <Route path="/manage-conference/:conferenceId/published-papers" element={<PublishedPaperList />}/>
+          <Route path="/manage-conference/:conferenceId/papers" element={<PaperListByConference />}/>
+          <Route path="/manage-conference/:conferenceId/call-for-paper" element={<ManageCallForPaper />} />
+
+          
+
 
 
           
