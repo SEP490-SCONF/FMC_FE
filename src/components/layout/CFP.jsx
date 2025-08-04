@@ -1,74 +1,210 @@
-import React from "react";
-import { Link, useParams } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useParams, Link } from "react-router-dom";
+import { getCallForPapersByConferenceId } from "../../services/CallForPaperService";
+import {
+  CalendarDays,
+  MapPin,
+  FileText,
+  BookOpen,
+  FileDown,
+  CheckCircle,
+  XCircle,
+  Landmark,
+  Globe,
+  FilePenLine,
+} from "lucide-react";
+
+import { motion } from "framer-motion";
+import { ArrowRight } from "lucide-react";
 
 const CFP = () => {
-  const { id } = useParams();
+  const { id } = useParams(); // conferenceId
+  const [cfp, setCfp] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchCFP = async () => {
+      try {
+        const data = await getCallForPapersByConferenceId(id);
+        if (data.length > 0) {
+          setCfp(data[0]);
+        }
+      } catch (error) {
+        console.error("Error fetching CFP:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCFP();
+  }, [id]);
+
+  if (loading)
+    return (
+      <div className="text-center py-10 text-gray-500 text-lg">Loading...</div>
+    );
+
+  if (!cfp) {
+    return (
+      <div className="text-center text-red-600 py-10 text-lg">
+        ❌ No Call For Paper found for this conference.
+      </div>
+    );
+  }
 
   return (
-    <section
-      className="min-h-[80vh] flex items-center justify-center bg-gray-50 py-20"
+    <section className="min-h-screen bg-gradient-to-br from-blue-50 to-white py-10 px-4 md:px-0">
+      <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-2xl p-6 md:p-10 space-y-10">
+        {/* Header */}
+        <div className="text-center space-y-3">
+          <h1 className="text-4xl md:text-5xl font-extrabold text-purple-700 tracking-wide">CALL FOR</h1>
+          <h2 className="text-4xl md:text-5xl font-extrabold text-orange-600 tracking-wide mb-2">PAPERS</h2>
+          <p className="text-blue-800 font-medium text-base md:text-lg max-w-3xl mx-auto">
+            {cfp.description}
+          </p>
+        </div>
+
+        {/* Banner and Topics */}
+        <div className="grid md:grid-cols-10 gap-6 items-start">
+          {/* Banner - 7/10 */}
+          {cfp?.conference?.bannerUrl && (
+            <div className="col-span-10 md:col-span-7">
+              <img
+                src={cfp.conference.bannerUrl}
+                alt="Conference Banner"
+                className="w-full h-56 object-cover rounded-xl shadow"
+              />
+            </div>
+          )}
+
+          {/* Topics - 3/10 */}
+            <div className="col-span-10 md:col-span-3">
+              <h3 className="text-lg font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2 mb-3">
+                <BookOpen className="text-green-600" size={20} />
+                Topics
+              </h3>
+              <ul className="space-y-2">
+  {cfp.conference?.topics?.map((topic) => (
+    <li
+      key={topic.topicId}
+      className="flex items-start gap-2 bg-green-50 border border-green-200 text-green-900 px-3 py-2 rounded-lg shadow-sm w-fit"
     >
-      <div className="container mx-auto px-4">
-        <div className="flex justify-center">
-          <div className="w-full max-w-2xl">
-            <div className="grid gap-4 text-center mb-8">
-              <span className="text-blue-700 font-semibold text-sm tracking-widest uppercase">
-                CALL FOR PAPERS
+      <span className="mt-0.5 text-green-600">✓</span>
+      <span className="font-medium">{topic.topicName}</span>
+    </li>
+  ))}
+</ul>
+
+            </div>
+
+        </div>
+
+        {/* Conference Info & Template */}
+        <div className="grid md:grid-cols-2 gap-8">
+          {/* Left: Conference Info */}
+          <div className="space-y-3 text-gray-800">
+            <h3 className="text-xl font-bold text-blue-700 flex items-center gap-2">
+                <CalendarDays className="text-blue-600" size={20} />
+                  Conference Info
+            </h3>
+            <p className="flex items-center gap-2">
+              <Landmark size={16} className="text-gray-600" />{" "}
+              <strong>Title:</strong> {cfp.conference?.title}
+            </p>
+            <p className="flex items-center gap-2">
+              <MapPin size={16} className="text-gray-600" />{" "}
+              {cfp.conference?.location}
+            </p>
+            <p>
+              <strong>Date:</strong>{" "}
+              {new Date(cfp.conference?.startDate).toLocaleDateString()} –{" "}
+              {new Date(cfp.conference?.endDate).toLocaleDateString()}
+            </p>
+            <p>
+              <strong>Submission Deadline:</strong>{" "}
+              <span className="text-red-600 font-semibold">
+                {new Date(cfp.deadline).toLocaleDateString()}
               </span>
-              <h1 className="text-3xl md:text-4xl font-bold mb-3">
-                Submit Your Research to Our Conference
-              </h1>
-              <p className="text-gray-600 text-base">
-                We invite researchers, practitioners, and students to submit
-                their original work to our upcoming conference. Share your
-                latest findings, innovative ideas, and practical experiences
-                with a vibrant academic and professional community.
-              </p>
+            </p>
+            <p className="flex items-center gap-2">
+              <strong>Status:</strong>{" "}
+              {cfp.status ? (
+                <span className="text-green-600 font-semibold flex items-center">
+                  <CheckCircle size={16} /> Open
+                </span>
+              ) : (
+                <span className="text-red-600 font-semibold flex items-center">
+                  <XCircle size={16} /> Closed
+                </span>
+              )}
+            </p>
+          </div>
+
+         {/* Right: Template */}
+<div className="text-gray-800">
+  <h3 className="text-lg font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2 mb-2">
+  <FileText className="text-purple-600" size={20} />
+  Template
+  </h3>
+  {cfp.templatePath ? (
+    <a
+      href={cfp.templatePath}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="mt-3 inline-flex items-center gap-2 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 hover:text-blue-900 font-medium px-4 py-2 rounded-lg shadow-sm transition"
+    >
+      <FileDown size={18} />
+      Download Template
+    </a>
+  ) : (
+    <p className="text-gray-500 italic mt-2">No template available.</p>
+  )}
+</div>
+
+        </div>
+
+        {/* Timeline Section */}
+        <div className="pt-8">
+          <h3 className="text-xl font-bold text-blue-700 mb-4 text-center">
+            Timeline
+          </h3>
+          <div className="flex flex-wrap justify-center gap-6 text-sm text-center text-gray-700">
+            <div className="bg-blue-100 rounded-xl p-4 shadow w-40">
+              <p className="font-bold text-purple-700">Sep 16</p>
+              <p>Submission Open</p>
             </div>
-            <div className="bg-white rounded-lg shadow p-6 mb-6">
-              <ul className="space-y-2 text-left">
-                <li>
-                  <strong>Submission Deadline:</strong>{" "}
-                  <span className="text-gray-700">August 31, 2025</span>
-                </li>
-                <li>
-                  <strong>Notification of Acceptance:</strong>{" "}
-                  <span className="text-gray-700">September 30, 2025</span>
-                </li>
-                <li>
-                  <strong>Camera-Ready Submission:</strong>{" "}
-                  <span className="text-gray-700">October 15, 2025</span>
-                </li>
-                <li>
-                  <strong>Conference Dates:</strong>{" "}
-                  <span className="text-gray-700">November 20–22, 2025</span>
-                </li>
-              </ul>
+            <div className="bg-orange-100 rounded-xl p-4 shadow w-40">
+              <p className="font-bold text-red-600">Nov 1</p>
+              <p>Abstract Deadline</p>
             </div>
-            <div className="mb-6">
-              <h2 className="text-lg font-semibold mb-2 text-blue-700">
-                Topics of Interest include, but are not limited to:
-              </h2>
-              <ul className="list-decimal list-inside text-gray-700 text-left max-w-xl mx-auto space-y-1">
-                <li>Artificial Intelligence &amp; Machine Learning</li>
-                <li>Cloud Computing &amp; Big Data</li>
-                <li>Cybersecurity &amp; Privacy</li>
-                <li>Software Engineering</li>
-                <li>Internet of Things (IoT)</li>
-                <li>Human-Computer Interaction</li>
-                <li>Other related topics</li>
-              </ul>
+            <div className="bg-green-100 rounded-xl p-4 shadow w-40">
+              <p className="font-bold text-green-600">Nov 10</p>
+              <p>Notification</p>
             </div>
-            <div className="text-center mt-8">
-              <Link
-                to={`/conference/${id}/paper-submition`}
-                className="inline-block bg-blue-700 hover:bg-blue-800 text-white font-semibold py-2 px-6 rounded transition"
-              >
-                Submit Your Paper
-              </Link>
+            <div className="bg-yellow-100 rounded-xl p-4 shadow w-40">
+              <p className="font-bold text-yellow-600">Nov 29</p>
+              <p>Submit Slides</p>
+            </div>
+            <div className="bg-indigo-100 rounded-xl p-4 shadow w-40">
+              <p className="font-bold text-indigo-600">Dec 7–8</p>
+              <p>Conference Day</p>
             </div>
           </div>
         </div>
+
+        {/* Submit Button */}
+<div className="flex justify-center pt-6">
+  <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
+    <Link
+      to={`/conference/${id}/paper-submition`}
+      className="group inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-semibold py-3 px-6 rounded-full shadow-lg transition duration-300 ring-2 ring-emerald-300/50 hover:ring-emerald-400"
+    >
+      ✍️ Submit Now
+      <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+    </Link>
+  </motion.div>
+</div>
+
+
       </div>
     </section>
   );

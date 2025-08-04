@@ -26,6 +26,12 @@ import {
 } from "@ant-design/icons";
 import { useParams } from "react-router-dom";
 import dayjs from "dayjs";
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+
+// Khởi tạo plugin (BẮT BUỘC phải sau import plugin)
+dayjs.extend(isSameOrAfter);
+dayjs.extend(isSameOrBefore);
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -110,6 +116,7 @@ const handleFilterDeadline = (range) => {
 
 
 
+
 const applyFilters = (status, deadlineRange, searchValue) => {
   const filtered = list.filter((item) => {
     const matchesStatus = status === "" || item.status === status;
@@ -117,9 +124,11 @@ const applyFilters = (status, deadlineRange, searchValue) => {
       .toLowerCase()
       .includes(searchValue.toLowerCase());
     const matchesDeadline =
-      deadlineRange.length !== 2 ||
-  (dayjs(item.deadline).isSameOrAfter(dayjs(deadlineRange[0]), "day") &&
-   dayjs(item.deadline).isSameOrBefore(dayjs(deadlineRange[1]), "day"));
+  !Array.isArray(deadlineRange) || deadlineRange.length !== 2 || !deadlineRange[0] || !deadlineRange[1]
+    ? true
+    : dayjs(item.deadline).isSameOrAfter(dayjs(deadlineRange[0]), "day") &&
+      dayjs(item.deadline).isSameOrBefore(dayjs(deadlineRange[1]), "day");
+
 
     return matchesStatus && matchesSearch && matchesDeadline;
   });
@@ -270,10 +279,11 @@ const applyFilters = (status, deadlineRange, searchValue) => {
       </Select>
 
       <DatePicker.RangePicker
-    allowEmpty={[true, true]}
-    onChange={(dates) => handleFilterDeadline(dates || [])}
-    style={{ width: "300px" }}
-  />
+  allowEmpty={[true, true]}
+  onChange={(dates) => handleFilterDeadline(dates || [])}
+  style={{ width: "300px" }}
+/>
+
       </div>
 
       <Table
