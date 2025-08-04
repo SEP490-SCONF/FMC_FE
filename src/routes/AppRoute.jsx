@@ -28,6 +28,7 @@ import PaperListByConference from "../pages/organizer/PaperListByConference";
 import ManageCallForPaper from "../pages/organizer/ManageCallForPaper";
 
 
+import About from "../pages/AboutUs";
 import ViewPaperReview from "../pages/author/ViewPaperReview"; // Thêm import ở đầu file
 import MainHomePage from "../pages/MainHomePage";
 import ConferenceSearch from "../pages/ConferenceSearch"; // Import ConferenceSearch component
@@ -39,6 +40,7 @@ export default function AppRoutes() {
         <Route path="/" element={<App />}>
           <Route index element={<MainHomePage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/about" element={<About />} />
           <Route path="/conferences" element={<ConferenceSearch />} />
           <Route path="user" element={<UserP />} />
           <Route path="/reviewer/assigned-papers" element={<PaperAss />} />
