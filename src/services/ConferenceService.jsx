@@ -11,6 +11,7 @@ export const searchConferences = async ({ search, filter, skip = 0, top = 10 }) 
   if (filter) query.push(`$filter=${filter}`);
   if (typeof skip === "number") query.push(`$skip=${skip}`);
   if (typeof top === "number") query.push(`$top=${top}`);
+  
   const queryString = query.length ? "?" + query.join("&") : "";
   return apiService.get(`/Conferences${queryString}`);
 };

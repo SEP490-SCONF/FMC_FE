@@ -1,37 +1,56 @@
 import React, { useState, useEffect } from "react";
 import { searchConferences } from "../services/ConferenceService";
-
-const PAGE_SIZE = 10;
+import { getAllTopics } from "../services/TopicService";
+import { useNavigate } from "react-router-dom";
+const PAGE_SIZE = 2;
 
 const ConferenceSearch = () => {
-  const [search, setSearch] = useState("");
   const [location, setLocation] = useState("");
-  const [topic, setTopic] = useState("");
-  const [activeTab, setActiveTab] = useState("event"); // "event" or "topic"
+  const [topics, setTopics] = useState([]);
+  const [selectedTopics, setSelectedTopics] = useState([]);
   const [page, setPage] = useState(1);
   const [conferences, setConferences] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [searchTitle, setSearchTitle] = useState(""); // Thêm state cho search title
+  const navigate = useNavigate();
+  useEffect(() => {
+    getAllTopics().then((res) => setTopics(res.value || res));
+  }, []);
 
   // Build OData filter string
   const buildFilter = () => {
     let filters = ["Status eq true"];
     if (location) filters.push(`contains(Location,'${location}')`);
-    if (activeTab === "topic" && topic)
-      filters.push(`Topics/any(t: contains(t/Name,'${topic}'))`);
+    if (searchTitle)
+      filters.push(`contains(tolower(Title),'${searchTitle.toLowerCase()}')`);
+    if (selectedTopics.length > 0) {
+      const topicFilters = selectedTopics
+        .map((topicId) => `Topics/any(t: t/TopicId eq ${topicId})`)
+        .join(" and ");
+      filters.push(`(${topicFilters})`);
+    }
     return filters.join(" and ");
   };
 
   useEffect(() => {
     setLoading(true);
     searchConferences({
-      search: activeTab === "event" ? search : "",
       filter: buildFilter(),
       skip: (page - 1) * PAGE_SIZE,
-      top: PAGE_SIZE,
+      top: PAGE_SIZE + 1,
     })
       .then((res) => setConferences(res.value || res))
       .finally(() => setLoading(false));
-  }, [search, location, topic, page, activeTab]);
+  }, [location, selectedTopics, page, searchTitle]); // Thêm searchTitle vào dependency
+
+  const handleTopicChange = (topicId) => {
+    setPage(1);
+    setSelectedTopics((prev) =>
+      prev.includes(topicId)
+        ? prev.filter((id) => id !== topicId)
+        : [...prev, topicId]
+    );
+  };
 
   return (
     <div className="bg-gray-50 min-h-screen py-8">
@@ -39,7 +58,19 @@ const ConferenceSearch = () => {
         {/* Sidebar Filters */}
         <aside className="w-full md:w-1/4">
           <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <h2 className="text-xl font-semibold mb-4">Filter Events</h2>
+            <div className="mb-4">
+              <label className="block font-medium mb-1">Search by Title</label>
+              <input
+                type="text"
+                placeholder="Enter conference title"
+                value={searchTitle}
+                onChange={(e) => {
+                  setSearchTitle(e.target.value);
+                  setPage(1);
+                }}
+                className="w-full border px-3 py-2 rounded"
+              />
+            </div>
             <div className="mb-4">
               <label className="block font-medium mb-1">Location</label>
               <input
@@ -53,92 +84,67 @@ const ConferenceSearch = () => {
                 className="w-full border px-3 py-2 rounded"
               />
             </div>
-            {activeTab === "topic" && (
-              <div className="mb-4">
-                <label className="block font-medium mb-1">Topic</label>
-                <input
-                  type="text"
-                  placeholder="Search by Topic"
-                  value={topic}
-                  onChange={(e) => {
-                    setTopic(e.target.value);
-                    setPage(1);
-                  }}
-                  className="w-full border px-3 py-2 rounded"
-                />
+            <div className="mb-4">
+              <label className="block font-medium mb-1">Disciplines</label>
+              <div className="max-h-60 overflow-y-auto border rounded p-2 bg-gray-50">
+                {/* Header group + Select All */}
+                <div className="flex items-center justify-between px-2 py-1 mb-2 bg-gray-100 rounded">
+                  <span className="font-semibold text-gray-600 text-xs uppercase tracking-wide">
+                    Economics and Social Sciences
+                  </span>
+                  <button
+                    type="button"
+                    className="text-xs text-blue-600 hover:underline"
+                    onClick={() =>
+                      setSelectedTopics(topics.map((t) => t.topicId))
+                    }
+                    tabIndex={0}
+                  >
+                    Select All
+                  </button>
+                </div>
+                {/* List topics */}
+                {topics.map((topic) => (
+                  <div
+                    key={topic.topicId}
+                    className="flex items-center mb-2 px-2"
+                  >
+                    <input
+                      type="checkbox"
+                      id={`topic-${topic.topicId}`}
+                      checked={selectedTopics.includes(topic.topicId)}
+                      onChange={() => handleTopicChange(topic.topicId)}
+                      className="mr-2"
+                    />
+                    <label
+                      htmlFor={`topic-${topic.topicId}`}
+                      className="text-base text-gray-900 cursor-pointer"
+                    >
+                      {topic.topicName}
+                    </label>
+                  </div>
+                ))}
               </div>
-            )}
+            </div>
           </div>
         </aside>
         {/* Main Content */}
         <main className="flex-1">
-          {/* Search Bar & Tabs */}
-          <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
-            {activeTab === "event" ? (
-              <input
-                type="text"
-                placeholder="Search within Events"
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  setPage(1);
-                }}
-                className="flex-1 border px-4 py-2 rounded"
-              />
-            ) : (
-              <input
-                type="text"
-                placeholder="Search by Topic"
-                value={topic}
-                onChange={(e) => {
-                  setTopic(e.target.value);
-                  setPage(1);
-                }}
-                className="flex-1 border px-4 py-2 rounded"
-              />
-            )}
-            {/* Tabs for search mode */}
-            <div className="flex gap-2">
-              <button
-                className={`px-4 py-2 rounded font-semibold ${
-                  activeTab === "event"
-                    ? "bg-gray-200 text-gray-700"
-                    : "bg-white text-gray-500 border"
-                }`}
-                onClick={() => {
-                  setActiveTab("event");
-                  setPage(1);
-                }}
-              >
-                Search by Event
-              </button>
-              <button
-                className={`px-4 py-2 rounded font-semibold ${
-                  activeTab === "topic"
-                    ? "bg-gray-200 text-gray-700"
-                    : "bg-white text-gray-500 border"
-                }`}
-                onClick={() => {
-                  setActiveTab("topic");
-                  setPage(1);
-                }}
-              >
-                Search by Topic
-              </button>
-            </div>
-          </div>
           {/* Results */}
-          <div className="mb-4 text-gray-600">
-            Showing {conferences.length} Active Conferences {new Date().getFullYear()}
-          </div>
+          <div className="mb-4 text-gray-600"></div>
           {loading ? (
-            <div className="text-center py-10 text-lg text-gray-500">Loading...</div>
+            <div className="text-center py-10 text-lg text-gray-500">
+              Loading...
+            </div>
           ) : (
             <div className="flex flex-col gap-6">
-              {conferences.map((conf) => (
+              {conferences.slice(0, PAGE_SIZE).map((conf) => (
                 <div
                   key={conf.conferenceId}
-                  className="bg-white rounded-lg shadow flex flex-col md:flex-row items-center p-6 gap-6"
+                  className="bg-white rounded-lg shadow flex flex-col md:flex-row items-center p-6 gap-6 cursor-pointer hover:bg-gray-100 transition"
+                  onClick={() => {
+                    navigate(`/conference/${conf.conferenceId}`);
+                  }}
                 >
                   {/* Banner or logo */}
                   <div className="flex-shrink-0 w-32 h-32 flex items-center justify-center bg-gray-100 rounded-lg overflow-hidden">
@@ -176,10 +182,13 @@ const ConferenceSearch = () => {
                       Between{" "}
                       <span className="font-semibold">
                         {conf.startDate
-                          ? new Date(conf.startDate).toLocaleDateString("en-GB", {
-                              day: "2-digit",
-                              month: "short",
-                            })
+                          ? new Date(conf.startDate).toLocaleDateString(
+                              "en-GB",
+                              {
+                                day: "2-digit",
+                                month: "short",
+                              }
+                            )
                           : ""}
                       </span>{" "}
                       and{" "}
@@ -204,7 +213,7 @@ const ConferenceSearch = () => {
                             key={topic.topicId}
                             className="bg-gray-200 text-gray-700 px-2 py-1 rounded text-xs"
                           >
-                            {topic.name}
+                            {topic.topicName}
                           </span>
                         ))}
                       </div>
@@ -225,7 +234,7 @@ const ConferenceSearch = () => {
             </button>
             <span className="px-3 py-2">{page}</span>
             <button
-              disabled={conferences.length < PAGE_SIZE}
+              disabled={conferences.length <= PAGE_SIZE}
               onClick={() => setPage(page + 1)}
               className="px-4 py-2 border rounded disabled:opacity-50"
             >

@@ -24,7 +24,7 @@ import AuthorConference from "../pages/author/AuthorConference";
 import EditConferencePage from "../pages/organizer/EditConferencePage";
 import ReviewerListPage from "../pages/organizer/ReviewerListPage"; 
 import PublishedPaperList from "../pages/organizer/PublishedPaperList";
-
+import About from "../pages/AboutUs";
 import ViewPaperReview from "../pages/author/ViewPaperReview"; // Thêm import ở đầu file
 import MainHomePage from "../pages/MainHomePage";
 import ConferenceSearch from "../pages/ConferenceSearch"; // Import ConferenceSearch component
@@ -36,6 +36,7 @@ export default function AppRoutes() {
         <Route path="/" element={<App />}>
           <Route index element={<MainHomePage />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/about" element={<About />} />
           <Route path="/conferences" element={<ConferenceSearch />} />
           <Route path="user" element={<UserP />} />
           <Route path="/reviewer/assigned-papers" element={<PaperAss />} />
