@@ -39,7 +39,7 @@ const OrganizerListView = ({ conferences }) => {
                                 </div>
                             }
                             style={{ cursor: "pointer" }}
-                            onClick={() => navigate(`/manage-conference/${item.conferenceId}`)}
+                            onClick={() => navigate(`/manage-conference/${item.conferenceId}/submitted-papers`)}
                         >
                             <Card.Meta
                                 avatar={

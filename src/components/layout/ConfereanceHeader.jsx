@@ -16,7 +16,7 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 w-full bg-white border-b border-gray-200 z-50 shadow-sm">
-      <div className="container-fluid px-4">
+      <div className="container-fluid px-23 py-3">
         <nav className="flex items-center justify-between py-3">
           {/* Left: Logo */}
           <Link to="/" className="flex items-center gap-2">
@@ -26,7 +26,9 @@ const Header = () => {
               className="h-10 w-auto object-contain"
               style={{ maxHeight: 40 }}
             />
-            <span className="font-bold text-xl text-brand-700 hidden md:inline">FPT Conference</span>
+            <span className="font-bold text-xl text-brand-700 hidden md:inline">
+              FPT Conference
+            </span>
           </Link>
           {/* Center: Navigation */}
           <ul className="flex gap-6 items-center">
@@ -40,7 +42,9 @@ const Header = () => {
             </li>
             <li>
               <Link
-                to={conferenceId ? `/conference/${conferenceId}/committee` : "#"}
+                to={
+                  conferenceId ? `/conference/${conferenceId}/committee` : "#"
+                }
                 className="text-gray-700 font-semibold hover:text-blue-700 transition uppercase"
               >
                 Committee
@@ -48,10 +52,26 @@ const Header = () => {
             </li>
             <li>
               <Link
-                to={conferenceId ? `/conference/${conferenceId}/call-for-paper` : "#"}
+                to={
+                  conferenceId
+                    ? `/conference/${conferenceId}/call-for-paper`
+                    : "#"
+                }
                 className="text-gray-700 font-semibold hover:text-blue-700 transition uppercase"
               >
-                CFP
+                CALL FOR PAPERS
+              </Link>
+            </li>
+            <li>
+              <Link
+                to={
+                  conferenceId
+                    ? `/conference/${conferenceId}/paper-submition`
+                    : "#"
+                }
+                className="text-gray-700 font-semibold hover:text-blue-700 transition uppercase"
+              >
+                Paper Submission
               </Link>
             </li>
           </ul>

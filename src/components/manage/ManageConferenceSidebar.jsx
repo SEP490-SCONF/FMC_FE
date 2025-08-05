@@ -1,9 +1,9 @@
 import { NavLink, useParams } from "react-router-dom";
 
 const navItems = [
-  { label: "Submitted Papers", to: "/manage-conference" },
-  { label: "Committee", to: "/manage-conference/committee" },
-  { label: "Settings", to: "/manage-conference/settings" },
+  { label: "Submitted Papers", to: "/manage-conference/:id/submitted-papers" },
+  // { label: "Committee", to: "/manage-conference/committee" },
+  // { label: "Settings", to: "/manage-conference/settings" },
   { label: "Update Conference", to: "/manage-conference/:id/edit" },
   { label: "Reviewer List", to: "/manage-conference/:conferenceId/reviewers" },
   { label: "Published Papers", to: "/manage-conference/:conferenceId/published-papers" },
@@ -43,8 +43,8 @@ export default function ManageConferenceSidebar() {
                   end
                 >
                   {item.label === "Submitted Papers" && <span>📄</span>}
-                  {item.label === "Committee" && <span>👥</span>}
-                  {item.label === "Settings" && <span>⚙️</span>}
+                  {/* {item.label === "Committee" && <span>👥</span>}
+                  {item.label === "Settings" && <span>⚙️</span>} */}
                   {item.label === "Update Conference" && <span>✏️</span>}
                   {item.label === "Reviewer List" && <span>🧑‍⚖️</span>}
                   {item.label === "Published Papers" && <span>📚</span>}

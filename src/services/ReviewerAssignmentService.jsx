@@ -32,3 +32,8 @@ export const getReviewerAssignments = async (reviewerId, params = {}, options = 
         options
     );
 };
+
+// Xóa assignment reviewer khỏi paper
+export const deleteReviewerAssignment = async (assignmentId) => {
+    return apiService.delete(`/ReviewerAssignment/${assignmentId}`);
+};
