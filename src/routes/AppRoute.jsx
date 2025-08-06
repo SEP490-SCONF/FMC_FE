@@ -25,6 +25,8 @@ import EditConferencePage from "../pages/organizer/EditConferencePage";
 import ReviewerListPage from "../pages/organizer/ReviewerListPage"; 
 import PublishedPaperList from "../pages/organizer/PublishedPaperList";
 import ManageCallForPaper from "../pages/organizer/ManageCallForPaper";
+import ManageTimeline from "../pages/organizer/ManageTimeline"; 
+
 
 
 
@@ -98,6 +100,8 @@ export default function AppRoutes() {
           <Route path="/manage-conference/:conferenceId/reviewers" element={<ReviewerListPage />} />
           <Route path="/manage-conference/:conferenceId/published-papers" element={<PublishedPaperList />}/>
           <Route path="/manage-conference/:conferenceId/call-for-paper" element={<ManageCallForPaper />} />
+          <Route path="/manage-conference/:conferenceId/timelines" element={<ManageTimeline />} /> 
+
 
 
           

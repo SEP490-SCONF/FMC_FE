@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getCallForPapersByConferenceId } from "../../services/CallForPaperService";
+import { getTimelinesByConferenceId } from "../../services/TimelineService";
+import dayjs from "dayjs";
 import {
   CalendarDays,
   MapPin,
@@ -21,35 +23,51 @@ const CFP = () => {
   const { id } = useParams(); // conferenceId
   const [cfp, setCfp] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [timelineList, setTimelineList] = useState([]);
+
 
   useEffect(() => {
-    const fetchCFP = async () => {
-      try {
-        const data = await getCallForPapersByConferenceId(id);
-        if (data.length > 0) {
-          setCfp(data[0]);
-        }
-      } catch (error) {
-        console.error("Error fetching CFP:", error);
-      } finally {
-        setLoading(false);
+  const fetchData = async () => {
+    try {
+      // Gọi CallForPaper
+      const data = await getCallForPapersByConferenceId(id);
+      if (data.length > 0) {
+        setCfp(data[0]);
       }
-    };
-    fetchCFP();
-  }, [id]);
 
-  if (loading)
-    return (
-      <div className="text-center py-10 text-gray-500 text-lg">Loading...</div>
-    );
+      // Gọi Timeline
+      getTimelinesByConferenceId(id)
+        .then((res) => setTimelineList(res))
+        .catch((err) => {
+          console.error("Error fetching timeline:", err);
+          setTimelineList([]);
+        });
 
-  if (!cfp) {
-    return (
-      <div className="text-center text-red-600 py-10 text-lg">
-        ❌ No Call For Paper found for this conference.
-      </div>
-    );
-  }
+    } catch (error) {
+      console.error("Error fetching CFP:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+}, [id]);
+
+// Loading
+if (loading)
+  return (
+    <div className="text-center py-10 text-gray-500 text-lg">Loading...</div>
+  );
+
+// Không có CFP
+if (!cfp) {
+  return (
+    <div className="text-center text-red-600 py-10 text-lg">
+      ❌ No Call For Paper found for this conference.
+    </div>
+  );
+}
+
 
   return (
     <section className="min-h-screen bg-gradient-to-br from-blue-50 to-white py-10 px-4 md:px-0">
@@ -162,34 +180,60 @@ const CFP = () => {
 
         </div>
 
-        {/* Timeline Section */}
-        <div className="pt-8">
-          <h3 className="text-xl font-bold text-blue-700 mb-4 text-center">
-            Timeline
-          </h3>
-          <div className="flex flex-wrap justify-center gap-6 text-sm text-center text-gray-700">
-            <div className="bg-blue-100 rounded-xl p-4 shadow w-40">
-              <p className="font-bold text-purple-700">Sep 16</p>
-              <p>Submission Open</p>
+        {/* Timeline Section - Dynamic from API */}
+<div className="pt-8">
+  <h3 className="text-xl font-bold text-blue-700 mb-4 text-center">
+    Timeline
+  </h3>
+
+  <div className="flex flex-wrap justify-center items-center gap-6 text-sm text-center text-gray-700 relative">
+    {timelineList.length === 0 ? (
+      <div className="text-gray-500 text-center">No timeline available</div>
+    ) : (
+      timelineList
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .map((item, index) => {
+          const bgColors = [
+            "bg-blue-100",
+            "bg-green-100",
+            "bg-yellow-100",
+            "bg-purple-100",
+            "bg-pink-100",
+            "bg-orange-100",
+            "bg-red-100",
+            "bg-teal-100",
+          ];
+          const textColors = [
+            "text-blue-800",
+            "text-green-800",
+            "text-yellow-800",
+            "text-purple-800",
+            "text-pink-800",
+            "text-orange-800",
+            "text-red-800",
+            "text-teal-800",
+          ];
+          const bgColor = bgColors[index % bgColors.length];
+          const textColor = textColors[index % textColors.length];
+
+          return (
+            <div key={item.timeLineId} className="relative flex items-center">
+              {index > 0 && (
+                <div className="w-6 h-1 bg-gray-300 mx-2 rounded"></div>
+              )}
+              <div className={`${bgColor} rounded-xl p-4 shadow w-40`}>
+                <p className={`font-bold ${textColor}`}>
+                  {dayjs(item.date).format("MMM D, HH:mm")}
+                </p>
+                <p>{item.description}</p>
+              </div>
             </div>
-            <div className="bg-orange-100 rounded-xl p-4 shadow w-40">
-              <p className="font-bold text-red-600">Nov 1</p>
-              <p>Abstract Deadline</p>
-            </div>
-            <div className="bg-green-100 rounded-xl p-4 shadow w-40">
-              <p className="font-bold text-green-600">Nov 10</p>
-              <p>Notification</p>
-            </div>
-            <div className="bg-yellow-100 rounded-xl p-4 shadow w-40">
-              <p className="font-bold text-yellow-600">Nov 29</p>
-              <p>Submit Slides</p>
-            </div>
-            <div className="bg-indigo-100 rounded-xl p-4 shadow w-40">
-              <p className="font-bold text-indigo-600">Dec 7–8</p>
-              <p>Conference Day</p>
-            </div>
-          </div>
-        </div>
+          );
+        })
+    )}
+  </div>
+</div>
+
 
         {/* Submit Button */}
 <div className="flex justify-center pt-6">
