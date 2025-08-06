@@ -30,32 +30,32 @@ const MainHeader = ({ onClick, onToggle }) => {
         <nav className="flex-1 flex gap-8 items-center justify-center">
           <Link
             to="/conferences"
-            className="font-medium text-gray-700 hover:text-red-700 transition text-lg"
+            className="text-gray-700 font-semibold hover:text-blue-700 transition uppercase"
           >
             Conferences / Events
           </Link>
           <Link
             to="/submit-paper"
-            className="font-medium text-gray-700 hover:text-red-700 transition text-lg"
+            className="text-gray-700 font-semibold hover:text-blue-700 transition uppercase"
           >
             Submit Paper
           </Link>
           <Link
             to="/proceedings"
-            className="font-medium text-gray-700 hover:text-red-700 transition text-lg"
+            className="text-gray-700 font-semibold hover:text-blue-700 transition uppercase"
           >
             Proceedings / Papers
           </Link>
           
           <Link
             to="/about"
-            className="font-medium text-gray-700 hover:text-red-700 transition text-lg"
+            className="text-gray-700 font-semibold hover:text-blue-700 transition uppercase"
           >
             About Us
           </Link>
           <Link
             to="/contact"
-            className="font-medium text-gray-700 hover:text-red-700 transition text-lg"
+            className="text-gray-700 font-semibold hover:text-blue-700 transition uppercase"
           >
             Contact
           </Link>

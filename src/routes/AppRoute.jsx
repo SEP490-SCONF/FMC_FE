@@ -34,6 +34,8 @@ import About from "../pages/AboutUs";
 import ViewPaperReview from "../pages/author/ViewPaperReview"; // Thêm import ở đầu file
 import MainHomePage from "../pages/MainHomePage";
 import ConferenceSearch from "../pages/ConferenceSearch"; // Import ConferenceSearch component
+import CommitteeForm from "../pages/CommitteeForm";
+
 export default function AppRoutes() {
   return (
     <BrowserRouter>
@@ -41,6 +43,7 @@ export default function AppRoutes() {
       <Routes>
         <Route path="/" element={<App />}>
           <Route index element={<MainHomePage />} />
+          <Route path="/committee-form" element={<CommitteeForm />} />
           <Route path="/login" element={<Login />} />
           <Route path="/about" element={<About />} />
           <Route path="/conferences" element={<ConferenceSearch />} />

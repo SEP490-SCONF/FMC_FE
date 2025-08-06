@@ -29,9 +29,11 @@ export const updatePaperPublishStatus = async (paperId, isPublished) => {
 };
 
 // Lấy danh sách paper đã submitted theo conferenceId
-export const getSubmittedPapersByConferenceId = async (conferenceId) => {
-    return apiService.get(`/Papers/conference/${conferenceId}/status/submitted`);
+export const getSubmittedPapersByConferenceId = async (conferenceId, queryParams = "") => {
+  const url = `/Papers/conference/${conferenceId}/status/submitted${queryParams}`;
+  return apiService.get(url);
 };
+
 
 // Lấy danh sách paper theo userId và conferenceId
 export const getPapersByUserAndConference = async (userId, conferenceId) => {
