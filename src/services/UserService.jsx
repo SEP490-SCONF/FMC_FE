@@ -12,9 +12,14 @@ export const getUserProfile = (id) => {
 };
 
 // Cập nhật hồ sơ người dùng (name, avatarUrl)
-export const updateUserProfile = (id, profileData) => {
-  return apiService.put(`/UserProfile/${id}/profile`, profileData);
+export const updateUserProfile = (id, data) => {
+  return apiService.put(`/UserProfile/${id}/profile`, data, {
+    headers: {
+      "Content-Type": "multipart/form-data", 
+    },
+  });
 };
+
 
 export const getUsersByRole = (roleId) => {
   return apiService.get(`/CRUDUser/role/${roleId}`);

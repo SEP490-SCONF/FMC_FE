@@ -3,6 +3,8 @@ import Modal from "../ui/Modal";
 import { getSubmittedPapersByConferenceId } from "../../services/PaperSerice";
 import { getConferenceReviewers } from "../../services/UserConferenceRoleService";
 import { deleteReviewerAssignment } from "../../services/ReviewerAssignmentService";
+import { generateCertificatesForPaper } from "../../services/CertificateService";
+
 import {
   assignReviewerToPaper,
   updateReviewerAssignment,
@@ -46,6 +48,7 @@ const SubmittedOrga = () => {
         `(contains(tolower(Title),'${search}') or contains(tolower(Abstract),'${search}') or contains(tolower(Keywords),'${search}'))`
       );
     }
+    
 
     const skip = (page - 1) * pageSize;
     const queryParams = [];
@@ -244,6 +247,9 @@ const SubmittedOrga = () => {
                     <th className={thClass}>Status</th>
                     <th className={thClass}>Topic</th>
                     <th className={thClass}>Last Submitted</th>
+                    <th className={thClass}>Send Certificate</th>
+
+                    
                   </tr>
                 </thead>
                 <tbody>
@@ -253,6 +259,7 @@ const SubmittedOrga = () => {
                       <td className={tdClass}>{p.author}</td>
                       <td className={tdClass}>{p.title}</td>
                       <td className={tdClass}>
+                        
                         {p.filePath ? (
                           <a
                             href={p.filePath}
@@ -369,6 +376,19 @@ const SubmittedOrga = () => {
                             })
                           : ""}
                       </td>
+
+                      <td className={tdClass}>
+          {p.status === "Accepted" ? (
+            <button
+              className="px-2 py-1 bg-green-100 border border-green-500 text-green-700 rounded hover:bg-green-200 text-xs"
+              onClick={() => handleSendCertificate(p.id)}
+            >
+              Send
+            </button>
+          ) : (
+            <span className="text-gray-400 italic text-xs">N/A</span>
+          )}
+        </td>
                     </tr>
                   ))}
                 </tbody>
@@ -508,8 +528,19 @@ const SubmittedOrga = () => {
   );
 };
 
+
 const thClass =
   "border border-gray-200 px-3 py-2 font-semibold bg-gray-50 text-xs";
 const tdClass = "border border-gray-100 px-3 py-2 text-center bg-white text-xs";
+
+const handleSendCertificate = async (paperId) => {
+  try {
+    await generateCertificatesForPaper(paperId);
+    alert("🎉 Certificate sent successfully!");
+  } catch (error) {
+    console.error("❌ Failed to send certificate", error);
+    alert("❌ Failed to send certificate.");
+  }
+};
 
 export default SubmittedOrga;

@@ -25,7 +25,6 @@ import EditConferencePage from "../pages/organizer/EditConferencePage";
 import ReviewerListPage from "../pages/organizer/ReviewerListPage"; 
 import PublishedPaperList from "../pages/organizer/PublishedPaperList";
 import ManageCallForPaper from "../pages/organizer/ManageCallForPaper";
-import ManageAllPaperPage from "../pages/organizer/ManageAllPaperPage";
 
 
 
@@ -35,6 +34,10 @@ import ViewPaperReview from "../pages/author/ViewPaperReview"; // ThÃªm import á
 import MainHomePage from "../pages/MainHomePage";
 import ConferenceSearch from "../pages/ConferenceSearch"; // Import ConferenceSearch component
 import CommitteeForm from "../pages/CommitteeForm";
+import ViewCertificate from "../pages/author/ViewCertificate";
+
+
+
 
 export default function AppRoutes() {
   return (
@@ -56,6 +59,8 @@ export default function AppRoutes() {
             element={<SubmittedPaperAuthor />}
           />
           <Route path="/author/conference" element={<AuthorConference />} />
+          <Route path="/author/view-certificates/:paperId" element={<ViewCertificate />} />
+
           <Route
             path="/author/view-paper-review/:revisionId"
             element={<ViewPaperReview />}
@@ -93,7 +98,6 @@ export default function AppRoutes() {
           <Route path="/manage-conference/:conferenceId/reviewers" element={<ReviewerListPage />} />
           <Route path="/manage-conference/:conferenceId/published-papers" element={<PublishedPaperList />}/>
           <Route path="/manage-conference/:conferenceId/call-for-paper" element={<ManageCallForPaper />} />
-          <Route path="/manage-conference/all-papers" element={<ManageAllPaperPage />} />
 
 
           

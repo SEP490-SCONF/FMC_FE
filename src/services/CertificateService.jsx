@@ -61,3 +61,6 @@ export const updateCertificate = async (id, updateDto) => {
 export const deleteCertificate = async (id) => {
   return apiService.delete(`${API_URL}/${id}`);
 };
+export const getCertificatesByPaperId = async (paperId) => {
+  return apiService.get(`${API_URL}/by-paper/${paperId}`);
+};

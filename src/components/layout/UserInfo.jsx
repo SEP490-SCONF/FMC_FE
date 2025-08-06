@@ -17,30 +17,31 @@ export default function UserInfo({ user }) {
     setIsEditing(false);
   };
 
-  const handleSave = async () => {
-    try {
-      const userId = userData?.id || userData?.userId;
-      if (!userId) {
-        console.error("❌ Không tìm thấy userId để cập nhật.", userData);
-        return;
-      }
-
-      const safeFormData = {
-        name: formData.name?.trim() || "",
-        avatarUrl: formData.avatarUrl?.startsWith("data:image")
-          ? formData.avatarUrl
-          : null,
-      };
-
-      await updateUserProfile(userId, safeFormData);
-
-      const updated = await getUserProfile(userId);
-      setUserData(updated.data || updated);
-      setIsEditing(false);
-    } catch (error) {
-      console.error("❌ Lỗi khi cập nhật hồ sơ:", error);
+ const handleSave = async () => {
+  try {
+    const userId = userData?.id || userData?.userId;
+    if (!userId) {
+      console.error("❌ Không tìm thấy userId để cập nhật.");
+      return;
     }
-  };
+
+    const formDataToSend = new FormData();
+    formDataToSend.append("Name", formData.name);
+
+    if (formData.avatarFile) {
+      formDataToSend.append("AvatarFile", formData.avatarFile); // 👈 tên này phải trùng với DTO backend
+    }
+
+    await updateUserProfile(userId, formDataToSend);
+
+    // ✅ Reload lại trang sau khi cập nhật
+    window.location.reload();
+  } catch (error) {
+    console.error("❌ Lỗi khi cập nhật hồ sơ:", error);
+  }
+};
+
+
 
   if (!userData) return <div className="text-center mt-10">Loading...</div>;
 
@@ -110,24 +111,27 @@ export default function UserInfo({ user }) {
                   <label className="block text-sm text-gray-600 dark:text-gray-300 mb-2">
                     Avatar (upload)
                   </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files[0];
-                      if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          setFormData({
-                            ...formData,
-                            avatarUrl: reader.result,
-                          });
-                        };
-                        reader.readAsDataURL(file);
-                      }
-                    }}
-                    className="w-full px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-                  />
+                                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+  const file = e.target.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFormData({
+        ...formData,
+        avatarUrl: reader.result,
+        avatarFile: file, // 👈 lưu cả file gốc
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+}}
+
+                  className="w-full px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                />
+
                 </div>
               </div>
 

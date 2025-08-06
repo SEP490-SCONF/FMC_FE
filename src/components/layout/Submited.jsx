@@ -198,6 +198,16 @@ const Submited = ({ submissions = [] }) => {
                             ? "Uploading..."
                             : "Resubmit"}
                         </button>
+                        {s.status === "Accepted" && (
+      <button
+        className="w-36 inline-flex items-center gap-1 px-3 py-1 border border-green-500 text-green-700 bg-green-50 rounded-full hover:bg-green-100 transition text-xs font-medium shadow-sm justify-center"
+        onClick={() => navigate(`/author/view-certificates/${s.paperId}`)}
+      >
+        🎓 View Certificate
+      </button>
+    )}
+
+                        
                       </div>
                     </td>
                   </tr>
