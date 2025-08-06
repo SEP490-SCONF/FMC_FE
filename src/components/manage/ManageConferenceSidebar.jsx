@@ -7,7 +7,6 @@ const navItems = [
   { label: "Conference Information", to: "/manage-conference/:id/edit" },
   { label: "Reviewer List", to: "/manage-conference/:conferenceId/reviewers" },
   { label: "Published Papers", to: "/manage-conference/:conferenceId/published-papers" },
-  { label: "All Papers", to: "/manage-conference/:conferenceId/papers" },
   { label: "Manage Call For Papers", to: "/manage-conference/:conferenceId/call-for-paper" },
 
 
@@ -52,7 +51,6 @@ export default function ManageConferenceSidebar() {
                   {item.label === "Conference Information" && <span>✏️</span>}
                   {item.label === "Reviewer List" && <span>🧑‍⚖️</span>}
                   {item.label === "Published Papers" && <span>📚</span>}
-                  {item.label === "All Papers" && <span>📑</span>}
                   {item.label === "Manage Call For Papers" && <span>📢</span>}
 
 
