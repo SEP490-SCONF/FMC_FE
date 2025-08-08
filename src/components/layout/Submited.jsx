@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 
 const ITEMS_PER_PAGE = 3;
 
-const Submited = ({ submissions = [] }) => {
+const Submited = ({ submissions = [], userId, conferenceId }) => {
   const [openIdx, setOpenIdx] = useState(null);
   const [message, setMessage] = useState("");
   const [uploadingIdx, setUploadingIdx] = useState(null);
@@ -20,14 +20,14 @@ const Submited = ({ submissions = [] }) => {
     const aTime =
       a.paperRevisions && a.paperRevisions.length > 0
         ? new Date(
-            a.paperRevisions[a.paperRevisions.length - 1].submittedAt
-          ).getTime()
+          a.paperRevisions[a.paperRevisions.length - 1].submittedAt
+        ).getTime()
         : 0;
     const bTime =
       b.paperRevisions && b.paperRevisions.length > 0
         ? new Date(
-            b.paperRevisions[b.paperRevisions.length - 1].submittedAt
-          ).getTime()
+          b.paperRevisions[b.paperRevisions.length - 1].submittedAt
+        ).getTime()
         : 0;
     return bTime - aTime;
   });
@@ -157,15 +157,15 @@ const Submited = ({ submissions = [] }) => {
                     <td className={tdClass}>
                       {lastRevision && lastRevision.submittedAt
                         ? new Date(lastRevision.submittedAt).toLocaleString(
-                            "en-GB",
-                            {
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            }
-                          )
+                          "en-GB",
+                          {
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          }
+                        )
                         : ""}
                     </td>
                     <td className={tdClass}>
@@ -181,11 +181,10 @@ const Submited = ({ submissions = [] }) => {
                         </button>
                         <button
                           className={`w-36 inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium shadow-sm border transition justify-center
-        ${
-          s.status === "Need Revision"
-            ? "border-yellow-500 text-yellow-700 bg-yellow-50 hover:bg-yellow-100"
-            : "border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed"
-        }
+        ${s.status === "Need Revision"
+                              ? "border-yellow-500 text-yellow-700 bg-yellow-50 hover:bg-yellow-100"
+                              : "border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed"
+                            }
       `}
                           onClick={() => handleResubmit(s.status, s.paperId)}
                           disabled={
@@ -198,24 +197,30 @@ const Submited = ({ submissions = [] }) => {
                             ? "Uploading..."
                             : "Resubmit"}
                         </button>
-                        { s.status === "Accepted" && (
-  <>
-    <button
-      className="w-36 inline-flex items-center gap-1 px-3 py-1 border border-green-500 text-green-700 bg-green-50 rounded-full hover:bg-green-100 transition text-xs font-medium shadow-sm justify-center"
-      onClick={() => navigate(`/author/view-certificates/${s.paperId}`)}
-    >
-      🎓 View Certificate
-    </button>
-    <button
-      className="w-36 inline-flex items-center gap-1 px-3 py-1 border border-purple-500 text-purple-700 bg-purple-50 rounded-full hover:bg-purple-100 transition text-xs font-medium shadow-sm justify-center"
-      onClick={() => navigate(`/author/payment/${s.paperId}`)}
-    >
-      💳 Payment
-    </button>
-  </>
-)}
+                        {s.status === "Accepted" && (
+                          <>
+                            <button
+                              className="w-36 inline-flex items-center gap-1 px-3 py-1 border border-green-500 text-green-700 bg-green-50 rounded-full hover:bg-green-100 transition text-xs font-medium shadow-sm justify-center"
+                              onClick={() => navigate(`/author/view-certificates/${s.paperId}`)}
+                            >
+                              🎓 View Certificate
+                            </button>
+                            <button
+                              className="w-36 inline-flex items-center gap-1 px-3 py-1 border border-purple-500 text-purple-700 bg-purple-50 rounded-full hover:bg-purple-100 transition text-xs font-medium shadow-sm justify-center"
+                              onClick={() => navigate(`/author/payment/${s.paperId}`, {
+                                state: {
+                                  userId,
+                                  conferenceId,
+                                  paperId: s.paperId
+                                }
+                              })}
+                            >
+                              💳 Payment
+                            </button>
+                          </>
+                        )}
 
-                        
+
                       </div>
                     </td>
                   </tr>
@@ -230,11 +235,10 @@ const Submited = ({ submissions = [] }) => {
             <button
               key={i}
               className={`w-10 h-10 flex items-center justify-center rounded border text-base font-semibold transition
-              ${
-                page === i + 1
+              ${page === i + 1
                   ? "bg-blue-600 text-green border-blue-600"
                   : "bg-white text-blue-600 border-gray-300 hover:bg-blue-50"
-              }
+                }
             `}
               onClick={() => setPage(i + 1)}
             >
@@ -293,15 +297,14 @@ const Submited = ({ submissions = [] }) => {
                       </td>
                       <td className="border-b px-4 py-2 text-center">
                         <span
-                          className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                            rev.status === "Submitted"
+                          className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${rev.status === "Submitted"
                               ? "bg-green-100 text-green-700"
                               : rev.status === "Need Revision"
                                 ? "bg-yellow-100 text-yellow-700"
                                 : rev.status === "Rejected"
                                   ? "bg-red-100 text-red-700"
                                   : "bg-gray-100 text-gray-700"
-                          }`}
+                            }`}
                         >
                           {rev.status}
                         </span>
@@ -309,12 +312,12 @@ const Submited = ({ submissions = [] }) => {
                       <td className="border-b px-4 py-2 text-center">
                         {rev.submittedAt
                           ? new Date(rev.submittedAt).toLocaleString("en-GB", {
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
                           : ""}
                       </td>
                       <td className="border-b px-4 py-2 text-center">

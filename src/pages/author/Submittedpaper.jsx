@@ -28,7 +28,11 @@ const SubmittedPaperAuthor = () => {
 
   return (
     <main>
-      <Submited submissions={papers} />
+      <Submited
+        submissions={papers}
+        userId={user?.userId}
+        conferenceId={conferenceId}
+      />
     </main>
   );
 };

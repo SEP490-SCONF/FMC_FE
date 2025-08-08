@@ -83,7 +83,7 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
         if (currentChunk.length > 0) {
             chunks.push({ ChunkId: chunks.length, Text: currentChunk.join(' ').trim(), TokenCount: currentTokenCount, Hash: null });
         }
-
+        // console.log('Generated chunks:', chunks);
         if (onChunksGenerated) {
             onChunksGenerated(chunks);
         }

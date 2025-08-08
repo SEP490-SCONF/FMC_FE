@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams,useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import ReviewSidebar from '../components/pdfReview/ReviewSidebar';
 import ReviewContent from '../components/pdfReview/reviewContent/ReviewContent';
 import { getReviewByAssignmentId } from '../services/ReviewService';
@@ -16,35 +16,35 @@ const PaperReview = () => {
     const [messageType, setMessageType] = useState('success'); // "success" or "error"
 
     useEffect(() => {
-    if (assignmentId) {
-        const fetchReview = async () => {
-            try {
-                const res = await getReviewByAssignmentId(assignmentId);
-                if (!res) {
-                    // Nếu cần điều hướng khi không tìm thấy review
-                    navigate("/not-found");
-                    return;
-                }
-                setReview(res);
-            } catch (error) {
-               
-                setReview(null);
-                navigate("/not-found");
-            }
-        };
+        if (assignmentId) {
+            const fetchReview = async () => {
+                try {
+                    const res = await getReviewByAssignmentId(assignmentId);
+                    if (!res) {
+                        // Nếu cần điều hướng khi không tìm thấy review
+                        navigate("/not-found");
+                        return;
+                    }
+                    setReview(res);
+                } catch (error) {
 
-        fetchReview();
-    }
-}, [assignmentId, navigate]);
+                    setReview(null);
+                    navigate("/not-found");
+                }
+            };
+
+            fetchReview();
+        }
+    }, [assignmentId, navigate]);
 
     // Hàm trích xuất chunk và gọi API
     const handleChunksGenerated = async (generatedChunks) => {
         setChunks(generatedChunks);
         if (generatedChunks.length > 0) {
-            console.log('Time:', new Date().toLocaleString(), 'Sending to:', '/api/AnalyzeAi', { ReviewId: review?.reviewId, Chunks: generatedChunks });
+            // console.log('Time:', new Date().toLocaleString(), 'Sending to:', '/api/AnalyzeAi', { ReviewId: review?.reviewId, Chunks: generatedChunks });
             try {
                 const data = await AnalyzeAiService.analyzeDocument(review?.reviewId, generatedChunks);
-                console.log('Response at:', new Date().toLocaleString(), data);
+                // console.log('Response at:', new Date().toLocaleString(), data);
                 setAiPercentage(data.percentAi || 0);
                 // setMessage(`AI Percentage: ${data.percentAi}%, Total Tokens: ${data.totalTokens}`);
                 setMessageType('success');

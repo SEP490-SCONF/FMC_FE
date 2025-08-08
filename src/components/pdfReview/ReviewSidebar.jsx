@@ -5,6 +5,7 @@ import AnalyzeAiService from '../../services/AnalyzeAiService';
 const ReviewSidebar = ({ review, chunks, onChange, onSave, onSendFeedback }) => {
     const [popup, setPopup] = useState({ open: false, text: '', type: 'success' });
     const [aiPercentage, setAiPercentage] = useState(review?.percentAi || 0);
+    const [isCheckingAi, setIsCheckingAi] = useState(false); // Thêm state này
 
     // Đảm bảo paperStatus luôn có giá trị mặc định
     const safePaperStatus = review?.paperStatus || "Need Revision";
@@ -68,13 +69,14 @@ const ReviewSidebar = ({ review, chunks, onChange, onSave, onSendFeedback }) => 
     };
 
     const handleCheckAiAgain = async () => {
+        setIsCheckingAi(true); // Bắt đầu kiểm tra
         try {
-            console.log('Chunks being sent');
             const data = await AnalyzeAiService.analyzeDocument(review.reviewId, chunks || []);
             setAiPercentage(data.percentAi || 0);
         } catch (err) {
-            console.error("Error checking AI:", err);
+            setAiPercentage("Error");
         }
+        setIsCheckingAi(false); // Kết thúc kiểm tra
     };
 
     return (
@@ -115,13 +117,14 @@ const ReviewSidebar = ({ review, chunks, onChange, onSave, onSendFeedback }) => 
                 <div className="flex items-center gap-2">
                     <input
                         type="text"
-                        value={aiPercentage + '%'}
+                        value={isCheckingAi ? "Checking again..." : (aiPercentage === "Error" ? "Error" : aiPercentage + '%')}
                         className="w-full border rounded px-3 py-2 bg-gray-100"
                         disabled
                     />
                     <button
                         className="px-4 py-2 bg-blue-100 text-blue-700 border border-blue-600 rounded font-semibold hover:bg-blue-600 hover:text-white transition"
                         onClick={handleCheckAiAgain}
+                        disabled={isCheckingAi}
                     >
                         Check Again
                     </button>

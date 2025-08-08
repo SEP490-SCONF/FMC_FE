@@ -25,8 +25,9 @@ import EditConferencePage from "../pages/organizer/EditConferencePage";
 import ReviewerListPage from "../pages/organizer/ReviewerListPage";
 import PublishedPaperList from "../pages/organizer/PublishedPaperList";
 import ManageCallForPaper from "../pages/organizer/ManageCallForPaper";
-import ManageTimeline from "../pages/organizer/ManageTimeline"; 
-
+import ManageTimeline from "../pages/organizer/ManageTimeline";
+import PaymentSuccess from "../pages/author/PaymentSuccess";
+import PaymentCancel from "../pages/author/PaymentCancel";
 
 
 
@@ -72,11 +73,11 @@ export default function AppRoutes() {
             path="/author/view-paper-review/:revisionId"
             element={<ViewPaperReview />}
           />{" "}
-         <Route path="*" element={<NotFoundPage />} />
+          <Route path="*" element={<NotFoundPage />} />
         </Route>
 
         <Route element={<ConferenceLayout />}>
-         <Route path="*" element={<NotFoundPage />} />
+          <Route path="*" element={<NotFoundPage />} />
           <Route path="/conference/:id" element={<Home />} />
           <Route path="/conference/:id/committee" element={<CommitteeList />} />
           <Route
@@ -95,7 +96,11 @@ export default function AppRoutes() {
             path="/conference/:id/submitted-papers"
             element={<SubmittedOrga />}
           />
+          <Route path="/author/payment/:id" element={<PaperPay />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
+          <Route path="/payment-cancel" element={<PaymentCancel />} />
         </Route>
+
         <Route element={<ManageConferenceLayout />}>
           <Route
             path="/manage-conference/:id/submitted-papers"
@@ -103,23 +108,12 @@ export default function AppRoutes() {
           />
           <Route path="/manage-conference/:conferenceId/edit" element={<EditConferencePage />} />
           <Route path="/manage-conference/:conferenceId/reviewers" element={<ReviewerListPage />} />
-          <Route path="/manage-conference/:conferenceId/published-papers" element={<PublishedPaperList />}/>
+          <Route path="/manage-conference/:conferenceId/published-papers" element={<PublishedPaperList />} />
           <Route path="/manage-conference/:conferenceId/call-for-paper" element={<ManageCallForPaper />} />
-          <Route path="/manage-conference/:conferenceId/timelines" element={<ManageTimeline />} /> 
+          <Route path="/manage-conference/:conferenceId/timelines" element={<ManageTimeline />} />
 
-
-
-          
-
-
-
-          
-
-
-
-          {/* Thêm các route con khác nếu cần */}
         </Route>
-        
+
       </Routes>
     </BrowserRouter>
   );
