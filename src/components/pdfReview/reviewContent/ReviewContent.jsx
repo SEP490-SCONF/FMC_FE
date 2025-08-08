@@ -122,20 +122,23 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
                 };
 
                 try {
-                    const area = props.highlightAreas[0] || {};
                     const formData = new FormData();
                     formData.append("ReviewId", review.reviewId);
                     formData.append("RevisionId", review.revisionId);
                     formData.append("ReviewerId", user.userId);
-                    formData.append("PageIndex", area.pageIndex);
-                    formData.append("Left", area.left || 0);
-                    formData.append("Top", area.top || 0);
-                    formData.append("Width", area.width || 0);
-                    formData.append("Height", area.height || 0);
                     formData.append("TextHighlighted", props.selectedText);
                     formData.append("UserId", user.userId);
                     formData.append("CommentText", message);
                     formData.append("Status", "Draft");
+
+                    // Gửi từng vùng highlight dưới dạng HighlightAreas[index].FieldName
+                    props.highlightAreas.forEach((area, idx) => {
+                        formData.append(`HighlightAreas[${idx}][PageIndex]`, area.pageIndex);
+                        formData.append(`HighlightAreas[${idx}][Left]`, area.left || 0);
+                        formData.append(`HighlightAreas[${idx}][Top]`, area.top || 0);
+                        formData.append(`HighlightAreas[${idx}][Width]`, area.width || 0);
+                        formData.append(`HighlightAreas[${idx}][Height]`, area.height || 0);
+                    });
 
                     await addReviewWithHighlightAndComment(formData);
                     setNotes((prev) => prev.concat([note]));
@@ -398,6 +401,8 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
 
             getReviewWithHighlightAndComment(review.reviewId)
                 .then((res) => {
+                    // res.Highlights: [{ HighlightId, TextHighlighted, Areas: [{...}] }]
+                    // res.Comments: [{ CommentId, UserId, CommentText, ... }]
                     if (res && res.highlights && res.comments) {
                         const notes = res.highlights.map((h) => {
                             const relatedComments = res.comments.filter(
@@ -405,16 +410,17 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
                             );
                             return {
                                 id: h.highlightId,
-                                content: relatedComments.length > 0 ? relatedComments[0].commentText : '',
-                                highlightAreas: [
-                                    {
-                                        pageIndex: h.pageIndex,
-                                        left: h.left,
-                                        top: h.top,
-                                        width: h.width,
-                                        height: h.height,
-                                    },
-                                ],
+                                content:
+                                    relatedComments.length > 0
+                                        ? relatedComments[0].commentText
+                                        : '',
+                                highlightAreas: h.areas.map((a) => ({
+                                    pageIndex: a.pageIndex,
+                                    left: a.left,
+                                    top: a.top,
+                                    width: a.width,
+                                    height: a.height,
+                                })),
                                 quote: h.textHighlighted,
                                 comments: relatedComments,
                             };

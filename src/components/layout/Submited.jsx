@@ -169,7 +169,7 @@ const Submited = ({ submissions = [] }) => {
                         : ""}
                     </td>
                     <td className={tdClass}>
-                      <div className="flex flex-col gap-2 items-center">
+                      <div className="grid grid-cols-2 gap-2 w-72 mx-auto">
                         <button
                           className="w-36 inline-flex items-center gap-1 px-3 py-1 border border-blue-500 text-blue-700 bg-blue-50 rounded-full hover:bg-blue-100 transition text-xs font-medium shadow-sm justify-center"
                           onClick={() =>
@@ -198,6 +198,24 @@ const Submited = ({ submissions = [] }) => {
                             ? "Uploading..."
                             : "Resubmit"}
                         </button>
+                        { s.status === "Accepted" && (
+  <>
+    <button
+      className="w-36 inline-flex items-center gap-1 px-3 py-1 border border-green-500 text-green-700 bg-green-50 rounded-full hover:bg-green-100 transition text-xs font-medium shadow-sm justify-center"
+      onClick={() => navigate(`/author/view-certificates/${s.paperId}`)}
+    >
+      🎓 View Certificate
+    </button>
+    <button
+      className="w-36 inline-flex items-center gap-1 px-3 py-1 border border-purple-500 text-purple-700 bg-purple-50 rounded-full hover:bg-purple-100 transition text-xs font-medium shadow-sm justify-center"
+      onClick={() => navigate(`/author/payment/${s.paperId}`)}
+    >
+      💳 Payment
+    </button>
+  </>
+)}
+
+                        
                       </div>
                     </td>
                   </tr>

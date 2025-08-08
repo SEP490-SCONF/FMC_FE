@@ -25,13 +25,18 @@ export const getConferenceMembersByRoles = async (conferenceId) => {
     return apiService.get(`/UserConferenceRoles/conference/${conferenceId}/roles/members`);
 };
 // Lấy danh sách reviewer (role 3) của hội thảo
-export const getConferenceReviewers = async (conferenceId, { page = 1, pageSize = 10, search = "" } = {}) => {
-    let url = `/UserConferenceRoles/conference/${conferenceId}/roles-reviewer?$top=${pageSize}&$skip=${(page - 1) * pageSize}`;
-    if (search) {
-        url += `&$filter=contains(Name,'${encodeURIComponent(search)}') or contains(Email,'${encodeURIComponent(search)}')`;
-    }
-    return apiService.get(url);
+export const getConferenceReviewers = async (
+  conferenceId,
+  { page = 1, pageSize = 10, search = "" } = {}
+) => {
+  let url = `/UserConferenceRoles/conference/${conferenceId}/roles-reviewer?page=${page}&pageSize=${pageSize}`;
+  if (search) {
+    url += `&search=${encodeURIComponent(search)}`;
+  }
+  return apiService.get(url);
 };
+
+
 
 export const changeUserConferenceRole = async (data) => {
     // data là UserConferenceRoleChangeRoleDto
@@ -46,4 +51,19 @@ export const deleteUserConferenceRole = async (id) => {
 // Lấy danh sách conference theo userId và roleName
 export const getConferencesByUserAndRole = async (userId, roleName) => {
     return apiService.get(`/UserConferenceRoles/user/${userId}/conferences/${roleName}`);
+};
+
+// Lấy thông tin committee form (GET /UserConferenceRoles/{id}/form?token=...)
+export const getCommitteeForm = async (id, token) => {
+  return apiService.get(`/UserConferenceRoles/${id}/form?token=${encodeURIComponent(token)}`);
+};
+
+// Gửi thông tin hoàn thiện committee form (POST /UserConferenceRoles/{id}/complete)
+export const completeCommitteeForm = async (id, data) => {
+  return apiService.post(`/UserConferenceRoles/${id}/complete`, data);
+};
+
+// Lấy danh sách committee theo conferenceId (GET /UserConferenceRoles/conference/{conferenceId}/committee)
+export const getCommitteeByConference = async (conferenceId) => {
+  return apiService.get(`/UserConferenceRoles/conference/${conferenceId}/committee`);
 };

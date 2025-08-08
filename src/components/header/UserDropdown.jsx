@@ -104,6 +104,7 @@ export default function UserDropdown({ user }) {
               Submitted Papers
             </DropdownItem>
           </li>
+
         </ul>
         <Link
           to="/login"
