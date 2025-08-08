@@ -32,7 +32,7 @@ const PaperReview = () => {
             console.log('Time:', new Date().toLocaleString(), 'Sending to:', '/api/AnalyzeAi', { ReviewId: review?.reviewId, Chunks: generatedChunks });
             try {
                 const data = await AnalyzeAiService.analyzeDocument(review?.reviewId, generatedChunks);
-                // console.log('Response at:', new Date().toLocaleString(), data);
+                console.log('Response at:', new Date().toLocaleString(), data);
                 setAiPercentage(data.percentAi || 0);
                 // setMessage(`AI Percentage: ${data.percentAi}%, Total Tokens: ${data.totalTokens}`);
                 setMessageType('success');
