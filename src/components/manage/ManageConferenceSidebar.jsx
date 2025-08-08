@@ -5,10 +5,11 @@ const navItems = [
   // { label: "Committee", to: "/manage-conference/committee" },
   // { label: "Settings", to: "/manage-conference/settings" },
   { label: "Conference Information", to: "/manage-conference/:id/edit" },
+  { label: "Manage Timelines", to: "/manage-conference/:conferenceId/timelines" }, 
   { label: "Reviewer List", to: "/manage-conference/:conferenceId/reviewers" },
   { label: "Published Papers", to: "/manage-conference/:conferenceId/published-papers" },
   { label: "Manage Call For Papers", to: "/manage-conference/:conferenceId/call-for-paper" },
-  { label: "Manage Timelines", to: "/manage-conference/:conferenceId/timelines" }, 
+  
 
 
 

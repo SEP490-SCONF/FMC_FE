@@ -32,8 +32,9 @@ const CFP = () => {
       // Gọi CallForPaper
       const data = await getCallForPapersByConferenceId(id);
       if (data.length > 0) {
-        setCfp(data[0]);
-      }
+  const activeCfp = data.find((item) => item.status === true);
+  setCfp(activeCfp || null); // nếu không có cái nào active thì null
+}
 
       // Gọi Timeline
       getTimelinesByConferenceId(id)

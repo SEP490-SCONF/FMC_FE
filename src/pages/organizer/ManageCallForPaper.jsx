@@ -137,37 +137,61 @@ const applyFilters = (status, deadlineRange, searchValue) => {
 };
 
 
-  const handleSubmit = (values) => {
-    const formData = new FormData();
-    formData.append("conferenceId", conferenceId);
-    formData.append("description", values.description);
-    formData.append("deadline", values.deadline.format("YYYY-MM-DD"));
-    formData.append("status", values.status);
+  const handleSubmit = async (values) => {
+  const formData = new FormData();
+  formData.append("conferenceId", conferenceId);
+  formData.append("description", values.description);
+  formData.append("deadline", values.deadline.format("YYYY-MM-DD"));
 
-    if (values.templateFile?.file) {
-      formData.append("templateFile", values.templateFile.file);
+  if (values.templateFile?.file) {
+    formData.append("templateFile", values.templateFile.file);
+  }
+
+  // Bắt đầu loading
+  setLoading(true);
+
+  try {
+    // Nếu đang Edit và muốn đặt status = true (Active)
+    if (editing && values.status === true) {
+  const existingActive = list.find(
+    (item) => item.cfpid !== editing.cfpid && item.status === true
+  );
+
+  if (existingActive) {
+    message.error(
+      `❌ Only one Call For Paper can be Active at a time.\n CPF"${existingActive.cfpid}" is already active.`
+    );
+    setLoading(false);
+    return; // ⚠️ Dừng lại, không update
+  }
+}
+
+
+    // Nếu đang edit và có status thì gửi lên
+    if (editing && values.status !== undefined) {
+      formData.append("status", values.status);
     }
 
-    setLoading(true);
-
+    // Tạo hoặc cập nhật
     const action = editing
       ? updateCallForPaper(editing.cfpid, formData)
       : createCallForPaper(formData);
 
-    action
-      .then(() => {
-        message.success(`${editing ? "Updated" : "Created"} successfully`);
-        setOpen(false);
-        form.resetFields();
-        setEditing(null);
-        fetchData();
-      })
-      .catch((error) => {
-        console.error("Error:", error);
-        message.error("Something went wrong");
-      })
-      .finally(() => setLoading(false));
-  };
+    await action;
+
+    message.success(`${editing ? "Updated" : "Created"} successfully`);
+    setOpen(false);
+    form.resetFields();
+    setEditing(null);
+    fetchData();
+  } catch (error) {
+    console.error("Error:", error);
+    message.error("Something went wrong");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleEdit = (item) => {
     setEditing(item);
@@ -192,6 +216,14 @@ const applyFilters = (status, deadlineRange, searchValue) => {
   };
 
   const columns = [
+    {
+    title: "ID",
+    dataIndex: "cfpid",
+    key: "cfpid",
+    width: 70,
+    sorter: (a, b) => a.cfpid - b.cfpid,
+  },
+
     {
       title: "Description",
       dataIndex: "description",
@@ -320,18 +352,24 @@ const applyFilters = (status, deadlineRange, searchValue) => {
           >
             <DatePicker style={{ width: "100%" }} />
           </Form.Item>
-          <Form.Item
-  name="status"
-  label="Status"
-  rules={[{ required: true, message: "Please select status" }]}
->
-  <Select options={[{ value: true, label: "Active" }, { value: false, label: "Inactive" }]} />
-</Form.Item>
+          
           <Form.Item name="templateFile" label="Upload Template">
             <Upload beforeUpload={() => false} maxCount={1}>
               <Button icon={<UploadOutlined />}>Choose File</Button>
             </Upload>
           </Form.Item>
+          {editing && (
+    <Form.Item
+      name="status"
+      label="Status"
+      rules={[{ required: true, message: "Please select status" }]}
+    >
+      <Select>
+        <Option value={true}>Active</Option>
+        <Option value={false}>Inactive</Option>
+      </Select>
+    </Form.Item>
+    )}
         </Form>
       </Modal>
     </div>
