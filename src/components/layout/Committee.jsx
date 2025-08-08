@@ -1,22 +1,7 @@
-import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { getCommitteeByConference } from "../../services/UserConferenceRoleService";
+import React from "react";
 import "../../assets/styles/pages/_section.scss";
 
-const Committee = () => {
-  const { id } = useParams(); 
-  const [committee, setCommittee] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    getCommitteeByConference(id) 
-      .then((res) => {
-        const data = res.data || res;
-        setCommittee(data);
-      })
-      .finally(() => setLoading(false));
-  }, [id]);
-
+const Committee = ({ committee, loading }) => {
   if (loading) {
     return (
       <div className="py-20 text-center text-lg text-gray-500">

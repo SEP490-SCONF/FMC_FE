@@ -32,7 +32,7 @@ const MainHeader = ({ onClick, onToggle }) => {
             to="/conferences"
             className="text-gray-700 font-semibold hover:text-blue-700 transition uppercase"
           >
-            Conferences / Events
+            Conferences
           </Link>
           <Link
             to="/submit-paper"

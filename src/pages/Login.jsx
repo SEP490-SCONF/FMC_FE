@@ -38,7 +38,7 @@ const Login = () => {
           <GoogleLogin
             onSuccess={handleSuccess}
             onError={handleError}
-            width="100%"
+           
             shape="rectangular"
             text="signin_with"
             theme="filled_blue"
