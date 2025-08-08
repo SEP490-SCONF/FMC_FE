@@ -22,13 +22,12 @@ import Submitted from "../pages/author/Submittedpaper";
 import SubmittedPaperAuthor from "../pages/author/Submittedpaper";
 import AuthorConference from "../pages/author/AuthorConference";
 import EditConferencePage from "../pages/organizer/EditConferencePage";
-import ReviewerListPage from "../pages/organizer/ReviewerListPage"; 
+import ReviewerListPage from "../pages/organizer/ReviewerListPage";
 import PublishedPaperList from "../pages/organizer/PublishedPaperList";
 import ManageCallForPaper from "../pages/organizer/ManageCallForPaper";
 import ManageAllPaperPage from "../pages/organizer/ManageAllPaperPage";
-
-
-
+import NotFoundPage from "../pages/NotFoundPage";
+import ForbiddenPage from "../pages/ForbiddenPage";
 
 import About from "../pages/AboutUs";
 import ViewPaperReview from "../pages/author/ViewPaperReview"; // Thêm import ở đầu file
@@ -44,6 +43,8 @@ export default function AppRoutes() {
         <Route path="/" element={<App />}>
           <Route index element={<MainHomePage />} />
           <Route path="/committee-form" element={<CommitteeForm />} />
+          <Route path="/forbidden" element={<ForbiddenPage />} />
+          <Route path="/not-found" element={<NotFoundPage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/about" element={<About />} />
           <Route path="/conferences" element={<ConferenceSearch />} />
@@ -60,10 +61,11 @@ export default function AppRoutes() {
             path="/author/view-paper-review/:revisionId"
             element={<ViewPaperReview />}
           />{" "}
-          {/* Thêm dòng này */}
+         <Route path="*" element={<NotFoundPage />} />
         </Route>
 
         <Route element={<ConferenceLayout />}>
+         <Route path="*" element={<NotFoundPage />} />
           <Route path="/conference/:id" element={<Home />} />
           <Route path="/conference/:id/committee" element={<CommitteeList />} />
           <Route
@@ -88,24 +90,28 @@ export default function AppRoutes() {
             path="/manage-conference/:id/submitted-papers"
             element={<SubOrganizer />}
           />
-          <Route path="/manage-conference/:conferenceId" element={<ConferenceOrganizer />} />
-          <Route path="/manage-conference/:conferenceId/edit" element={<EditConferencePage />} />
-          <Route path="/manage-conference/:conferenceId/reviewers" element={<ReviewerListPage />} />
-          <Route path="/manage-conference/:conferenceId/published-papers" element={<PublishedPaperList />}/>
-          <Route path="/manage-conference/:conferenceId/call-for-paper" element={<ManageCallForPaper />} />
-          <Route path="/manage-conference/all-papers" element={<ManageAllPaperPage />} />
-
-
-          
-
-
-
-          
-
-
-
-          {/* Thêm các route con khác nếu cần */}
+          <Route
+            path="/manage-conference/:conferenceId/edit"
+            element={<EditConferencePage />}
+          />
+          <Route
+            path="/manage-conference/:conferenceId/reviewers"
+            element={<ReviewerListPage />}
+          />
+          <Route
+            path="/manage-conference/:conferenceId/published-papers"
+            element={<PublishedPaperList />}
+          />
+          <Route
+            path="/manage-conference/:conferenceId/call-for-paper"
+            element={<ManageCallForPaper />}
+          />
+          <Route
+            path="/manage-conference/all-papers"
+            element={<ManageAllPaperPage />}
+          />
         </Route>
+        
       </Routes>
     </BrowserRouter>
   );

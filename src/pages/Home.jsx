@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams,useNavigate } from "react-router-dom";
 import Banner from "../components/layout/Banner";
 import Event from "../components/layout/Event";
 import Faq from "../components/layout/Faq";
@@ -16,21 +16,27 @@ const Home = () => {
     const [selectedConference, setSelectedConference] = useState(null);
     const [topics, setTopics] = useState([]);
     const [loadingTopics, setLoadingTopics] = useState(false);
+    const navigate = useNavigate(); // Thêm dòng này
 
     useEffect(() => {
         if (id) {
             const fetchData = async () => {
                 try {
                     const data = await getConferenceById(id);
-                    setSelectedConference(data || null);
+                    if (!data) {
+                        navigate("/not-found"); // Chuyển hướng nếu không tìm thấy
+                        return;
+                    }
+                    setSelectedConference(data);
                     console.log("Selected Conference:", data);
                 } catch (error) {
                     setSelectedConference(null);
+                    navigate("/not-found"); // Chuyển hướng nếu lỗi
                 }
             };
             fetchData();
         }
-    }, [id]);
+    }, [id, navigate]);
 
     useEffect(() => {
         if (selectedConference?.conferenceId) {

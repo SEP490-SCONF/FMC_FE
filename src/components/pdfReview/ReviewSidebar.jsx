@@ -4,6 +4,9 @@ import { updateReview, sendFeedback } from '../../services/ReviewService';
 const ReviewSidebar = ({ review, onChange, onSave, onSendFeedback }) => {
     const [popup, setPopup] = useState({ open: false, text: '', type: 'success' });
 
+    // Đảm bảo paperStatus luôn có giá trị mặc định
+    const safePaperStatus = review?.paperStatus || "Need Revision";
+
     // Auto close popup after 3s
     useEffect(() => {
         if (popup.open) {
@@ -25,6 +28,10 @@ const ReviewSidebar = ({ review, onChange, onSave, onSendFeedback }) => {
 
     const handleChange = (field, value) => {
         if (onChange) {
+            // Đảm bảo paperStatus không bao giờ là rỗng
+            if (field === "paperStatus" && !value) {
+                value = "Need Revision";
+            }
             onChange({ ...review, [field]: value });
         }
     };
@@ -33,7 +40,7 @@ const ReviewSidebar = ({ review, onChange, onSave, onSendFeedback }) => {
         const formData = new FormData();
         formData.append("Comments", review.comments ?? "");
         formData.append("Score", review.score ?? "");
-        formData.append("PaperStatus", review.paperStatus ?? "");
+        formData.append("PaperStatus", safePaperStatus);
         try {
             await updateReview(review.reviewId, formData);
             setPopup({ open: true, text: "Review updated!", type: "success" });
@@ -47,7 +54,7 @@ const ReviewSidebar = ({ review, onChange, onSave, onSendFeedback }) => {
         const formData = new FormData();
         formData.append("Comments", review.comments ?? "");
         formData.append("Score", review.score ?? "");
-        formData.append("PaperStatus", review.paperStatus ?? "");
+        formData.append("PaperStatus", safePaperStatus);
         try {
             await updateReview(review.reviewId, formData);
             await sendFeedback(review.reviewId);
@@ -82,7 +89,7 @@ const ReviewSidebar = ({ review, onChange, onSave, onSendFeedback }) => {
             <div className="mb-4">
                 <label className="block text-sm font-medium mb-1">Status</label>
                 <select
-                    value={review.paperStatus ?? ""}
+                    value={safePaperStatus}
                     onChange={e => handleChange("paperStatus", e.target.value)}
                     className="w-full border rounded px-3 py-2 bg-gray-100"
                 >
