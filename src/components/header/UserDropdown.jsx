@@ -1,10 +1,14 @@
 import { useState } from "react";
 import { DropdownItem } from "../ui/dropdown/DropdownItem";
 import { Dropdown } from "../ui/dropdown/Dropdown";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { logout } from "../../services/AuthenService";
+import { useUser } from "../../context/UserContext"; // hoặc đúng path của bạn
 
 export default function UserDropdown({ user }) {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+  const { setUser } = useUser();
 
   function toggleDropdown() {
     setIsOpen(!isOpen);
@@ -71,7 +75,7 @@ export default function UserDropdown({ user }) {
               to="/user"
               className="flex items-center gap-3 px-3 py-2 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
             >
-              Edit profile
+              My profile
             </DropdownItem>
           </li>
           <li>
@@ -108,12 +112,14 @@ export default function UserDropdown({ user }) {
         </ul>
         <Link
           to="/login"
-          onClick={() => {
-            localStorage.removeItem("accessToken"); // Xóa token nếu có
-            // Nếu dùng cookie, có thể cần xóa cookie ở đây
-            // Có thể gọi API logout nếu backend yêu cầu
-            
-            navigate("/login"); 
+          onClick={async (e) => {
+            e.preventDefault();
+            try {
+              await logout();
+            } catch (err) {}
+            localStorage.removeItem("accessToken");
+            setUser(null);
+            navigate("/login");
           }}
           className="flex items-center gap-3 px-3 py-2 mt-3 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
         >

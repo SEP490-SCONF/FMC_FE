@@ -1,39 +1,41 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect } from "react";
 import {
     Button,
     Position,
+    PrimaryButton,
     Tooltip,
     Viewer,
     Worker,
-} from '@react-pdf-viewer/core';
-import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
-import { highlightPlugin, MessageIcon } from '@react-pdf-viewer/highlight';
-import { getPdfUrlByReviewId } from '../../../services/PaperRevisionService';
+} from "@react-pdf-viewer/core";
+import { defaultLayoutPlugin } from "@react-pdf-viewer/default-layout";
+import { highlightPlugin, MessageIcon } from "@react-pdf-viewer/highlight";
+import { getPdfUrlByReviewId } from "../../../services/PaperRevisionService";
 import {
     addReviewWithHighlightAndComment,
     getReviewWithHighlightAndComment,
     updateReviewWithHighlightAndComment,
     deleteReviewWithHighlightAndComment,
-} from '../../../services/ReviewWithHighlightService';
-import { useUser } from '../../../context/UserContext';
+} from "../../../services/ReviewWithHighlightService";
+import { useUser } from "../../../context/UserContext";
 
-import '@react-pdf-viewer/core/lib/styles/index.css';
-import '@react-pdf-viewer/default-layout/lib/styles/index.css';
+import "@react-pdf-viewer/core/lib/styles/index.css";
+import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 
 const ReviewContent = ({ review, onChunksGenerated }) => {
     const { user } = useUser();
 
-    const [fileUrl, setFileUrl] = useState('');
-    const [message, setMessage] = useState('');
+    const [fileUrl, setFileUrl] = useState("");
+    const [message, setMessage] = useState("");
     const [notes, setNotes] = useState([]);
     const notesContainerRef = useRef(null);
     let noteId = notes.length;
 
     const [selectedHighlight, setSelectedHighlight] = useState(null);
-    const [highlightEditContent, setHighlightEditContent] = useState('');
+    const [highlightEditContent, setHighlightEditContent] = useState("");
+    const [popup, setPopup] = useState({ open: false, text: "", type: "error" });
     const noteEles = useRef(new Map());
     const [currentDoc, setCurrentDoc] = useState(null);
-    const [aiAnalysisResult, setAiAnalysisResult] = useState(null); // Giữ state này để tương thích với giao diện
+    const [aiAnalysisResult, setAiAnalysisResult] = useState(null);
 
     const handleDocumentLoad = async (e) => {
         setCurrentDoc(e.doc);
@@ -82,30 +84,31 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
             chunks.push({ ChunkId: chunks.length, Text: currentChunk.join(' ').trim(), TokenCount: currentTokenCount, Hash: null });
         }
 
-        // console.log('Generated chunks:', chunks);
         if (onChunksGenerated) {
-            onChunksGenerated(chunks); // Truyền chunk lên PaperReview
+            onChunksGenerated(chunks);
         }
-
-        // Loại bỏ logic gọi API, giữ nguyên giao diện
     };
 
     const renderHighlightTarget = (props) => (
         <div
             style={{
-                background: '#eee',
-                display: 'flex',
-                position: 'absolute',
+                background: "#eee",
+                display: "flex",
+                position: "absolute",
                 left: `${props.selectionRegion.left}%`,
                 top: `${props.selectionRegion.top + props.selectionRegion.height}%`,
-                transform: 'translate(0, 8px)',
+                transform: "translate(0, 8px)",
                 zIndex: 1,
             }}
         >
             <Tooltip
                 position={Position.TopCenter}
-                target={<Button onClick={props.toggle}><MessageIcon /></Button>}
-                content={() => <div style={{ width: '100px' }}>Add a note</div>}
+                target={
+                    <Button onClick={props.toggle}>
+                        <MessageIcon />
+                    </Button>
+                }
+                content={() => <div style={{ width: "100px" }}>Add a note</div>}
                 offset={{ left: 0, top: -8 }}
             />
         </div>
@@ -113,14 +116,7 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
 
     const renderHighlightContent = (props) => {
         const addNote = async () => {
-            if (message !== '') {
-                const note = {
-                    id: ++noteId,
-                    content: message,
-                    highlightAreas: props.highlightAreas,
-                    quote: props.selectedText,
-                };
-
+            if (message !== "") {
                 try {
                     const formData = new FormData();
                     formData.append("ReviewId", review.reviewId);
@@ -131,21 +127,46 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
                     formData.append("CommentText", message);
                     formData.append("Status", "Draft");
 
-                    // Gửi từng vùng highlight dưới dạng HighlightAreas[index].FieldName
                     props.highlightAreas.forEach((area, idx) => {
-                        formData.append(`HighlightAreas[${idx}][PageIndex]`, area.pageIndex);
+                        formData.append(
+                            `HighlightAreas[${idx}][PageIndex]`,
+                            area.pageIndex
+                        );
                         formData.append(`HighlightAreas[${idx}][Left]`, area.left || 0);
                         formData.append(`HighlightAreas[${idx}][Top]`, area.top || 0);
                         formData.append(`HighlightAreas[${idx}][Width]`, area.width || 0);
                         formData.append(`HighlightAreas[${idx}][Height]`, area.height || 0);
                     });
 
-                    await addReviewWithHighlightAndComment(formData);
-                    setNotes((prev) => prev.concat([note]));
-                    setMessage('');
+                    const res = await addReviewWithHighlightAndComment(formData);
+                    const highlightId = res?.highlight?.highlightId;
+
+                    if (!highlightId) {
+                        setPopup({
+                            open: true,
+                            text: "Failed to save note (missing ID)",
+                            type: "error",
+                        });
+                        return;
+                    }
+
+                    const note = {
+                        id: highlightId,
+                        content: message,
+                        highlightAreas: props.highlightAreas,
+                        quote: props.selectedText,
+                    };
+
+                    setNotes((prev) => [...prev, note]);
+                    setMessage("");
                     props.cancel();
+                    setPopup({
+                        open: true,
+                        text: "Note added successfully!",
+                        type: "success",
+                    });
                 } catch (err) {
-                    // setPopup({ open: true, text: `Failed to save note! (${err.message})`, type: 'error' });
+                    setPopup({ open: true, text: "Failed to save note!", type: "error" });
                 }
             }
         };
@@ -163,10 +184,10 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
                     className="w-full border border-gray-300 rounded p-2 mb-3"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                />
+                ></textarea>
                 <div className="flex flex-row gap-3 justify-end">
                     <button
-                        className="bg-blue-600 text-white rounded-lg px-4 py-1 font-semibold hover:bg-blue-700 transition"
+                        className="bg-blue-600 text-green rounded-lg px-4 py-1 font-semibold hover:bg-blue-700 transition"
                         onClick={addNote}
                     >
                         Add
@@ -183,11 +204,14 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
     };
 
     const [activateTab, setActivateTab] = useState(() => () => { });
+
     const jumpToNote = (note) => {
         activateTab(3);
         const notesContainer = notesContainerRef.current;
         if (noteEles.current.has(note.id) && notesContainer) {
-            notesContainer.scrollTop = noteEles.current.get(note.id).getBoundingClientRect().top;
+            notesContainer.scrollTop = noteEles.current
+                .get(note.id)
+                .getBoundingClientRect().top;
         }
     };
 
@@ -201,13 +225,13 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
                             <div
                                 key={idx}
                                 style={{
-                                    position: 'absolute',
-                                    background: 'rgba(255, 255, 0, 0.4)',
+                                    position: "absolute",
+                                    background: "rgba(255, 255, 0, 0.4)",
                                     left: `${area.left}%`,
                                     top: `${area.top}%`,
                                     width: `${area.width}%`,
                                     height: `${area.height}%`,
-                                    pointerEvents: 'auto',
+                                    pointerEvents: "auto",
                                     zIndex: 2,
                                 }}
                                 onClick={(e) => {
@@ -240,18 +264,26 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
         };
     }, []);
 
-    const handleDeleteNote = async (id) => {
+    const handleDeleteNote = async (highlightId) => {
         try {
-            await deleteReviewWithHighlightAndComment(id);
-            setNotes((notes) => notes.filter((note) => note.id !== id));
-            // setPopup({ open: true, text: 'Note deleted successfully!', type: 'success' });
+            await deleteReviewWithHighlightAndComment(highlightId);
+            setNotes((notes) => notes.filter((note) => note.id !== highlightId));
+            setPopup({
+                open: true,
+                text: "Note deleted successfully!",
+                type: "success",
+            });
         } catch (err) {
-            // setPopup({ open: true, text: `Failed to delete note! (${err.message})`, type: 'error' });
+            setPopup({
+                open: true,
+                text: "Failed to delete note!",
+                type: "error",
+            });
         }
     };
 
     const [editingNoteId, setEditingNoteId] = useState(null);
-    const [editingContent, setEditingContent] = useState('');
+    const [editingContent, setEditingContent] = useState("");
 
     const handleEditNote = (id) => {
         const note = notes.find((n) => n.id === id);
@@ -262,31 +294,38 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
     const handleUpdateNote = async (note, newContent) => {
         if (!review || !review.reviewId) return;
         try {
-            const area = note.highlightAreas[0] || {};
             const formData = new FormData();
-            formData.append('HighlightId', note.id);
-            formData.append('ReviewId', review.reviewId);
-            formData.append('RevisionId', review.revisionId);
-            formData.append('PageIndex', area.pageIndex);
-            formData.append('Left', area.left || 0);
-            formData.append('Top', area.top || 0);
-            formData.append('Width', area.width || 0);
-            formData.append('Height', area.height || 0);
-            formData.append('TextHighlighted', note.quote);
-            formData.append('CommentText', newContent);
+            formData.append("HighlightId", note.id);
+            formData.append("ReviewId", review.reviewId);
+            formData.append("RevisionId", review.revisionId);
+            formData.append("TextHighlighted", note.quote);
+            formData.append("CommentText", newContent);
+
+            note.highlightAreas.forEach((area, idx) => {
+                formData.append(`HighlightAreas[${idx}][PageIndex]`, area.pageIndex);
+                formData.append(`HighlightAreas[${idx}][Left]`, area.left || 0);
+                formData.append(`HighlightAreas[${idx}][Top]`, area.top || 0);
+                formData.append(`HighlightAreas[${idx}][Width]`, area.width || 0);
+                formData.append(`HighlightAreas[${idx}][Height]`, area.height || 0);
+            });
 
             await updateReviewWithHighlightAndComment(review.reviewId, formData);
-            // setPopup({ open: true, text: 'Note updated successfully!', type: 'success' });
+            setPopup({
+                open: true,
+                text: "Note updated successfully!",
+                type: "success",
+            });
         } catch (err) {
-            // setPopup({ open: true, text: `Failed to update note! (${err.message})`, type: 'error' });
+            setPopup({
+                open: true,
+                text: "Failed to update note!",
+                type: "error",
+            });
         }
     };
 
     const sidebarNotes = (
-        <div
-            ref={notesContainerRef}
-            className="overflow-auto w-full space-y-4"
-        >
+        <div ref={notesContainerRef} className="overflow-auto w-full space-y-4">
             {notes.length === 0 && (
                 <div className="text-center text-gray-400 py-8">There is no note</div>
             )}
@@ -312,7 +351,7 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
                             />
                             <div className="flex flex-row gap-3 justify-end">
                                 <button
-                                    className="bg-blue-600 text-white rounded-lg px-4 py-1 font-semibold shadow hover:bg-blue-700 transition"
+                                    className="bg-blue-600 text-green rounded-lg px-4 py-1 font-semibold shadow hover:bg-blue-700 transition"
                                     onClick={async (e) => {
                                         e.stopPropagation();
                                         setNotes((notes) =>
@@ -383,7 +422,7 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
             defaultTabs.concat({
                 content: sidebarNotes,
                 icon: <MessageIcon />,
-                title: 'Notes',
+                title: "Notes",
             }),
     });
 
@@ -394,15 +433,13 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
                     if (res && res.pdfUrl) {
                         setFileUrl(res.pdfUrl);
                     } else {
-                        setFileUrl('');
+                        setFileUrl("");
                     }
                 })
-                .catch(() => setFileUrl(''));
+                .catch(() => setFileUrl(""));
 
             getReviewWithHighlightAndComment(review.reviewId)
                 .then((res) => {
-                    // res.Highlights: [{ HighlightId, TextHighlighted, Areas: [{...}] }]
-                    // res.Comments: [{ CommentId, UserId, CommentText, ... }]
                     if (res && res.highlights && res.comments) {
                         const notes = res.highlights.map((h) => {
                             const relatedComments = res.comments.filter(
@@ -413,7 +450,7 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
                                 content:
                                     relatedComments.length > 0
                                         ? relatedComments[0].commentText
-                                        : '',
+                                        : "",
                                 highlightAreas: h.areas.map((a) => ({
                                     pageIndex: a.pageIndex,
                                     left: a.left,
@@ -434,8 +471,18 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
         }
     }, [review]);
 
+    useEffect(() => {
+        if (popup.open) {
+            const timer = setTimeout(
+                () => setPopup((p) => ({ ...p, open: false })),
+                3000
+            );
+            return () => clearTimeout(timer);
+        }
+    }, [popup.open]);
+
     return (
-        <div style={{ height: '100%' }}>
+        <div style={{ height: "100%" }}>
             {selectedHighlight && (
                 <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30">
                     <div className="bg-white rounded-xl shadow-2xl border border-gray-200 p-6 min-w-[300px] max-w-md w-full">
@@ -447,7 +494,7 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
                         />
                         <div className="flex flex-row gap-4 justify-end">
                             <button
-                                className="bg-green-600 text-white rounded-lg px-6 py-2 font-semibold shadow hover:bg-green-700 transition"
+                                className="bg-red-100 text-green-600 rounded-lg px-6 py-2 font-semibold shadow hover:bg-red-200 transition"
                                 onClick={async () => {
                                     setNotes((notes) =>
                                         notes.map((n) =>
@@ -456,7 +503,10 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
                                                 : n
                                         )
                                     );
-                                    await handleUpdateNote(selectedHighlight.note, highlightEditContent);
+                                    await handleUpdateNote(
+                                        selectedHighlight.note,
+                                        highlightEditContent
+                                    );
                                     setSelectedHighlight(null);
                                 }}
                             >
@@ -466,14 +516,24 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
                                 className="bg-red-100 text-red-600 rounded-lg px-6 py-2 font-semibold shadow hover:bg-red-200 transition"
                                 onClick={async () => {
                                     try {
-                                        await deleteReviewWithHighlightAndComment(selectedHighlight.note.id);
+                                        await deleteReviewWithHighlightAndComment(
+                                            selectedHighlight.note.id
+                                        );
                                         setNotes((notes) =>
                                             notes.filter((n) => n.id !== selectedHighlight.note.id)
                                         );
                                         setSelectedHighlight(null);
-                                        // setPopup({ open: true, text: 'Note deleted successfully!', type: 'success' });
+                                        setPopup({
+                                            open: true,
+                                            text: "Note deleted successfully!",
+                                            type: "success",
+                                        });
                                     } catch (err) {
-                                        // setPopup({ open: true, text: `Failed to delete note! (${err.message})`, type: 'error' });
+                                        setPopup({
+                                            open: true,
+                                            text: "Failed to delete note!",
+                                            type: "error",
+                                        });
                                     }
                                 }}
                             >
@@ -490,6 +550,27 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
                 </div>
             )}
 
+            {popup.open && (
+                <div
+                    className={`fixed bottom-6 right-6 z-50 px-6 py-3 rounded-lg shadow-lg text-base font-semibold
+                        ${popup.type === "success"
+                            ? "bg-green-100 text-green-700 border border-green-300"
+                            : "bg-red-100 text-red-700 border border-red-300"
+                        }`}
+                    style={{ minWidth: 220, maxWidth: 320 }}
+                >
+                    <div className="flex items-center justify-between gap-4">
+                        <span>{popup.text}</span>
+                        <button
+                            className="ml-4 text-lg font-bold text-gray-400 hover:text-gray-700"
+                            onClick={() => setPopup({ ...popup, open: false })}
+                        >
+                            ×
+                        </button>
+                    </div>
+                </div>
+            )}
+
             <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
                 {fileUrl ? (
                     <Viewer
@@ -498,7 +579,7 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
                         onDocumentLoad={handleDocumentLoad}
                     />
                 ) : (
-                    <div style={{ textAlign: 'center', marginTop: 40, color: '#888' }}>
+                    <div style={{ textAlign: "center", marginTop: 40, color: "#888" }}>
                         PDF not found or loading...
                     </div>
                 )}

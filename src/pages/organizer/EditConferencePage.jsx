@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams ,useNavigate} from "react-router-dom";
 import ConferenceOrganizer from "../../components/layout/organizer/ConferenceOrganizer";
-import { getConferenceById, updateConference } from "../../services/ConferenceService";
+import {
+  getConferenceById,
+  updateConference,
+} from "../../services/ConferenceService";
 
 import {
   Card,
@@ -32,8 +35,7 @@ const EditConferencePage = () => {
   const [form] = Form.useForm();
   const [topics, setTopics] = useState([]);
   const [previewImage, setPreviewImage] = useState(null);
-
-
+  const navigate = useNavigate();
   useEffect(() => {
     fetchConference();
     fetchTopics();
@@ -42,9 +44,15 @@ const EditConferencePage = () => {
   const fetchConference = async () => {
     try {
       const data = await getConferenceById(conferenceId);
+
+      if (!data) {
+        navigate("/not-found");
+        return;
+      }
+
       setConference(data);
-    } catch (error) {
-      console.error("❌ Failed to fetch conference:", error);
+    } catch {
+      navigate("/not-found");
     } finally {
       setLoading(false);
     }
@@ -113,27 +121,33 @@ const EditConferencePage = () => {
 
   if (!conference) {
     return (
-      <p style={{ textAlign: "center", color: "red" }}>
-        Conference not found.
-      </p>
+      <p style={{ textAlign: "center", color: "red" }}>Conference not found.</p>
     );
   }
 
   return (
     <Card
       title="📘 Conference Information"
-      extra={
-        editing ? null : <Button onClick={handleEditClick}>Edit</Button>
-      }
+      extra={editing ? null : <Button onClick={handleEditClick}>Edit</Button>}
       style={{ maxWidth: 900, margin: "auto", marginTop: 40 }}
     >
       {!editing ? (
         <Descriptions column={1} bordered>
-          <Descriptions.Item label="Title">{conference.title}</Descriptions.Item>
-          <Descriptions.Item label="Description">{conference.description}</Descriptions.Item>
-          <Descriptions.Item label="Location">{conference.location}</Descriptions.Item>
-          <Descriptions.Item label="Start Date">{dayjs(conference.startDate).format("YYYY-MM-DD")}</Descriptions.Item>
-          <Descriptions.Item label="End Date">{dayjs(conference.endDate).format("YYYY-MM-DD")}</Descriptions.Item>
+          <Descriptions.Item label="Title">
+            {conference.title}
+          </Descriptions.Item>
+          <Descriptions.Item label="Description">
+            {conference.description}
+          </Descriptions.Item>
+          <Descriptions.Item label="Location">
+            {conference.location}
+          </Descriptions.Item>
+          <Descriptions.Item label="Start Date">
+            {dayjs(conference.startDate).format("YYYY-MM-DD")}
+          </Descriptions.Item>
+          <Descriptions.Item label="End Date">
+            {dayjs(conference.endDate).format("YYYY-MM-DD")}
+          </Descriptions.Item>
           <Descriptions.Item label="Status">
             <Tag color={conference.status ? "green" : "red"}>
               {conference.status ? "Active" : "Inactive"}
@@ -169,7 +183,11 @@ const EditConferencePage = () => {
           <Form.Item label="Location" name="location">
             <Input />
           </Form.Item>
-          <Form.Item label="Date Range" name="dateRange" rules={[{ required: true }]}>
+          <Form.Item
+            label="Date Range"
+            name="dateRange"
+            rules={[{ required: true }]}
+          >
             <RangePicker />
           </Form.Item>
           <Form.Item label="Status" name="status" valuePropName="checked">
@@ -186,56 +204,57 @@ const EditConferencePage = () => {
           </Form.Item>
 
           <Form.Item label="Upload New Banner" name="bannerImage">
-  <Upload
-    listType="picture"
-    accept="image/*"
-    showUploadList={false}
-    beforeUpload={(file) => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setPreviewImage({
-          url: reader.result,
-          name: file.name,
-          file: file,
-        });
-        form.setFieldsValue({ bannerImage: { file } });
-      };
-      reader.readAsDataURL(file);
-      return false; // Prevent upload
-    }}
-  >
-    <Button icon={<UploadOutlined />}>Select File</Button>
-  </Upload>
+            <Upload
+              listType="picture"
+              accept="image/*"
+              showUploadList={false}
+              beforeUpload={(file) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                  setPreviewImage({
+                    url: reader.result,
+                    name: file.name,
+                    file: file,
+                  });
+                  form.setFieldsValue({ bannerImage: { file } });
+                };
+                reader.readAsDataURL(file);
+                return false; // Prevent upload
+              }}
+            >
+              <Button icon={<UploadOutlined />}>Select File</Button>
+            </Upload>
 
-  {previewImage && (
-    <div style={{ marginTop: 10 }}>
-      <img
-        src={previewImage.url}
-        alt="Preview"
-        style={{ maxWidth: "100%", maxHeight: 300, borderRadius: 8 }}
-      />
-      <div style={{ display: "flex", alignItems: "center", marginTop: 5 }}>
-        <span style={{ marginRight: 8 }}>{previewImage.name}</span>
-        <Button
-          type="text"
-          danger
-          size="small"
-          onClick={() => {
-            setPreviewImage(null);
-            form.setFieldsValue({ bannerImage: null });
-          }}
-        >
-          🗑️
-        </Button>
-      </div>
-    </div>
-  )}
-</Form.Item>
-
-
-
-
-
+            {previewImage && (
+              <div style={{ marginTop: 10 }}>
+                <img
+                  src={previewImage.url}
+                  alt="Preview"
+                  style={{ maxWidth: "100%", maxHeight: 300, borderRadius: 8 }}
+                />
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    marginTop: 5,
+                  }}
+                >
+                  <span style={{ marginRight: 8 }}>{previewImage.name}</span>
+                  <Button
+                    type="text"
+                    danger
+                    size="small"
+                    onClick={() => {
+                      setPreviewImage(null);
+                      form.setFieldsValue({ bannerImage: null });
+                    }}
+                  >
+                    🗑️
+                  </Button>
+                </div>
+              </div>
+            )}
+          </Form.Item>
 
           <Form.Item>
             <Button type="primary" htmlType="submit" style={{ marginRight: 8 }}>
@@ -248,6 +267,5 @@ const EditConferencePage = () => {
     </Card>
   );
 };
-
 
 export default EditConferencePage;

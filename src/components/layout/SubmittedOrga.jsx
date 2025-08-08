@@ -247,7 +247,7 @@ const SubmittedOrga = () => {
                     <th className={thClass}>Status</th>
                     <th className={thClass}>Topic</th>
                     <th className={thClass}>Last Submitted</th>
-                    <th className={thClass}>Send Certificate</th>
+                    <th className={thClass}>Certificate</th>
 
                     
                   </tr>
@@ -383,7 +383,7 @@ const SubmittedOrga = () => {
               className="px-2 py-1 bg-green-100 border border-green-500 text-green-700 rounded hover:bg-green-200 text-xs"
               onClick={() => handleSendCertificate(p.id)}
             >
-              Send
+              Send Certificate
             </button>
           ) : (
             <span className="text-gray-400 italic text-xs">N/A</span>

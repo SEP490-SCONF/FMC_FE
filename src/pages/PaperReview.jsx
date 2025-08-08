@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams,useNavigate } from 'react-router-dom';
 import ReviewSidebar from '../components/pdfReview/ReviewSidebar';
 import ReviewContent from '../components/pdfReview/reviewContent/ReviewContent';
 import { getReviewByAssignmentId } from '../services/ReviewService';
 import AnalyzeAiService from '../services/AnalyzeAiService';
 
 const PaperReview = () => {
+    const navigate = useNavigate();
     const { assignmentId } = useParams();
     const [review, setReview] = useState(null);
     const [chunks, setChunks] = useState([]);
@@ -15,15 +16,26 @@ const PaperReview = () => {
     const [messageType, setMessageType] = useState('success'); // "success" or "error"
 
     useEffect(() => {
-        if (assignmentId) {
-            getReviewByAssignmentId(assignmentId)
-                .then(res => {
-                    console.log(res);
-                    setReview(res);
-                })
-                .catch(() => setReview(null));
-        }
-    }, [assignmentId]);
+    if (assignmentId) {
+        const fetchReview = async () => {
+            try {
+                const res = await getReviewByAssignmentId(assignmentId);
+                if (!res) {
+                    // Nếu cần điều hướng khi không tìm thấy review
+                    navigate("/not-found");
+                    return;
+                }
+                setReview(res);
+            } catch (error) {
+               
+                setReview(null);
+                navigate("/not-found");
+            }
+        };
+
+        fetchReview();
+    }
+}, [assignmentId, navigate]);
 
     // Hàm trích xuất chunk và gọi API
     const handleChunksGenerated = async (generatedChunks) => {
