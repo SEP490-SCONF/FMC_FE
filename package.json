@@ -22,6 +22,7 @@
     "axios": "^1.10.0",
     "bootstrap": "^5.3.6",
     "jquery-ui-dist": "^1.13.3",
+    "pdfjs-dist": "^3.11.174",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^5.5.0",

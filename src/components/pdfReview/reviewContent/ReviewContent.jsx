@@ -2,7 +2,6 @@ import React, { useRef, useState, useEffect } from 'react';
 import {
     Button,
     Position,
-    PrimaryButton,
     Tooltip,
     Viewer,
     Worker,
@@ -14,14 +13,14 @@ import {
     addReviewWithHighlightAndComment,
     getReviewWithHighlightAndComment,
     updateReviewWithHighlightAndComment,
-    deleteReviewWithHighlightAndComment, // Thêm dòng này
+    deleteReviewWithHighlightAndComment,
 } from '../../../services/ReviewWithHighlightService';
 import { useUser } from '../../../context/UserContext';
 
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 
-const ReviewContent = ({ review }) => {
+const ReviewContent = ({ review, onChunksGenerated }) => {
     const { user } = useUser();
 
     const [fileUrl, setFileUrl] = useState('');
@@ -32,17 +31,63 @@ const ReviewContent = ({ review }) => {
 
     const [selectedHighlight, setSelectedHighlight] = useState(null);
     const [highlightEditContent, setHighlightEditContent] = useState('');
-
-    const [popup, setPopup] = useState({ open: false, text: '', type: 'error' }); // type: 'error' | 'success'
-
     const noteEles = useRef(new Map());
     const [currentDoc, setCurrentDoc] = useState(null);
+    const [aiAnalysisResult, setAiAnalysisResult] = useState(null); // Giữ state này để tương thích với giao diện
 
-    const handleDocumentLoad = (e) => {
+    const handleDocumentLoad = async (e) => {
         setCurrentDoc(e.doc);
         if (currentDoc && currentDoc !== e.doc) {
             setNotes([]);
         }
+
+        // Trích xuất text từ PDF
+        const numPages = e.doc.numPages;
+        let fullText = '';
+        for (let i = 1; i <= numPages; i++) {
+            const page = await e.doc.getPage(i);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items
+                .map(item => item.str)
+                .join(' ')
+                .replace(/\[.*?\]/g, '')
+                .replace(/Figure \d+/g, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+            fullText += pageText + ' ';
+        }
+
+        // Chia nhỏ thành chunk với tối đa 512 token
+        const maxTokens = 512;
+        const chunks = [];
+        const words = fullText.split(' ').filter(word => word.length > 0 && !/^\d+$/.test(word));
+        let currentChunk = [];
+        let currentTokenCount = 0;
+
+        for (let word of words) {
+            const wordTokenCount = Math.ceil(word.length / 4) || 1;
+            if (currentTokenCount + wordTokenCount <= maxTokens) {
+                currentChunk.push(word);
+                currentTokenCount += wordTokenCount;
+            } else {
+                if (currentChunk.length > 0) {
+                    chunks.push({ ChunkId: chunks.length, Text: currentChunk.join(' ').trim(), TokenCount: currentTokenCount, Hash: null });
+                }
+                currentChunk = [word];
+                currentTokenCount = wordTokenCount;
+            }
+        }
+
+        if (currentChunk.length > 0) {
+            chunks.push({ ChunkId: chunks.length, Text: currentChunk.join(' ').trim(), TokenCount: currentTokenCount, Hash: null });
+        }
+
+        // console.log('Generated chunks:', chunks);
+        if (onChunksGenerated) {
+            onChunksGenerated(chunks); // Truyền chunk lên PaperReview
+        }
+
+        // Loại bỏ logic gọi API, giữ nguyên giao diện
     };
 
     const renderHighlightTarget = (props) => (
@@ -59,18 +104,13 @@ const ReviewContent = ({ review }) => {
         >
             <Tooltip
                 position={Position.TopCenter}
-                target={
-                    <Button onClick={props.toggle}>
-                        <MessageIcon />
-                    </Button>
-                }
+                target={<Button onClick={props.toggle}><MessageIcon /></Button>}
                 content={() => <div style={{ width: '100px' }}>Add a note</div>}
                 offset={{ left: 0, top: -8 }}
             />
         </div>
     );
 
-    // Call API when adding a new note
     const renderHighlightContent = (props) => {
         const addNote = async () => {
             if (message !== '') {
@@ -98,13 +138,11 @@ const ReviewContent = ({ review }) => {
                     formData.append("Status", "Draft");
 
                     await addReviewWithHighlightAndComment(formData);
-
                     setNotes((prev) => prev.concat([note]));
                     setMessage('');
                     props.cancel();
-                    setPopup({ open: true, text: 'Note added successfully!', type: 'success' });
                 } catch (err) {
-                    setPopup({ open: true, text: 'Failed to save note!', type: 'error' });
+                    // setPopup({ open: true, text: `Failed to save note! (${err.message})`, type: 'error' });
                 }
             }
         };
@@ -122,10 +160,10 @@ const ReviewContent = ({ review }) => {
                     className="w-full border border-gray-300 rounded p-2 mb-3"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                ></textarea>
+                />
                 <div className="flex flex-row gap-3 justify-end">
                     <button
-                        className="bg-blue-600 text-green rounded-lg px-4 py-1 font-semibold hover:bg-blue-700 transition"
+                        className="bg-blue-600 text-white rounded-lg px-4 py-1 font-semibold hover:bg-blue-700 transition"
                         onClick={addNote}
                     >
                         Add
@@ -141,8 +179,7 @@ const ReviewContent = ({ review }) => {
         );
     };
 
-    const [activateTab, setActivateTab] = useState(() => () => {});
-
+    const [activateTab, setActivateTab] = useState(() => () => { });
     const jumpToNote = (note) => {
         activateTab(3);
         const notesContainer = notesContainerRef.current;
@@ -200,14 +237,13 @@ const ReviewContent = ({ review }) => {
         };
     }, []);
 
-    // Call API when deleting a note
     const handleDeleteNote = async (id) => {
         try {
             await deleteReviewWithHighlightAndComment(id);
             setNotes((notes) => notes.filter((note) => note.id !== id));
-            setPopup({ open: true, text: 'Note deleted successfully!', type: 'success' });
+            // setPopup({ open: true, text: 'Note deleted successfully!', type: 'success' });
         } catch (err) {
-            setPopup({ open: true, text: 'Failed to delete note!', type: 'error' });
+            // setPopup({ open: true, text: `Failed to delete note! (${err.message})`, type: 'error' });
         }
     };
 
@@ -220,7 +256,6 @@ const ReviewContent = ({ review }) => {
         setEditingContent(note.content);
     };
 
-    // Call API when updating a note
     const handleUpdateNote = async (note, newContent) => {
         if (!review || !review.reviewId) return;
         try {
@@ -238,13 +273,12 @@ const ReviewContent = ({ review }) => {
             formData.append('CommentText', newContent);
 
             await updateReviewWithHighlightAndComment(review.reviewId, formData);
-            setPopup({ open: true, text: 'Note updated successfully!', type: 'success' });
+            // setPopup({ open: true, text: 'Note updated successfully!', type: 'success' });
         } catch (err) {
-            setPopup({ open: true, text: 'Failed to update note!', type: 'error' });
+            // setPopup({ open: true, text: `Failed to update note! (${err.message})`, type: 'error' });
         }
     };
 
-    // Sidebar notes đẹp với Tailwind
     const sidebarNotes = (
         <div
             ref={notesContainerRef}
@@ -275,7 +309,7 @@ const ReviewContent = ({ review }) => {
                             />
                             <div className="flex flex-row gap-3 justify-end">
                                 <button
-                                    className="bg-blue-600 text-green rounded-lg px-4 py-1 font-semibold shadow hover:bg-blue-700 transition"
+                                    className="bg-blue-600 text-white rounded-lg px-4 py-1 font-semibold shadow hover:bg-blue-700 transition"
                                     onClick={async (e) => {
                                         e.stopPropagation();
                                         setNotes((notes) =>
@@ -371,10 +405,7 @@ const ReviewContent = ({ review }) => {
                             );
                             return {
                                 id: h.highlightId,
-                                content:
-                                    relatedComments.length > 0
-                                        ? relatedComments[0].commentText
-                                        : '',
+                                content: relatedComments.length > 0 ? relatedComments[0].commentText : '',
                                 highlightAreas: [
                                     {
                                         pageIndex: h.pageIndex,
@@ -397,16 +428,8 @@ const ReviewContent = ({ review }) => {
         }
     }, [review]);
 
-    useEffect(() => {
-        if (popup.open) {
-            const timer = setTimeout(() => setPopup((p) => ({ ...p, open: false })), 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [popup.open]);
-
     return (
         <div style={{ height: '100%' }}>
-            {/* Popup Edit/Delete when selecting highlight */}
             {selectedHighlight && (
                 <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30">
                     <div className="bg-white rounded-xl shadow-2xl border border-gray-200 p-6 min-w-[300px] max-w-md w-full">
@@ -418,7 +441,7 @@ const ReviewContent = ({ review }) => {
                         />
                         <div className="flex flex-row gap-4 justify-end">
                             <button
-                                className="bg-red-100 text-green-600 rounded-lg px-6 py-2 font-semibold shadow hover:bg-red-200 transition"
+                                className="bg-green-600 text-white rounded-lg px-6 py-2 font-semibold shadow hover:bg-green-700 transition"
                                 onClick={async () => {
                                     setNotes((notes) =>
                                         notes.map((n) =>
@@ -427,10 +450,7 @@ const ReviewContent = ({ review }) => {
                                                 : n
                                         )
                                     );
-                                    await handleUpdateNote(
-                                        selectedHighlight.note,
-                                        highlightEditContent
-                                    );
+                                    await handleUpdateNote(selectedHighlight.note, highlightEditContent);
                                     setSelectedHighlight(null);
                                 }}
                             >
@@ -445,9 +465,9 @@ const ReviewContent = ({ review }) => {
                                             notes.filter((n) => n.id !== selectedHighlight.note.id)
                                         );
                                         setSelectedHighlight(null);
-                                        setPopup({ open: true, text: 'Note deleted successfully!', type: 'success' });
+                                        // setPopup({ open: true, text: 'Note deleted successfully!', type: 'success' });
                                     } catch (err) {
-                                        setPopup({ open: true, text: 'Failed to delete note!', type: 'error' });
+                                        // setPopup({ open: true, text: `Failed to delete note! (${err.message})`, type: 'error' });
                                     }
                                 }}
                             >
@@ -460,28 +480,6 @@ const ReviewContent = ({ review }) => {
                                 Cancel
                             </button>
                         </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Popup message */}
-            {popup.open && (
-                <div
-                    className={`fixed bottom-6 right-6 z-50 px-6 py-3 rounded-lg shadow-lg text-base font-semibold
-                        ${popup.type === 'success'
-                            ? 'bg-green-100 text-green-700 border border-green-300'
-                            : 'bg-red-100 text-red-700 border border-red-300'
-                        }`}
-                    style={{ minWidth: 220, maxWidth: 320 }}
-                >
-                    <div className="flex items-center justify-between gap-4">
-                        <span>{popup.text}</span>
-                        <button
-                            className="ml-4 text-lg font-bold text-gray-400 hover:text-gray-700"
-                            onClick={() => setPopup({ ...popup, open: false })}
-                        >
-                            ×
-                        </button>
                     </div>
                 </div>
             )}

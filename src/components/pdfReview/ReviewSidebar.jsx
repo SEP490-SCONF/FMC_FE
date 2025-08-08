@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { updateReview, sendFeedback } from '../../services/ReviewService';
+import AnalyzeAiService from '../../services/AnalyzeAiService';
 
-const ReviewSidebar = ({ review, onChange, onSave, onSendFeedback }) => {
+const ReviewSidebar = ({ review, chunks, onChange, onSave, onSendFeedback }) => {
     const [popup, setPopup] = useState({ open: false, text: '', type: 'success' });
+    const [aiPercentage, setAiPercentage] = useState(review?.percentAi || 0);
 
-    // Auto close popup after 3s
     useEffect(() => {
         if (popup.open) {
             const timer = setTimeout(() => {
@@ -58,6 +59,16 @@ const ReviewSidebar = ({ review, onChange, onSave, onSendFeedback }) => {
         }
     };
 
+    const handleCheckAiAgain = async () => {
+        try {
+            console.log('Chunks being sent');
+            const data = await AnalyzeAiService.analyzeDocument(review.reviewId, chunks || []);
+            setAiPercentage(data.percentAi || 0);
+        } catch (err) {
+            console.error("Error checking AI:", err);
+        }
+    };
+
     return (
         <div className="flex-1 p-6 border-r border-gray-200 bg-white flex flex-col h-full">
             <h2 className="text-center text-xl font-bold border-b pb-2 mb-4">Review Info</h2>
@@ -90,6 +101,23 @@ const ReviewSidebar = ({ review, onChange, onSave, onSendFeedback }) => {
                     <option value="Accepted">Accepted</option>
                     <option value="Rejected">Rejected</option>
                 </select>
+            </div>
+            <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">AI Percentage</label>
+                <div className="flex items-center gap-2">
+                    <input
+                        type="text"
+                        value={aiPercentage + '%'}
+                        className="w-full border rounded px-3 py-2 bg-gray-100"
+                        disabled
+                    />
+                    <button
+                        className="px-4 py-2 bg-blue-100 text-blue-700 border border-blue-600 rounded font-semibold hover:bg-blue-600 hover:text-white transition"
+                        onClick={handleCheckAiAgain}
+                    >
+                        Check Again
+                    </button>
+                </div>
             </div>
             <div className="flex gap-4 mt-auto">
                 <button
