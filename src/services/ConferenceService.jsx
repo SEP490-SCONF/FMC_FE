@@ -7,6 +7,7 @@ export const getConferences = async () => {
 };
 export const searchConferences = async ({ search, filter, skip = 0, top = 10 }) => {
   let query = [];
+  query.push(`$count=true`);
   if (search) query.push(`$search=${encodeURIComponent(search)}`);
   if (filter) query.push(`$filter=${filter}`);
   if (typeof skip === "number") query.push(`$skip=${skip}`);

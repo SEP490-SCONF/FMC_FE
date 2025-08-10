@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { searchConferences } from "../services/ConferenceService";
 import { getAllTopics } from "../services/TopicService";
 import { useNavigate } from "react-router-dom";
-const PAGE_SIZE = 2;
+import { Pagination } from "antd";
+const PAGE_SIZE =2;
 
 const ConferenceSearch = () => {
   const [location, setLocation] = useState("");
@@ -10,9 +11,11 @@ const ConferenceSearch = () => {
   const [selectedTopics, setSelectedTopics] = useState([]);
   const [page, setPage] = useState(1);
   const [conferences, setConferences] = useState([]);
+  const [totalCount, setTotalCount] = useState(0); // Thêm state này
   const [loading, setLoading] = useState(false);
-  const [searchTitle, setSearchTitle] = useState(""); // Thêm state cho search title
+  const [searchTitle, setSearchTitle] = useState("");
   const navigate = useNavigate();
+
   useEffect(() => {
     getAllTopics().then((res) => setTopics(res.value || res));
   }, []);
@@ -37,11 +40,17 @@ const ConferenceSearch = () => {
     searchConferences({
       filter: buildFilter(),
       skip: (page - 1) * PAGE_SIZE,
-      top: PAGE_SIZE + 1,
+      top: PAGE_SIZE,
     })
-      .then((res) => setConferences(res.value || res))
+      .then((res) => {
+        setConferences(res.value || res);
+        setTotalCount(res["@odata.count"] || res.count || 0);
+        console.log("API Response:", res);
+              console.log("OData Count:", res["@odata.count"]); // 👈 log riêng count
+
+      })
       .finally(() => setLoading(false));
-  }, [location, selectedTopics, page, searchTitle]); // Thêm searchTitle vào dependency
+  }, [location, selectedTopics, page, searchTitle]);
 
   const handleTopicChange = (topicId) => {
     setPage(1);
@@ -138,7 +147,7 @@ const ConferenceSearch = () => {
             </div>
           ) : (
             <div className="flex flex-col gap-6">
-              {conferences.slice(0, PAGE_SIZE).map((conf) => (
+              {conferences.map((conf) => (
                 <div
                   key={conf.conferenceId}
                   className="bg-white rounded-lg shadow flex flex-col md:flex-row items-center p-6 gap-6 cursor-pointer hover:bg-gray-100 transition"
@@ -223,24 +232,18 @@ const ConferenceSearch = () => {
               ))}
             </div>
           )}
-          {/* Pagination */}
-          <div className="flex gap-2 mt-8 justify-center">
-            <button
-              disabled={page === 1}
-              onClick={() => setPage(page - 1)}
-              className="px-4 py-2 border rounded disabled:opacity-50"
-            >
-              Prev
-            </button>
-            <span className="px-3 py-2">{page}</span>
-            <button
-              disabled={conferences.length <= PAGE_SIZE}
-              onClick={() => setPage(page + 1)}
-              className="px-4 py-2 border rounded disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
+          {/* Pagination Ant Design */}
+          {!loading && totalCount > PAGE_SIZE && (
+            <div className="flex justify-center mt-8">
+              <Pagination
+                current={page}
+                total={totalCount}
+                pageSize={PAGE_SIZE}
+                onChange={(p) => setPage(p)}
+                showSizeChanger={false}
+              />
+            </div>
+          )}
         </main>
       </div>
     </div>

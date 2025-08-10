@@ -1,12 +1,41 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useUser } from "../../context/UserContext";
+import { useNotificationSignalR } from "../../hooks/useNotificationSignalR";
+import { getNotificationsByUserId } from "../../services/NotificationService";
 import NotificationDropdown from "./NotificationDropdown";
 import UserDropdown from "./UserDropdown";
-import { useUser } from "../../context/UserContext";
 import fptLogo from "../../assets/images/fptlogo.png"; // Đường dẫn tùy vị trí file ảnh
 
 const MainHeader = ({ onClick, onToggle }) => {
   const { user } = useUser();
+  const [notifications, setNotifications] = useState([]);
+  const [popup, setPopup] = useState(null);
+
+  // In ra userId để test
+  useEffect(() => {
+    console.log("Current userId:", user?.userId);
+  }, [user?.userId]);
+
+  // Lấy thông báo ban đầu
+  useEffect(() => {
+    if (user?.userId) {
+      getNotificationsByUserId(user.userId)
+        .then(setNotifications)
+        .catch(() => setNotifications([]));
+    }
+  }, [user?.userId]);
+
+  // Lắng nghe SignalR
+  useNotificationSignalR(user?.userId, (title, content) => {
+    setPopup({ title, content });
+    console.log("Received notification:", title, content);
+    getNotificationsByUserId(user.userId).then(setNotifications);
+
+    // Tự động tắt popup sau 5 giây
+    setTimeout(() => setPopup(null), 5000);
+  });
+
   const [isApplicationMenuOpen, setApplicationMenuOpen] = React.useState(false);
 
   const toggleApplicationMenu = () => {
@@ -68,8 +97,24 @@ const MainHeader = ({ onClick, onToggle }) => {
           {/* <ThemeToggleButton /> */}
           {user ? (
             <>
-              <NotificationDropdown />
+              <NotificationDropdown notifications={notifications} />
               <UserDropdown user={user} />
+              {popup && (
+                <div className="fixed bottom-6 right-6 z-50 px-6 py-3 rounded-lg shadow-lg bg-blue-100 text-blue-700 border border-blue-300 font-semibold animate-fade-in">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <div className="font-bold">{popup.title}</div>
+                      <div>{popup.content}</div>
+                    </div>
+                    <button
+                      className="ml-4 text-lg font-bold text-gray-400 hover:text-gray-700"
+                      onClick={() => setPopup(null)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           ) : (
             <Link
