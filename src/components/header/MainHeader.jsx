@@ -6,11 +6,11 @@ import { getNotificationsByUserId } from "../../services/NotificationService";
 import NotificationDropdown from "./NotificationDropdown";
 import UserDropdown from "./UserDropdown";
 import fptLogo from "../../assets/images/fptlogo.png"; // Đường dẫn tùy vị trí file ảnh
+import { toast } from "react-toastify";
 
 const MainHeader = ({ onClick, onToggle }) => {
   const { user } = useUser();
   const [notifications, setNotifications] = useState([]);
-  const [popup, setPopup] = useState(null);
 
   // In ra userId để test
   useEffect(() => {
@@ -26,14 +26,22 @@ const MainHeader = ({ onClick, onToggle }) => {
     }
   }, [user?.userId]);
 
-  // Lắng nghe SignalR
   useNotificationSignalR(user?.userId, (title, content) => {
-    setPopup({ title, content });
+    // Thay thế popup thủ công bằng toast.info
+    toast.info(
+      <div>
+        <div className="font-bold">{title}</div>
+        <div>{content}</div>
+      </div>,
+      {
+        position: "bottom-right",
+        autoClose: 5000,
+        closeButton: true,
+        hideProgressBar: false,
+      }
+    );
     console.log("Received notification:", title, content);
     getNotificationsByUserId(user.userId).then(setNotifications);
-
-    // Tự động tắt popup sau 5 giây
-    setTimeout(() => setPopup(null), 5000);
   });
 
   const [isApplicationMenuOpen, setApplicationMenuOpen] = React.useState(false);
@@ -99,22 +107,7 @@ const MainHeader = ({ onClick, onToggle }) => {
             <>
               <NotificationDropdown notifications={notifications} />
               <UserDropdown user={user} />
-              {popup && (
-                <div className="fixed bottom-6 right-6 z-50 px-6 py-3 rounded-lg shadow-lg bg-blue-100 text-blue-700 border border-blue-300 font-semibold animate-fade-in">
-                  <div className="flex items-center justify-between gap-4">
-                    <div>
-                      <div className="font-bold">{popup.title}</div>
-                      <div>{popup.content}</div>
-                    </div>
-                    <button
-                      className="ml-4 text-lg font-bold text-gray-400 hover:text-gray-700"
-                      onClick={() => setPopup(null)}
-                    >
-                      ×
-                    </button>
-                  </div>
-                </div>
-              )}
+              
             </>
           ) : (
             <Link
