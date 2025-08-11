@@ -220,9 +220,9 @@ export default function ProceedingsPage() {
             }}
           >
             <Title level={3}>📚 Proceedings</Title>
-            <Button type="primary" onClick={() => setModalOpen(true)}>
+            {/* <Button type="primary" onClick={() => setModalOpen(true)}>
               + Create Proceeding
-            </Button>
+            </Button> */}
           </Space>
 
           {/* Search & Filter */}
