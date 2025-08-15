@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useUser } from "../../context/UserContext";
-import { useNotificationSignalR } from "../../hooks/useNotificationSignalR";
-import { getNotificationsByUserId } from "../../services/NotificationService";
+import { useUser } from "../../../context/UserContext";
+import { useNotificationSignalR } from "../../../hooks/useNotificationSignalR";
+import { getNotificationsByUserId } from "../../../services/NotificationService";
 import NotificationDropdown from "./NotificationDropdown";
 import UserDropdown from "./UserDropdown";
-import fptLogo from "../../assets/images/fptlogo.png"; // Đường dẫn tùy vị trí file ảnh
+import fptLogo from "../../../assets/images/fptlogo.png"; // Đường dẫn tùy vị trí file ảnh
 import { toast } from "react-toastify";
 
 const MainHeader = ({ onClick, onToggle }) => {

@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import {
   getCommitteeForm,
   completeCommitteeForm,
-} from "../services/UserConferenceRoleService";
+} from "../../services/UserConferenceRoleService";
 
 const CommitteeForm = () => {
   const [searchParams] = useSearchParams();

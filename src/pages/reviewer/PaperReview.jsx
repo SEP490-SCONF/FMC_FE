@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams,useNavigate } from 'react-router-dom';
-import ReviewSidebar from '../components/pdfReview/ReviewSidebar';
-import ReviewContent from '../components/pdfReview/reviewContent/ReviewContent';
-import { getReviewByAssignmentId } from '../services/ReviewService';
-import AnalyzeAiService from '../services/AnalyzeAiService';
+import ReviewSidebar from '../../components/pdfReview/ReviewSidebar';
+import ReviewContent from '../../components/pdfReview/reviewContent/ReviewContent';
+import { getReviewByAssignmentId } from '../../services/ReviewService';
+import AnalyzeAiService from '../../services/AnalyzeAiService';
 
 const PaperReview = () => {
     const navigate = useNavigate();

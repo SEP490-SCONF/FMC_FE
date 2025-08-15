@@ -1,15 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { useParams,useNavigate } from "react-router-dom";
-import Banner from "../components/layout/Banner";
-import Event from "../components/layout/Event";
-import Faq from "../components/layout/Faq";
-import Schedule from "../components/layout/schedule";
-import Service from "../components/layout/Service";
-import Solution from "../components/layout/Solution";
-import HomeBody from "../components/layout/HomeScreen";
-import TechMarquee from "../components/layout/Marque";
-import { getConferences, getConferenceById } from "../services/ConferenceService";
-import { getConferenceTopicsByConferenceId } from "../services/ConferenceTopicService";
+import Banner from "../../components/conference/ConferenceBanner";
+
+import Schedule from "../../components/conference/ConferenceSchedule";
+import Service from "../../components/conference/ConferenceTopic";
+
+import { getConferences, getConferenceById } from "../../services/ConferenceService";
+import { getConferenceTopicsByConferenceId } from "../../services/ConferenceTopicService";
 
 const Home = () => {
     const { id } = useParams();
@@ -53,26 +50,15 @@ const Home = () => {
         }
     }, [selectedConference]);
 
-    // Hàm nhận id và gọi API lấy chi tiết conference
-    const handleConferenceSelect = async (conferenceId) => {
-        try {
-            const data = await getConferenceById(conferenceId);
-            setSelectedConference(data);
-        } catch (error) {
-            setSelectedConference(null);
-        }
-    };
-
+    
     return (
         <>
             <main>
                 <Banner conference={selectedConference} />
                 <Service conference={selectedConference} topics={topics} />
-                <Event />
+                
                 <Schedule conference={selectedConference} />
-                <Solution />
-                <Faq />
-                <TechMarquee />
+               
             </main>
         </>
     );

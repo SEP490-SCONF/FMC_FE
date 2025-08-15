@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { getAllConferences } from "../services/ConferenceService";
-import { getAllTopics } from "../services/TopicService";
+import { getAllConferences } from "../../services/ConferenceService";
+import { getAllTopics } from "../../services/TopicService";
 import { useNavigate } from "react-router-dom";
 import { Pagination, Input, Select, Button, Checkbox, Space, Card } from "antd";
 const { Search } = Input;

@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { DropdownItem } from "../ui/dropdown/DropdownItem";
-import { Dropdown } from "../ui/dropdown/Dropdown";
+import { DropdownItem } from "../../ui/dropdown/DropdownItem";
+import { Dropdown } from "../../ui/dropdown/Dropdown";
 import { Link, useNavigate } from "react-router-dom";
-import { logout } from "../../services/AuthenService";
-import { useUser } from "../../context/UserContext"; // hoặc đúng path của bạn
+import { logout } from "../../../services/AuthenService";
+import { useUser } from "../../../context/UserContext"; // hoặc đúng path của bạn
 
 export default function UserDropdown({ user }) {
   const [isOpen, setIsOpen] = useState(false);

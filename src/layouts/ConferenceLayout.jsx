@@ -8,7 +8,7 @@ const ConferenceLayout = () => (
     <div>
       <ConferenceHeader />
       <Outlet />
-      <Footer />
+      
     </div>
   </ConferenceProvider>
 );

@@ -1,6 +1,6 @@
-import CFP from "../components/layout/CFP";
+import CFP from "../../components/conference/ConferenceCFP";
 import React from "react";
-import ConferenceHeader from "../components/header/MainHeader";
+import ConferenceHeader from "../../components/layout/header/MainHeader";
 
 
 

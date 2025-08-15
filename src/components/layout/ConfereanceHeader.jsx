@@ -2,12 +2,12 @@ import React, { useEffect, useState } from "react";
 import { useConference } from "../../context/ConferenceContext";
 import { Link, useParams } from "react-router-dom";
 import fptLogo from "../../assets/images/fptlogo.png";
-import "../../assets/css/style.min.css";
-import UserDropdown from "../header/UserDropdown";
+
+import UserDropdown from "./header/UserDropdown";
 import { useUser } from "../../context/UserContext";
 import { useNotificationSignalR } from "../../hooks/useNotificationSignalR";
 import { getNotificationsByUserId } from "../../services/NotificationService";
-import NotificationDropdown from "../header/NotificationDropdown";
+import NotificationDropdown from "./header/NotificationDropdown";
 import { toast } from "react-toastify";
 
 const Header = () => {
@@ -66,7 +66,11 @@ const Header = () => {
           <ul className="flex gap-6 items-center">
             <li>
               <Link
-                to="/"
+               to={
+                  conferenceId
+                    ? `/conference/${conferenceId}`
+                    : "#"
+                }
                 className="text-gray-700 font-semibold hover:text-blue-700 transition uppercase"
               >
                 Home
