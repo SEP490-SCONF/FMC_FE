@@ -2,7 +2,6 @@ import React, { useRef, useState, useEffect } from "react";
 import {
   Button,
   Position,
-  PrimaryButton,
   Tooltip,
   Viewer,
   Worker,
@@ -10,11 +9,13 @@ import {
 import { defaultLayoutPlugin } from "@react-pdf-viewer/default-layout";
 import { highlightPlugin, MessageIcon } from "@react-pdf-viewer/highlight";
 import { getPdfUrlByReviewId } from "../../../services/PaperRevisionService";
+import { translatePaperPdf } from "../../../services/PaperSerice";
+
 import {
   addReviewWithHighlightAndComment,
   getReviewWithHighlightAndComment,
   updateReviewWithHighlightAndComment,
-  deleteReviewWithHighlightAndComment, // Thêm dòng này
+  deleteReviewWithHighlightAndComment,
 } from "../../../services/ReviewWithHighlightService";
 import { useUser } from "../../../context/UserContext";
 
@@ -28,21 +29,55 @@ const ReviewContent = ({ review }) => {
   const [message, setMessage] = useState("");
   const [notes, setNotes] = useState([]);
   const notesContainerRef = useRef(null);
-  let noteId = notes.length;
 
   const [selectedHighlight, setSelectedHighlight] = useState(null);
   const [highlightEditContent, setHighlightEditContent] = useState("");
 
-  const [popup, setPopup] = useState({ open: false, text: "", type: "error" }); // type: 'error' | 'success'
+  const [popup, setPopup] = useState({ open: false, text: "", type: "error" });
 
   const noteEles = useRef(new Map());
   const [currentDoc, setCurrentDoc] = useState(null);
+
+  // --- Trạng thái dịch ---
+  const [targetLang, setTargetLang] = useState("en"); // mặc định English
+  const [translating, setTranslating] = useState(false);
+  const [translatedText, setTranslatedText] = useState("");
+
+  // --- Modal xem bản dịch ---
+  const [showTranslatedModal, setShowTranslatedModal] = useState(false);
 
   const handleDocumentLoad = (e) => {
     setCurrentDoc(e.doc);
     if (currentDoc && currentDoc !== e.doc) {
       setNotes([]);
     }
+  };
+
+  // Dịch toàn bộ notes
+  const handleTranslateNotes = async () => {
+    if (!review || !review.paperId) {
+      setPopup({ open: true, text: "Review or paper not loaded yet.", type: "error" });
+      return;
+    }
+
+    setTranslating(true);
+    try {
+      const res = await translatePaperPdf(review.paperId, targetLang);
+      const translatedText = res?.data?.translatedText || res?.translatedText || "";
+      setTranslatedText(translatedText);
+
+      setNotes((prevNotes) =>
+        prevNotes.map((note) => ({
+          ...note,
+          content: translatedText,
+        }))
+      );
+
+      setPopup({ open: true, text: "Notes translated successfully!", type: "success" });
+    } catch (error) {
+      setPopup({ open: true, text: "Failed to translate notes.", type: "error" });
+    }
+    setTranslating(false);
   };
 
   const renderHighlightTarget = (props) => (
@@ -70,7 +105,6 @@ const ReviewContent = ({ review }) => {
     </div>
   );
 
-  // Call API when adding a new note
   const renderHighlightContent = (props) => {
     const addNote = async () => {
       if (message !== "") {
@@ -85,10 +119,7 @@ const ReviewContent = ({ review }) => {
           formData.append("Status", "Draft");
 
           props.highlightAreas.forEach((area, idx) => {
-            formData.append(
-              `HighlightAreas[${idx}][PageIndex]`,
-              area.pageIndex
-            );
+            formData.append(`HighlightAreas[${idx}][PageIndex]`, area.pageIndex);
             formData.append(`HighlightAreas[${idx}][Left]`, area.left || 0);
             formData.append(`HighlightAreas[${idx}][Top]`, area.top || 0);
             formData.append(`HighlightAreas[${idx}][Width]`, area.width || 0);
@@ -96,18 +127,10 @@ const ReviewContent = ({ review }) => {
           });
 
           const res = await addReviewWithHighlightAndComment(formData);
-          console.log("API Response:", res);
-
-          // ✅ Lấy highlightId đúng
           const highlightId = res?.highlight?.highlightId;
 
           if (!highlightId) {
-            console.error("HighlightId not found in response:", res);
-            setPopup({
-              open: true,
-              text: "Failed to save note (missing ID)",
-              type: "error",
-            });
+            setPopup({ open: true, text: "Failed to save note (missing ID)", type: "error" });
             return;
           }
 
@@ -121,13 +144,8 @@ const ReviewContent = ({ review }) => {
           setNotes((prev) => [...prev, note]);
           setMessage("");
           props.cancel();
-          setPopup({
-            open: true,
-            text: "Note added successfully!",
-            type: "success",
-          });
+          setPopup({ open: true, text: "Note added successfully!", type: "success" });
         } catch (err) {
-          console.error("Error adding note:", err);
           setPopup({ open: true, text: "Failed to save note!", type: "error" });
         }
       }
@@ -171,9 +189,7 @@ const ReviewContent = ({ review }) => {
     activateTab(3);
     const notesContainer = notesContainerRef.current;
     if (noteEles.current.has(note.id) && notesContainer) {
-      notesContainer.scrollTop = noteEles.current
-        .get(note.id)
-        .getBoundingClientRect().top;
+      notesContainer.scrollTop = noteEles.current.get(note.id).getBoundingClientRect().top;
     }
   };
 
@@ -198,11 +214,7 @@ const ReviewContent = ({ review }) => {
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  setSelectedHighlight({
-                    note,
-                    area,
-                    pageIndex: props.pageIndex,
-                  });
+                  setSelectedHighlight({ note, area, pageIndex: props.pageIndex });
                   setHighlightEditContent(note.content);
                 }}
               />
@@ -226,24 +238,15 @@ const ReviewContent = ({ review }) => {
     };
   }, []);
 
-  // Call API when deleting a note
   const handleDeleteNote = async (highlightId) => {
-  try {
-    await deleteReviewWithHighlightAndComment(highlightId); // Gọi API xóa theo highlightId
-    setNotes((notes) => notes.filter((note) => note.id !== highlightId)); // Xóa khỏi UI
-    setPopup({
-      open: true,
-      text: "Note deleted successfully!",
-      type: "success",
-    });
-  } catch (err) {
-    setPopup({
-      open: true,
-      text: "Failed to delete note!",
-      type: "error",
-    });
-  }
-};
+    try {
+      await deleteReviewWithHighlightAndComment(highlightId);
+      setNotes((notes) => notes.filter((note) => note.id !== highlightId));
+      setPopup({ open: true, text: "Note deleted successfully!", type: "success" });
+    } catch (err) {
+      setPopup({ open: true, text: "Failed to delete note!", type: "error" });
+    }
+  };
 
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [editingContent, setEditingContent] = useState("");
@@ -254,7 +257,6 @@ const ReviewContent = ({ review }) => {
     setEditingContent(note.content);
   };
 
-  // Call API when updating a note
   const handleUpdateNote = async (note, newContent) => {
     if (!review || !review.reviewId) return;
     try {
@@ -265,7 +267,6 @@ const ReviewContent = ({ review }) => {
       formData.append("TextHighlighted", note.quote);
       formData.append("CommentText", newContent);
 
-      // Gửi tất cả highlightAreas
       note.highlightAreas.forEach((area, idx) => {
         formData.append(`HighlightAreas[${idx}][PageIndex]`, area.pageIndex);
         formData.append(`HighlightAreas[${idx}][Left]`, area.left || 0);
@@ -275,17 +276,12 @@ const ReviewContent = ({ review }) => {
       });
 
       await updateReviewWithHighlightAndComment(review.reviewId, formData);
-      setPopup({
-        open: true,
-        text: "Note updated successfully!",
-        type: "success",
-      });
+      setPopup({ open: true, text: "Note updated successfully!", type: "success" });
     } catch (err) {
       setPopup({ open: true, text: "Failed to update note!", type: "error" });
     }
   };
 
-  // Sidebar notes đẹp với Tailwind
   const sidebarNotes = (
     <div ref={notesContainerRef} className="overflow-auto w-full space-y-4">
       {notes.length === 0 && (
@@ -382,7 +378,52 @@ const ReviewContent = ({ review }) => {
     }),
     sidebarTabs: (defaultTabs) =>
       defaultTabs.concat({
-        content: sidebarNotes,
+        content: (
+          <div className="flex flex-col h-full">
+            {/* Chọn ngôn ngữ + nút dịch */}
+<div className="px-4 py-2 border-b border-gray-300 flex items-center gap-3">
+  <select
+    className="border border-gray-300 rounded px-2 py-1"
+    value={targetLang}
+    onChange={(e) => setTargetLang(e.target.value)}
+  >
+    <option value="en-US">English</option>
+    <option value="vi">Vietnamese</option>
+    <option value="fr">French</option>
+    <option value="ja">Japanese</option>
+    <option value="zh">Chinese</option>
+  </select>
+  <button
+    style={{
+      padding: "10px 20px",
+      backgroundColor: translating ? "#4d7c0f" : "#22c55e", // xanh lá đậm khi hover: #4d7c0f, bình thường: #22c55e
+      color: "white",
+      borderRadius: 8,
+      fontWeight: 600,
+      cursor: translating ? "not-allowed" : "pointer",
+      border: "none",
+      transition: "background-color 0.3s ease",
+      userSelect: "none",
+      opacity: translating ? 0.6 : 1,
+    }}
+    onClick={handleTranslateNotes}
+    disabled={translating}
+    onMouseEnter={(e) => {
+      if (!translating) e.currentTarget.style.backgroundColor = "#4d7c0f";
+    }}
+    onMouseLeave={(e) => {
+      if (!translating) e.currentTarget.style.backgroundColor = "#22c55e";
+    }}
+  >
+    {translating ? "Translating..." : "Translate Notes"}
+  </button>
+</div>
+
+
+            {/* Nội dung notes */}
+            <div className="overflow-auto w-full flex-grow">{sidebarNotes}</div>
+          </div>
+        ),
         icon: <MessageIcon />,
         title: "Notes",
       }),
@@ -402,8 +443,6 @@ const ReviewContent = ({ review }) => {
 
       getReviewWithHighlightAndComment(review.reviewId)
         .then((res) => {
-          // res.Highlights: [{ HighlightId, TextHighlighted, Areas: [{...}] }]
-          // res.Comments: [{ CommentId, UserId, CommentText, ... }]
           if (res && res.highlights && res.comments) {
             const notes = res.highlights.map((h) => {
               const relatedComments = res.comments.filter(
@@ -437,17 +476,14 @@ const ReviewContent = ({ review }) => {
 
   useEffect(() => {
     if (popup.open) {
-      const timer = setTimeout(
-        () => setPopup((p) => ({ ...p, open: false })),
-        3000
-      );
+      const timer = setTimeout(() => setPopup((p) => ({ ...p, open: false })), 3000);
       return () => clearTimeout(timer);
     }
   }, [popup.open]);
 
   return (
     <div style={{ height: "100%" }}>
-      {/* Popup Edit/Delete when selecting highlight */}
+      {/* Popup Edit/Delete khi chọn highlight */}
       {selectedHighlight && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30">
           <div className="bg-white rounded-xl shadow-2xl border border-gray-200 p-6 min-w-[300px] max-w-md w-full">
@@ -468,41 +504,11 @@ const ReviewContent = ({ review }) => {
                         : n
                     )
                   );
-                  await handleUpdateNote(
-                    selectedHighlight.note,
-                    highlightEditContent
-                  );
+                  await handleUpdateNote(selectedHighlight.note, highlightEditContent);
                   setSelectedHighlight(null);
                 }}
               >
                 Save
-              </button>
-              <button
-                className="bg-red-100 text-red-600 rounded-lg px-6 py-2 font-semibold shadow hover:bg-red-200 transition"
-                onClick={async () => {
-                  try {
-                    await deleteReviewWithHighlightAndComment(
-                      selectedHighlight.note.id
-                    );
-                    setNotes((notes) =>
-                      notes.filter((n) => n.id !== selectedHighlight.note.id)
-                    );
-                    setSelectedHighlight(null);
-                    setPopup({
-                      open: true,
-                      text: "Note deleted successfully!",
-                      type: "success",
-                    });
-                  } catch (err) {
-                    setPopup({
-                      open: true,
-                      text: "Failed to delete note!",
-                      type: "error",
-                    });
-                  }
-                }}
-              >
-                Delete
               </button>
               <button
                 className="bg-gray-100 text-gray-700 rounded-lg px-6 py-2 font-semibold shadow hover:bg-gray-200 transition"
@@ -515,42 +521,116 @@ const ReviewContent = ({ review }) => {
         </div>
       )}
 
-      {/* Popup message */}
-      {popup.open && (
-        <div
-          className={`fixed bottom-6 right-6 z-50 px-6 py-3 rounded-lg shadow-lg text-base font-semibold
-                        ${
-                          popup.type === "success"
-                            ? "bg-green-100 text-green-700 border border-green-300"
-                            : "bg-red-100 text-red-700 border border-red-300"
-                        }`}
-          style={{ minWidth: 220, maxWidth: 320 }}
+     {popup.open && (
+  <div
+    className={`fixed bottom-6 right-6 px-4 py-3 rounded-md font-semibold shadow-md text-white ${
+      popup.type === "success" ? "bg-green-500" : "bg-red-500"
+    }`}
+    role="alert"
+    style={{
+      zIndex: 9999,
+      userSelect: "none",
+      pointerEvents: "auto",
+      boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+      maxWidth: "300px",
+      wordWrap: "break-word",
+    }}
+  >
+    {popup.text}
+  </div>
+)}
+
+      {/* Hiển thị file PDF */}
+      <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
+        {fileUrl ? (
+          <Viewer
+            fileUrl={fileUrl}
+            plugins={[defaultLayoutPluginInstance, highlightPluginInstance]}
+            onDocumentLoad={handleDocumentLoad}
+            ini tialPage={0}
+          />
+        ) : (
+          <p className="text-center py-20 text-gray-500">No PDF file available</p>
+        )}
+      </Worker>
+
+      {/* Nút View Translated Paper nằm dưới PDF */}
+      <div style={{ textAlign: "center", marginTop: 16 }}>
+        <button
+          style={{
+            padding: "10px 20px",
+            backgroundColor: translatedText ? "#dc2626" : "#aaa",
+            color: "white",
+            borderRadius: 8,
+            fontWeight: 600,
+            cursor: translatedText ? "pointer" : "not-allowed",
+            border: "none",
+            transition: "background-color 0.3s ease",
+            userSelect: "none",
+            opacity: translatedText ? 1 : 0.6,
+          }}
+          onClick={() => setShowTranslatedModal(true)}
+          disabled={!translatedText}
+          onMouseEnter={(e) => {
+            if (translatedText) e.currentTarget.style.backgroundColor = "#b91c1c";
+          }}
+          onMouseLeave={(e) => {
+            if (translatedText) e.currentTarget.style.backgroundColor = "#dc2626";
+          }}
         >
-          <div className="flex items-center justify-between gap-4">
-            <span>{popup.text}</span>
+          View Translated Paper
+        </button>
+      </div>
+
+      {/* Hiển thị nội dung dịch dưới cùng (không tiêu đề) */}
+      <div
+        style={{
+          marginTop: 20,
+          padding: 12,
+          border: "1px solid #ccc",
+          borderRadius: 6,
+          backgroundColor: "#f9f9f9",
+          maxHeight: 400,
+          overflowY: "auto",
+          whiteSpace: "pre-wrap",
+          fontSize: 14,
+          lineHeight: 1.5,
+          minHeight: 100,
+        }}
+      >
+        {translating ? (
+          <p>Translating...</p>
+        ) : (
+          <p>{translatedText || "No translated text yet."}</p>
+        )}
+      </div>
+
+      {/* Modal hiện bản dịch */}
+      {showTranslatedModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
+          onClick={() => setShowTranslatedModal(false)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-lg max-w-3xl max-h-[80vh] overflow-auto p-6 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl font-bold mb-4">Translated Paper</h2>
+            <div
+              style={{ whiteSpace: "pre-wrap", fontSize: 14, lineHeight: 1.6 }}
+            >
+              {translatedText || "No translated text available."}
+            </div>
             <button
-              className="ml-4 text-lg font-bold text-gray-400 hover:text-gray-700"
-              onClick={() => setPopup({ ...popup, open: false })}
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-900 font-bold"
+              onClick={() => setShowTranslatedModal(false)}
+              aria-label="Close modal"
             >
               ×
             </button>
           </div>
         </div>
       )}
-
-      <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-        {fileUrl ? (
-          <Viewer
-            fileUrl={fileUrl}
-            plugins={[highlightPluginInstance, defaultLayoutPluginInstance]}
-            onDocumentLoad={handleDocumentLoad}
-          />
-        ) : (
-          <div style={{ textAlign: "center", marginTop: 40, color: "#888" }}>
-            PDF not found or loading...
-          </div>
-        )}
-      </Worker>
     </div>
   );
 };

@@ -4,7 +4,8 @@ import { useConference } from "../../context/ConferenceContext";
 import { getConferenceTopicsByConferenceId } from "../../services/ConferenceTopicService";
 import { useParams } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
-import { uploadPaperPdf } from "../../services/PaperSerice";
+import { uploadPaperPdf, uploadAndSpellCheck } from "../../services/PaperSerice";
+import "../../App.css";
 
 const rules = [
     "Papers must be original and not under consideration elsewhere.",
@@ -29,8 +30,9 @@ const SubmitPapers = () => {
     const [authorIds, setAuthorIds] = useState(user ? [user.userId] : []);
     const [message, setMessage] = useState("");
     const [messageType, setMessageType] = useState("success"); // "success" or "error"
+    const [highlightedUrl, setHighlightedUrl] = useState("");
+    const [isChecking, setIsChecking] = useState(false);
 
-    const authors = user ? [{ id: user.userId, name: user.name }] : [];
 
     useEffect(() => {
         if (!selectedConference || selectedConference.conferenceId !== Number(id)) {
@@ -73,13 +75,13 @@ const SubmitPapers = () => {
         formData.append("Keywords", keywords);
         formData.append("TopicId", topic);
         authorIds.forEach(id => formData.append("AuthorIds", id));
-        formData.append("PdfFile", file);
+        formData.append("pdfFile", file);
 
         try {
             await uploadPaperPdf(formData);
             setMessageType("success");
             setMessage("Paper submitted successfully!");
-            // Optionally reset form here
+            setHighlightedUrl(""); // reset khi submit paper
         } catch (error) {
             setMessageType("error");
             setMessage("Failed to submit paper.");
@@ -87,6 +89,44 @@ const SubmitPapers = () => {
         }
         setTimeout(() => setMessage(""), 3000);
     };
+
+const handleSpellCheck = async () => {
+  console.log("👉 Spell check button clicked");
+
+  if (!file) {
+    setMessageType("error");
+    setMessage("Please upload a file before checking spelling.");
+    setTimeout(() => setMessage(""), 3000);
+    return;
+  }
+
+  setIsChecking(true); // 👈 Bắt đầu check
+
+  try {
+    const res = await uploadAndSpellCheck(file);
+
+    console.log("Spell check response:", res);
+
+    if (res.highlightedFileUrl) {
+      setHighlightedUrl(res.highlightedFileUrl);
+      setMessageType("success");
+      setMessage("Spell check completed. Download highlighted PDF below.");
+    } else {
+      setMessageType("error");
+      setMessage("No highlighted PDF returned from server.");
+    }
+  } catch (error) {
+    console.error("❌ Spell check error:", error);
+    setMessageType("error");
+    setMessage("Spell check failed.");
+  } finally {
+    setIsChecking(false); 
+  }
+
+  setTimeout(() => setMessage(""), 3000);
+};
+
+
 
     return (
         <section className="py-20 min-h-[80vh] bg-gray-50 relative">
@@ -164,7 +204,6 @@ const SubmitPapers = () => {
                                     placeholder="Enter keywords separated by commas"
                                 />
                             </div>
-                            {/* Author selection is hidden, only current user is used */}
                             <div>
                                 <label htmlFor="paperFile" className="font-semibold mb-2 block">
                                     Upload Paper (PDF only, max 30MB)
@@ -183,11 +222,34 @@ const SubmitPapers = () => {
                                     </div>
                                 )}
                             </div>
-                            <Buttonsubmit />
+
+                            {/* Buttons */}
+                            <div className="flex gap-4 mt-4">
+                                <Buttonsubmit />
+                               <button
+                                    type="button"
+                                    onClick={handleSpellCheck}
+                                    disabled={isChecking}
+                                    className={`btn-spell-check ${isChecking ? "opacity-50 cursor-not-allowed" : ""}`}
+                                    >
+                                    {isChecking ? "Checking..." : "Check Spelling"}
+                                    </button>
+
+                            </div>
                         </form>
+
+                        {/* Highlighted PDF link */}
+                        {highlightedUrl && (
+                            <div className="spell-check-link">
+                                <a href={highlightedUrl} target="_blank" rel="noopener noreferrer">
+                                    📑 Download Spell-Checked PDF
+                                </a>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
+
             {message && (
                 <div
                     className={`fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg text-center max-w-xs z-50

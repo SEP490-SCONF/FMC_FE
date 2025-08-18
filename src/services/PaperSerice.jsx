@@ -50,11 +50,20 @@
     export const uploadAndSpellCheck = async (file) => {
   const formData = new FormData();
   formData.append("pdfFile", file);
-  return apiService.post("/Papers/upload-and-spell-check", formData, {
-    headers: {
-      "Content-Type": "multipart/form-data"
-    }
-  });
+
+  // ✅ Debug formData
+  for (let [key, value] of formData.entries()) {
+    console.log(key, value);
+  }
+
+  return apiService.post("/Papers/upload-and-spell-check", formData);
 };
+
+
+export const translatePaperPdf = async (paperId, targetLang) => {
+  const encodedLang = encodeURIComponent(targetLang);
+  return apiService.get(`/Papers/translate-pdf/${paperId}?targetLang=${encodedLang}`);
+};
+
 
 
