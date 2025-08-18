@@ -1,19 +1,24 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import App from "../App";
-import Home from "../pages/conference/Home";
-import CommitteeList from "../pages/conference/CommitteeList";
-import CallForPaper from "../pages/conference/CallForPaper";
+import Home from "../pages/Home";
+import CommitteeList from "../pages/CommitteeList";
+import CallForPaper from "../pages/CallForPaper";
 import PaperSubmition from "../pages/author/PaperSubmition";
-import UserP from "../pages/User/UserProfile";
-import Login from "../pages/auth/Login";
+import UserP from "../pages/User";
+import Screen from "../pages/Screen";
+import Login from "../pages/Login";
 import ScrollToTop from "../components/common/ScrollToTop";
 import SubOrganizer from "../pages/organizer/SubmittedPaper";
-import PaperReview from "../pages/reviewer/PaperReview";
+import ResultPaper from "../pages/author/ResultPaper";
+import PaperPay from "../pages/author/Payment";
+import PaperReview from "../pages/PaperReview";
 import ConferenceLayout from "../layouts/ConferenceLayout";
 import PaperAss from "../pages/reviewer/PaperAss";
 import OrganizerView from "../pages/organizer/OrganizerView";
 import ManageConferenceLayout from "../layouts/ManageConferenceLayout";
-import SubmittedOrga from "../components/paper/OrganizerSubmittedPapers";
+import SubmittedOrga from "../components/layout/SubmittedOrga";
+import ConferenceOrganizer from "../components/layout/organizer/ConferenceOrganizer";
+import Submitted from "../pages/author/Submittedpaper";
 import SubmittedPaperAuthor from "../pages/author/Submittedpaper";
 import AuthorConference from "../pages/author/AuthorConference";
 import EditConferencePage from "../pages/organizer/EditConferencePage";
@@ -21,14 +26,20 @@ import ReviewerListPage from "../pages/organizer/ReviewerListPage";
 import PublishedPaperList from "../pages/organizer/PublishedPaperList";
 import ManageCallForPaper from "../pages/organizer/ManageCallForPaper";
 import ManageTimeline from "../pages/organizer/ManageTimeline";
-import OrganizerTrackincome from "../components/payment/OrganizerTrackincome";
-import NotFoundPage from "../pages/otherpages/NotFoundPage";
-import ForbiddenPage from "../pages/otherpages/ForbiddenPage";
-import About from "../pages/User/AboutUs";
+import PaymentSuccess from "../pages/author/PaymentSuccess";
+import PaymentCancel from "../pages/author/PaymentCancel";
+
+
+
+import ManageAllPaperPage from "../pages/organizer/ManageAllPaperPage";
+import NotFoundPage from "../pages/NotFoundPage";
+import ForbiddenPage from "../pages/ForbiddenPage";
+
+import About from "../pages/AboutUs";
 import ViewPaperReview from "../pages/author/ViewPaperReview"; // Thêm import ở đầu file
-import MainHomePage from "../pages/User/MainHomePage";
-import ConferenceSearch from "../pages/User/ConferenceSearch"; // Import ConferenceSearch component
-import CommitteeForm from "../pages/conference/CommitteeForm";
+import MainHomePage from "../pages/MainHomePage";
+import ConferenceSearch from "../pages/ConferenceSearch"; // Import ConferenceSearch component
+import CommitteeForm from "../pages/CommitteeForm";
 import ViewCertificate from "../pages/author/ViewCertificate";
 
 
@@ -85,7 +96,11 @@ export default function AppRoutes() {
             path="/conference/:id/submitted-papers"
             element={<SubmittedOrga />}
           />
+          <Route path="/author/payment/:id" element={<PaperPay />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
+          <Route path="/payment-cancel" element={<PaymentCancel />} />
         </Route>
+
         <Route element={<ManageConferenceLayout />}>
           <Route
             path="/manage-conference/:id/submitted-papers"
@@ -96,7 +111,6 @@ export default function AppRoutes() {
           <Route path="/manage-conference/:conferenceId/published-papers" element={<PublishedPaperList />} />
           <Route path="/manage-conference/:conferenceId/call-for-paper" element={<ManageCallForPaper />} />
           <Route path="/manage-conference/:conferenceId/timelines" element={<ManageTimeline />} />
-          <Route path="/manage-conference/:id/income" element={<OrganizerTrackincome />} />
 
         </Route>
 

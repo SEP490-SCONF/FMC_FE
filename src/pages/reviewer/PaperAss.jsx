@@ -1,6 +1,6 @@
 import React from "react";
 
-import PaperAssign from "../../components/paper/AssignedPapersList";
+import PaperAssign from "../../components/layout/PaperReviewer";
 
 const PaperAss = () => {
     return (

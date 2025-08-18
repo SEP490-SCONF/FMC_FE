@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import Submited from "../../components/paper/PaperSubmissionsTable";
+import Submited from "../../components/layout/Submited";
 import { getPapersByUserAndConference } from "../../services/PaperSerice";
 import { useUser } from "../../context/UserContext";
 import { useParams, useNavigate } from "react-router-dom";
@@ -13,6 +13,7 @@ const SubmittedPaperAuthor = () => {
     if (user && conferenceId) {
       getPapersByUserAndConference(user.userId, conferenceId)
         .then((res) => {
+          console.log("Paper response:", res); // In ra res để kiểm tra dữ liệu nhận được
           const papersData = res.data || res;
           if (!papersData || papersData.length === 0) {
             navigate("/not-found");
@@ -28,7 +29,11 @@ const SubmittedPaperAuthor = () => {
 
   return (
     <main>
-      <Submited submissions={papers} />
+      <Submited
+        submissions={papers}
+        userId={user?.userId}
+        conferenceId={conferenceId}
+      />
     </main>
   );
 };

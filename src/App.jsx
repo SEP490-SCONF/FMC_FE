@@ -1,6 +1,6 @@
 import { Outlet } from "react-router-dom";
 import './App.css';
-import MainHeader from "./components/layout/header/MainHeader";
+import MainHeader from "./components/header/MainHeader";
 import Footer from "./components/layout/Footer";
 
 function App() {
@@ -9,7 +9,7 @@ function App() {
       <MainHeader />
       {/* Sidebar nếu có, thêm ở đây */}
       <Outlet />
-      
+      <Footer />
     </div>
   );
 }

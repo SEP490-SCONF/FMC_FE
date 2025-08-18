@@ -1,6 +1,6 @@
 import React from "react";
 
-import SubmittedOrga from "../../components/paper/OrganizerSubmittedPapers";
+import SubmittedOrga from "../../components/layout/SubmittedOrga";
 
 
 

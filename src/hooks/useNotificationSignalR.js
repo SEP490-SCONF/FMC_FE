@@ -6,9 +6,9 @@ export function useNotificationSignalR(userId, onReceive) {
     if (!userId) return;
 
     const connection = new signalR.HubConnectionBuilder()
-      .withUrl("https://localhost:7166/notificationHub",{
+      .withUrl("https://fptfmc-ejh2frajb5byguc9.southeastasia-01.azurewebsites.net/notificationHub", {
         accessTokenFactory: () => localStorage.getItem("accessToken") // hoặc từ cookie
-    })
+      })
       .withAutomaticReconnect()
       .build();
 

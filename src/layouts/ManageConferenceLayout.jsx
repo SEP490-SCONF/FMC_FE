@@ -1,8 +1,9 @@
+import ConferenceHeader from "../components/layout/ConfereanceHeader";
 import Footer from "../components/layout/Footer";
 import ManageConferenceSidebar from "../components/manage/ManageConferenceSidebar";
 import { Outlet } from "react-router-dom";
 import { ConferenceProvider } from "../context/ConferenceContext";
-import MainHeader from "../components/layout/header/MainHeader";
+import MainHeader from "../components/header/MainHeader";
 export default function ManageConferenceLayout() {
   return (
     <ConferenceProvider>
@@ -14,6 +15,7 @@ export default function ManageConferenceLayout() {
             <Outlet />
           </main>
         </div>
+        <Footer />
       </div>
     </ConferenceProvider>
   );

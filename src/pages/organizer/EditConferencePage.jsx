@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams ,useNavigate} from "react-router-dom";
-import ConferenceOrganizer from "../../components/conference/ConferenceEditForm";
+import ConferenceOrganizer from "../../components/layout/organizer/ConferenceOrganizer";
 import {
   getConferenceById,
   updateConference,
