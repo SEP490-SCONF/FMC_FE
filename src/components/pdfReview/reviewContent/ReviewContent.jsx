@@ -81,29 +81,51 @@ const ReviewContent = ({ review }) => {
   };
 
   const renderHighlightTarget = (props) => (
-    <div
-      style={{
-        background: "#eee",
-        display: "flex",
-        position: "absolute",
-        left: `${props.selectionRegion.left}%`,
-        top: `${props.selectionRegion.top + props.selectionRegion.height}%`,
-        transform: "translate(0, 8px)",
-        zIndex: 1,
-      }}
-    >
-      <Tooltip
-        position={Position.TopCenter}
-        target={
-          <Button onClick={props.toggle}>
-            <MessageIcon />
-          </Button>
-        }
-        content={() => <div style={{ width: "100px" }}>Add a note</div>}
-        offset={{ left: 0, top: -8 }}
-      />
-    </div>
-  );
+  <div
+    style={{
+      display: "flex",
+      position: "absolute",
+      left: `${props.selectionRegion.left}%`,
+      top: `${props.selectionRegion.top + props.selectionRegion.height}%`,
+      transform: "translate(0, 8px)",
+      zIndex: 10,
+      gap: "8px",
+    }}
+  >
+    {/* Nút Note */}
+    <Tooltip
+      position={Position.TopCenter}
+      target={<Button onClick={props.toggle}><MessageIcon /></Button>}
+      content={() => <div style={{ width: "100px" }}>Add a note</div>}
+      offset={{ left: 0, top: -8 }}
+    />
+
+    {/* Nút Translate */}
+    <Tooltip
+      position={Position.TopCenter}
+      target={
+        <Button
+          onClick={async () => {
+            setTranslating(true);
+            try {
+              // Gửi text được chọn để dịch
+              const res = await translatePaperPdf(null, targetLang, props.selectedText);
+              setTranslatedText(res?.data?.translatedText || res?.translatedText || "");
+              setShowTranslatedModal(true);
+            } catch (err) {
+              setPopup({ open: true, text: "Failed to translate selected text", type: "error" });
+            }
+            setTranslating(false);
+          }}
+        >
+          T
+        </Button>
+      }
+      content={() => <div style={{ width: "100px" }}>Translate text</div>}
+      offset={{ left: 0, top: -8 }}
+    />
+  </div>
+);
 
   const renderHighlightContent = (props) => {
     const addNote = async () => {
