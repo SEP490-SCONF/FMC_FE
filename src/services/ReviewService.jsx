@@ -70,3 +70,10 @@ export const sendFeedback = async (reviewId) => {
         headers: { "Content-Type": "multipart/form-data" }
     });
 };
+export const getCompletedReviewsByUserAndConference = async (userId, conferenceId) => {
+    return apiService.get(`/Review/completed/user/${userId}/conference/${conferenceId}`);
+};
+
+export const countCompletedReviewsByUserAndConference = async (userId, conferenceId) => {
+    return apiService.get(`/Review/completed/count/user/${userId}/conference/${conferenceId}`);
+};

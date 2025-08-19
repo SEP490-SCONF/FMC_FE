@@ -65,5 +65,9 @@ export const translatePaperPdf = async (paperId, targetLang) => {
   return apiService.get(`/Papers/translate-pdf/${paperId}?targetLang=${encodedLang}`);
 };
 
+export const getPapersByUser = async (userId) => {
+    return apiService.get(`/Papers/user/${userId}`);
+};
+
 
 

@@ -10,6 +10,8 @@ import HomeBody from "../components/layout/HomeScreen";
 import TechMarquee from "../components/layout/Marque";
 import { getConferences, getConferenceById } from "../services/ConferenceService";
 import { getConferenceTopicsByConferenceId } from "../services/ConferenceTopicService";
+import { FaEye } from "react-icons/fa"; // Thêm import ở đầu file
+
 
 const Home = () => {
     const { id } = useParams();
