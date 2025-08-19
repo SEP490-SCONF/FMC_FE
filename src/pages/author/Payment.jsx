@@ -1,5 +1,5 @@
 import React from "react";
-import PaymentPage from "../../components/layout/Payment";
+import PaymentPage from "../../components/payment/Payment";
 import { useLocation } from "react-router-dom";
 
 const PaperPay = () => {

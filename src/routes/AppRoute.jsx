@@ -23,6 +23,7 @@ import ManageCallForPaper from "../pages/organizer/ManageCallForPaper";
 import ManageTimeline from "../pages/organizer/ManageTimeline";
 import PaymentSuccess from "../pages/author/PaymentSuccess";
 import PaymentCancel from "../pages/author/PaymentCancel";
+import PaperPay from "../pages/author/Payment";
 
 
 import NotFoundPage from "../pages/otherpages/NotFoundPage";
