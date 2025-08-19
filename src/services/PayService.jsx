@@ -17,7 +17,6 @@ const PayService = {
     },
 
     getPaymentsByConference: async (conferenceId) => {
-        // Lấy danh sách thanh toán theo conferenceId
         return await apiService.get(`/Payment/conference/${conferenceId}`);
     },
 

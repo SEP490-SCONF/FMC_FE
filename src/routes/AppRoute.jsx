@@ -26,7 +26,7 @@ import PaymentCancel from "../pages/author/PaymentCancel";
 import PaperPay from "../pages/author/Payment";
 
 
-import OrganizerTrackincome from "../components/payment/OrganizerTrackincome";
+import OrganizerTrack from "../pages/organizer/Trackincome";
 import NotFoundPage from "../pages/otherpages/NotFoundPage";
 import ForbiddenPage from "../pages/otherpages/ForbiddenPage";
 import About from "../pages/User/AboutUs";
@@ -105,7 +105,7 @@ export default function AppRoutes() {
           <Route path="/manage-conference/:conferenceId/published-papers" element={<PublishedPaperList />} />
           <Route path="/manage-conference/:conferenceId/call-for-paper" element={<ManageCallForPaper />} />
           <Route path="/manage-conference/:conferenceId/timelines" element={<ManageTimeline />} />
-          <Route path="/manage-conference/:id/income" element={<OrganizerTrackincome />} />
+          <Route path="/manage-conference/:conferenceId/income" element={<OrganizerTrack />} />
 
         </Route>
 
