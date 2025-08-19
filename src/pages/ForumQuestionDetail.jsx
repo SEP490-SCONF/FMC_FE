@@ -593,7 +593,8 @@ const ForumQuestionDetail = () => {
                                             <button
                                                 onClick={() => handleSaveEdit(answer.answerId)}
                                                 disabled={!editContent.trim() || loading}
-                                                className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700 transition-colors disabled:bg-gray-400"
+                                                style={{ backgroundColor: '#1447e6' }}
+                                                className="text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors disabled:bg-gray-400"
                                             >
                                                 {loading ? 'Saving...' : 'Save'}
                                             </button>
@@ -775,6 +776,7 @@ const ForumQuestionDetail = () => {
                             <button
                                 onClick={() => confirmDeleteAnswer(showDeleteConfirm)}
                                 disabled={loading}
+                                style={{ backgroundColor: '#e62914ff' }}
                                 className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-red-400"
                             >
                                 {loading ? 'Deleting...' : 'Delete'}
