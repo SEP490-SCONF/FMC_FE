@@ -26,6 +26,8 @@ import ReviewerListPage from "../pages/organizer/ReviewerListPage";
 import PublishedPaperList from "../pages/organizer/PublishedPaperList";
 import ManageCallForPaper from "../pages/organizer/ManageCallForPaper";
 import ManageTimeline from "../pages/organizer/ManageTimeline"; 
+import Forum from "../pages/Forum"; // Import Forum component
+import ForumQuestionDetail from "../pages/ForumQuestionDetail"; // Import ForumQuestionDetail component
 
 
 
@@ -86,6 +88,14 @@ export default function AppRoutes() {
           <Route
             path="/conference/:id/paper-submition"
             element={<PaperSubmition />}
+          />
+          <Route
+            path="/conference/:id/forum"
+            element={<Forum />}
+          />
+          <Route
+            path="/conference/:id/forum/question/:questionId"
+            element={<ForumQuestionDetail />}
           />
           <Route
             path="/conference/:id/paper-review"
