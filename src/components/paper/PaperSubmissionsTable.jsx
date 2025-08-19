@@ -205,18 +205,27 @@ const Submited = ({ submissions = [], userId, conferenceId }) => {
                             >
                               🎓 View Certificate
                             </button>
-                            <button
-                              className="w-36 inline-flex items-center gap-1 px-3 py-1 border border-purple-500 text-purple-700 bg-purple-50 rounded-full hover:bg-purple-100 transition text-xs font-medium shadow-sm justify-center"
-                              onClick={() => navigate(`/author/payment/${s.paperId}`, {
-                                state: {
-                                  userId,
-                                  conferenceId,
-                                  paperId: s.paperId
-                                }
-                              })}
-                            >
-                              💳 Payment
-                            </button>
+                            {s.isPublished ? (
+                              <button
+                                className="  w-36 inline-flex items-center gap-1 px-3 py-1 border border-gray-400 text-gray-500 bg-gray-100 rounded-full cursor-not-allowed text-xs font-medium shadow-sm justify-center"
+                                disabled
+                              >
+                                💳 Payment Complete
+                              </button>
+                            ) : (
+                              <button
+                                className="w-36 inline-flex items-center gap-1 px-3 py-1 border border-purple-500 text-purple-700 bg-purple-50 rounded-full hover:bg-purple-100 transition text-xs font-medium shadow-sm justify-center"
+                                onClick={() => navigate(`/author/payment/${s.paperId}`, {
+                                  state: {
+                                    userId,
+                                    conferenceId,
+                                    paperId: s.paperId
+                                  }
+                                })}
+                              >
+                                💳 Payment
+                              </button>
+                            )}
                           </>
                         )}
 
@@ -298,12 +307,12 @@ const Submited = ({ submissions = [], userId, conferenceId }) => {
                       <td className="border-b px-4 py-2 text-center">
                         <span
                           className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${rev.status === "Submitted"
-                              ? "bg-green-100 text-green-700"
-                              : rev.status === "Need Revision"
-                                ? "bg-yellow-100 text-yellow-700"
-                                : rev.status === "Rejected"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-gray-100 text-gray-700"
+                            ? "bg-green-100 text-green-700"
+                            : rev.status === "Need Revision"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : rev.status === "Rejected"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-gray-100 text-gray-700"
                             }`}
                         >
                           {rev.status}
