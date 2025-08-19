@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import Submited from "../../components/layout/Submited";
+import Submited from "../../components/paper/PaperSubmissionsTable";
 import { getPapersByUserAndConference } from "../../services/PaperSerice";
 import { useUser } from "../../context/UserContext";
 import { useParams, useNavigate } from "react-router-dom";

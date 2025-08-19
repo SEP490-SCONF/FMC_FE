@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { FaUser, FaEnvelope, FaEdit, FaUserShield } from "react-icons/fa";
 import { getUserProfile, updateUserProfile } from "../../services/UserService";
-import "../../assets/styles/pages/_section.scss";
 
 export default function UserInfo({ user }) {
   const [userData, setUserData] = useState(user);
@@ -17,31 +16,29 @@ export default function UserInfo({ user }) {
     setIsEditing(false);
   };
 
- const handleSave = async () => {
-  try {
-    const userId = userData?.id || userData?.userId;
-    if (!userId) {
-      console.error("❌ Không tìm thấy userId để cập nhật.");
-      return;
+  const handleSave = async () => {
+    try {
+      const userId = userData?.id || userData?.userId;
+      if (!userId) {
+        console.error("❌ Không tìm thấy userId để cập nhật.");
+        return;
+      }
+
+      const formDataToSend = new FormData();
+      formDataToSend.append("Name", formData.name);
+
+      if (formData.avatarFile) {
+        formDataToSend.append("AvatarFile", formData.avatarFile); // 👈 tên này phải trùng với DTO backend
+      }
+
+      await updateUserProfile(userId, formDataToSend);
+
+      // ✅ Reload lại trang sau khi cập nhật
+      window.location.reload();
+    } catch (error) {
+      console.error("❌ Lỗi khi cập nhật hồ sơ:", error);
     }
-
-    const formDataToSend = new FormData();
-    formDataToSend.append("Name", formData.name);
-
-    if (formData.avatarFile) {
-      formDataToSend.append("AvatarFile", formData.avatarFile); // 👈 tên này phải trùng với DTO backend
-    }
-
-    await updateUserProfile(userId, formDataToSend);
-
-    // ✅ Reload lại trang sau khi cập nhật
-    window.location.reload();
-  } catch (error) {
-    console.error("❌ Lỗi khi cập nhật hồ sơ:", error);
-  }
-};
-
-
+  };
 
   if (!userData) return <div className="text-center mt-10">Loading...</div>;
 
@@ -75,14 +72,13 @@ export default function UserInfo({ user }) {
               {userData.roleName}
             </p>
 
-           <button
-  onClick={openEdit}
-  className="mt-6 px-6 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold shadow-md transition duration-300 ease-in-out text-sm md:text-base flex items-center gap-2"
->
-  <FaEdit className="text-white text-base" />
-  Edit Profile
-</button>
-
+            <button
+              onClick={openEdit}
+              className="mt-6 px-6 py-2 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-semibold shadow-md transition duration-300 ease-in-out text-sm md:text-base flex items-center gap-2"
+            >
+              <FaEdit className="text-white text-base" />
+              Edit Profile
+            </button>
           </div>
 
           {/* Edit Form */}
@@ -111,27 +107,25 @@ export default function UserInfo({ user }) {
                   <label className="block text-sm text-gray-600 dark:text-gray-300 mb-2">
                     Avatar (upload)
                   </label>
-                                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-  const file = e.target.files[0];
-  if (file) {
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setFormData({
-        ...formData,
-        avatarUrl: reader.result,
-        avatarFile: file, // 👈 lưu cả file gốc
-      });
-    };
-    reader.readAsDataURL(file);
-  }
-}}
-
-                  className="w-full px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-                />
-
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setFormData({
+                            ...formData,
+                            avatarUrl: reader.result,
+                            avatarFile: file, // 👈 lưu cả file gốc
+                          });
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="w-full px-4 py-2 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                  />
                 </div>
               </div>
 

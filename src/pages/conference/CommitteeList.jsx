@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams,useNavigate } from "react-router-dom";
-import Committee from "../components/layout/Committee";
-import { getCommitteeByConference } from "../services/UserConferenceRoleService";
+import Committee from "../../components/conference/ConferenceCommittee";
+import { getCommitteeByConference } from "../../services/UserConferenceRoleService";
 
 const Comm = () => {
     const { id } = useParams();

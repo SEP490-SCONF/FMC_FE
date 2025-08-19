@@ -1,5 +1,4 @@
-import React from "react";
-import "../../assets/styles/pages/_section.scss";
+
 
 const Committee = ({ committee, loading }) => {
   if (loading) {

@@ -1,5 +1,5 @@
 import React from "react";
-import bgImage from "../assets/images/tru-so-fpt20250415141843.jpg";
+import bgImage from "../../assets/images/tru-so-fpt20250415141843.jpg";
 
 const MainHomePage = () => {
   return (

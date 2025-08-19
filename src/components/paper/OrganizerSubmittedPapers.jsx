@@ -4,7 +4,7 @@ import { getSubmittedPapersByConferenceId } from "../../services/PaperSerice";
 import { getConferenceReviewers } from "../../services/UserConferenceRoleService";
 import { deleteReviewerAssignment } from "../../services/ReviewerAssignmentService";
 import { generateCertificatesForPaper } from "../../services/CertificateService";
-
+import { toast } from "react-toastify";
 import {
   assignReviewerToPaper,
   updateReviewerAssignment,
@@ -34,6 +34,7 @@ const SubmittedOrga = () => {
   const [searchText, setSearchText] = useState("");
   const [page, setPage] = useState(1);
   const pageSize = 5;
+
   function buildQuery() {
     const filters = [];
 
@@ -48,7 +49,6 @@ const SubmittedOrga = () => {
         `(contains(tolower(Title),'${search}') or contains(tolower(Abstract),'${search}') or contains(tolower(Keywords),'${search}'))`
       );
     }
-    
 
     const skip = (page - 1) * pageSize;
     const queryParams = [];
@@ -131,7 +131,8 @@ const SubmittedOrga = () => {
     } else {
       await assignReviewerToPaper(paper.id, reviewerId);
     }
-    getSubmittedPapersByConferenceId(conferenceId).then((res) => {
+    const query = buildQuery(); // Sử dụng query hiện tại để giữ trạng thái lọc và phân trang
+    getSubmittedPapersByConferenceId(conferenceId, query).then((res) => {
       const mapped = (res || []).map((p) => ({
         id: p.paperId,
         title: p.title,
@@ -152,8 +153,7 @@ const SubmittedOrga = () => {
       setPaperList(mapped);
     });
     closeModal();
-    setSuccessPopup(true); // Hiện popup
-    setTimeout(() => setSuccessPopup(false), 3000); // Ẩn sau 3s
+   toast.success("Assign reviewer successfully!");
   };
 
   useEffect(() => {
@@ -248,8 +248,6 @@ const SubmittedOrga = () => {
                     <th className={thClass}>Topic</th>
                     <th className={thClass}>Last Submitted</th>
                     <th className={thClass}>Certificate</th>
-
-                    
                   </tr>
                 </thead>
                 <tbody>
@@ -259,7 +257,6 @@ const SubmittedOrga = () => {
                       <td className={tdClass}>{p.author}</td>
                       <td className={tdClass}>{p.title}</td>
                       <td className={tdClass}>
-                        
                         {p.filePath ? (
                           <a
                             href={p.filePath}
@@ -294,8 +291,10 @@ const SubmittedOrga = () => {
                               title="Remove this reviewer?"
                               onConfirm={async () => {
                                 await deleteReviewerAssignment(p.assignmentId);
+                                const query = buildQuery();
                                 getSubmittedPapersByConferenceId(
-                                  conferenceId
+                                  conferenceId,
+                                  query
                                 ).then((res) => {
                                   const mapped = (res || []).map((p) => ({
                                     id: p.paperId,
@@ -378,17 +377,19 @@ const SubmittedOrga = () => {
                       </td>
 
                       <td className={tdClass}>
-          {p.status === "Accepted" ? (
-            <button
-              className="px-2 py-1 bg-green-100 border border-green-500 text-green-700 rounded hover:bg-green-200 text-xs"
-              onClick={() => handleSendCertificate(p.id)}
-            >
-              Send Certificate
-            </button>
-          ) : (
-            <span className="text-gray-400 italic text-xs">N/A</span>
-          )}
-        </td>
+                        {p.status === "Accepted" ? (
+                          <button
+                            className="px-2 py-1 bg-green-100 border border-green-500 text-green-700 rounded hover:bg-green-200 text-xs"
+                            onClick={() => handleSendCertificate(p.id)}
+                          >
+                            Send Certificate
+                          </button>
+                        ) : (
+                          <span className="text-gray-400 italic text-xs">
+                            N/A
+                          </span>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -527,7 +528,6 @@ const SubmittedOrga = () => {
     </>
   );
 };
-
 
 const thClass =
   "border border-gray-200 px-3 py-2 font-semibold bg-gray-50 text-xs";

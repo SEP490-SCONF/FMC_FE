@@ -5,6 +5,7 @@ import { getConferenceTopicsByConferenceId } from "../../services/ConferenceTopi
 import { useParams } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import { uploadPaperPdf } from "../../services/PaperSerice";
+import { toast } from "react-toastify";
 
 const rules = [
     "Papers must be original and not under consideration elsewhere.",
@@ -61,9 +62,7 @@ const SubmitPapers = () => {
             !selectedConference?.conferenceId ||
             authorIds.length === 0
         ) {
-            setMessageType("error");
-            setMessage("Please fill in all required fields and select a file.");
-            setTimeout(() => setMessage(""), 3000);
+            toast.error("Please fill in all required fields and select a file.");
             return;
         }
         const formData = new FormData();
@@ -75,17 +74,27 @@ const SubmitPapers = () => {
         authorIds.forEach(id => formData.append("AuthorIds", id));
         formData.append("PdfFile", file);
 
-        try {
-            await uploadPaperPdf(formData);
+        await toast.promise(
+            uploadPaperPdf(formData),
+            {
+                pending: "Submitting paper...",
+                success: "Paper submitted successfully!",
+                error: "Failed to submit paper."
+            }
+       ).then(() => {
+            // Clear state after successful submission
+            setFile(null);
+            setTitle("");
+            setAbstract("");
+            setKeywords("");
+            setTopic("");
+            // authorIds không cần reset vì nó dựa trên user.userId
+            setMessage("");
             setMessageType("success");
-            setMessage("Paper submitted successfully!");
-            // Optionally reset form here
-        } catch (error) {
-            setMessageType("error");
-            setMessage("Failed to submit paper.");
-            console.error(error);
-        }
-        setTimeout(() => setMessage(""), 3000);
+        }).catch((error) => {
+            console.error("Error during submission:", error);
+        });
+       
     };
 
     return (

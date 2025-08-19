@@ -1,15 +1,47 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useConference } from "../../context/ConferenceContext";
 import { Link, useParams } from "react-router-dom";
 import fptLogo from "../../assets/images/fptlogo.png";
-import "../../assets/css/style.min.css";
-import UserDropdown from "../header/UserDropdown";
+
+import UserDropdown from "./header/UserDropdown";
 import { useUser } from "../../context/UserContext";
+import { useNotificationSignalR } from "../../hooks/useNotificationSignalR";
+import { getNotificationsByUserId } from "../../services/NotificationService";
+import NotificationDropdown from "./header/NotificationDropdown";
+import { toast } from "react-toastify";
 
 const Header = () => {
   const { user } = useUser();
   const { selectedConference } = useConference();
   const params = useParams();
+
+  // Notification logic giống MainHeader
+  const [notifications, setNotifications] = useState([]);
+
+  useEffect(() => {
+    if (user?.userId) {
+      getNotificationsByUserId(user.userId)
+        .then(setNotifications)
+        .catch(() => setNotifications([]));
+    }
+  }, [user?.userId]);
+
+  useNotificationSignalR(user?.userId, (title, content) => {
+    // Hiển thị thông báo bằng React-Toastify
+    toast.info(
+      <div>
+        <div className="font-bold">{title}</div>
+        <div>{content}</div>
+      </div>,
+      {
+        position: "bottom-right",
+        autoClose: 5000,
+        closeButton: true,
+        hideProgressBar: false,
+      }
+    );
+    getNotificationsByUserId(user.userId).then(setNotifications);
+  });
 
   // Prefer context id, fallback to URL param
   const conferenceId = selectedConference?.conferenceId || params.id;
@@ -34,7 +66,11 @@ const Header = () => {
           <ul className="flex gap-6 items-center">
             <li>
               <Link
-                to="/"
+               to={
+                  conferenceId
+                    ? `/conference/${conferenceId}`
+                    : "#"
+                }
                 className="text-gray-700 font-semibold hover:text-blue-700 transition uppercase"
               >
                 Home
@@ -75,10 +111,13 @@ const Header = () => {
               </Link>
             </li>
           </ul>
-          {/* Right: User/Login */}
-          <div>
+          {/* Right: User/Login/Notification */}
+          <div className="flex items-center gap-3">
             {user ? (
-              <UserDropdown user={user} />
+              <>
+                <NotificationDropdown notifications={notifications} />
+                <UserDropdown user={user} />
+              </>
             ) : (
               <Link
                 to="/login"

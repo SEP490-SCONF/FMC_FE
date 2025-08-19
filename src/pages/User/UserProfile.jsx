@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import UserInfo from "../components/layout/UserInfo";
-import { getUserProfile } from "../services/UserService";
-import { useUser } from "../context/UserContext";
+import UserInfo from "../../components/UserProfile/UserProfileCard";
+import { getUserProfile } from "../../services/UserService";
+import { useUser } from "../../context/UserContext";
 
 const UserP = () => {
   const { user: contextUser } = useUser();

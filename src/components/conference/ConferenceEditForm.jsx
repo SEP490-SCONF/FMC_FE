@@ -13,7 +13,7 @@ import {
 } from "antd";
 import { UploadOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { getAllTopics } from "../../../services/TopicService"; // ⚠️ đảm bảo path đúng
+import { getAllTopics } from "../../services/TopicService"; // ⚠️ đảm bảo path đúng
 
 const locationOptions = [
     { value: "Ha Noi" },

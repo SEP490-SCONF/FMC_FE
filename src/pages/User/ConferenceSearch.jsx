@@ -1,64 +1,65 @@
 import React, { useState, useEffect } from "react";
-import { searchConferences } from "../services/ConferenceService";
-import { getAllTopics } from "../services/TopicService";
+import { getAllConferences } from "../../services/ConferenceService";
+import { getAllTopics } from "../../services/TopicService";
 import { useNavigate } from "react-router-dom";
-import { Pagination } from "antd";
-const PAGE_SIZE =2;
+import { Pagination, Input, Select, Button, Checkbox, Space, Card } from "antd";
+const { Search } = Input;
+const { Option } = Select;
+const PAGE_SIZE = 3;
 
 const ConferenceSearch = () => {
   const [location, setLocation] = useState("");
   const [topics, setTopics] = useState([]);
   const [selectedTopics, setSelectedTopics] = useState([]);
   const [page, setPage] = useState(1);
-  const [conferences, setConferences] = useState([]);
-  const [totalCount, setTotalCount] = useState(0); // Thêm state này
+  const [allConferences, setAllConferences] = useState([]);
+  const [filteredConferences, setFilteredConferences] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTitle, setSearchTitle] = useState("");
   const navigate = useNavigate();
 
   useEffect(() => {
-    getAllTopics().then((res) => setTopics(res.value || res));
-  }, []);
-
-  // Build OData filter string
-  const buildFilter = () => {
-    let filters = ["Status eq true"];
-    if (location) filters.push(`contains(Location,'${location}')`);
-    if (searchTitle)
-      filters.push(`contains(tolower(Title),'${searchTitle.toLowerCase()}')`);
-    if (selectedTopics.length > 0) {
-      const topicFilters = selectedTopics
-        .map((topicId) => `Topics/any(t: t/TopicId eq ${topicId})`)
-        .join(" and ");
-      filters.push(`(${topicFilters})`);
-    }
-    return filters.join(" and ");
-  };
-
-  useEffect(() => {
     setLoading(true);
-    searchConferences({
-      filter: buildFilter(),
-      skip: (page - 1) * PAGE_SIZE,
-      top: PAGE_SIZE,
-    })
-      .then((res) => {
-        setConferences(res.value || res);
-        setTotalCount(res["@odata.count"] || res.count || 0);
-        console.log("API Response:", res);
-              console.log("OData Count:", res["@odata.count"]); // 👈 log riêng count
-
+    Promise.all([getAllConferences(), getAllTopics()])
+      .then(([confs, tops]) => {
+        setAllConferences(confs);
+        setTopics(tops.value || tops);
       })
       .finally(() => setLoading(false));
-  }, [location, selectedTopics, page, searchTitle]);
+  }, []);
 
-  const handleTopicChange = (topicId) => {
-    setPage(1);
-    setSelectedTopics((prev) =>
-      prev.includes(topicId)
-        ? prev.filter((id) => id !== topicId)
-        : [...prev, topicId]
-    );
+  // Filter/search logic
+  useEffect(() => {
+    let filtered = allConferences.filter((conf) => conf.status === true);
+
+    if (location) {
+      filtered = filtered.filter((conf) =>
+        conf.location?.toLowerCase().includes(location.toLowerCase())
+      );
+    }
+    if (searchTitle) {
+      filtered = filtered.filter((conf) =>
+        conf.title?.toLowerCase().includes(searchTitle.toLowerCase())
+      );
+    }
+    if (selectedTopics.length > 0) {
+      filtered = filtered.filter((conf) =>
+        conf.topics?.some((t) => selectedTopics.includes(t.topicId))
+      );
+    }
+
+    setFilteredConferences(filtered);
+    setPage(1); // Reset về trang 1 khi filter/search
+  }, [allConferences, location, searchTitle, selectedTopics]);
+
+  // Pagination
+  const pagedConferences = filteredConferences.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE
+  );
+
+  const handleTopicChange = (checkedValues) => {
+    setSelectedTopics(checkedValues);
   };
 
   return (
@@ -66,88 +67,65 @@ const ConferenceSearch = () => {
       <div className="max-w-7xl mx-auto flex flex-col md:flex-row gap-8">
         {/* Sidebar Filters */}
         <aside className="w-full md:w-1/4">
-          <div className="bg-white rounded-lg shadow p-6 mb-6">
-            <div className="mb-4">
-              <label className="block font-medium mb-1">Search by Title</label>
-              <input
-                type="text"
-                placeholder="Enter conference title"
+          <Card title="Filter" bordered={false} style={{ marginBottom: 24 }}>
+            <Space direction="vertical" size="middle" style={{ width: "100%" }}>
+              <Search
+                placeholder="Search by title"
+                allowClear
                 value={searchTitle}
-                onChange={(e) => {
-                  setSearchTitle(e.target.value);
-                  setPage(1);
-                }}
-                className="w-full border px-3 py-2 rounded"
+                onChange={(e) => setSearchTitle(e.target.value)}
+                onSearch={(value) => setSearchTitle(value)}
               />
-            </div>
-            <div className="mb-4">
-              <label className="block font-medium mb-1">Location</label>
-              <input
-                type="text"
-                placeholder="Filter by Location"
+              <Input
+                placeholder="Filter by location"
+                allowClear
                 value={location}
-                onChange={(e) => {
-                  setLocation(e.target.value);
-                  setPage(1);
-                }}
-                className="w-full border px-3 py-2 rounded"
+                onChange={(e) => setLocation(e.target.value)}
               />
-            </div>
-            <div className="mb-4">
-              <label className="block font-medium mb-1">Disciplines</label>
-              <div className="max-h-60 overflow-y-auto border rounded p-2 bg-gray-50">
-                {/* Header group + Select All */}
-                <div className="flex items-center justify-between px-2 py-1 mb-2 bg-gray-100 rounded">
-                  <span className="font-semibold text-gray-600 text-xs uppercase tracking-wide">
-                    Economics and Social Sciences
-                  </span>
-                  <button
-                    type="button"
-                    className="text-xs text-blue-600 hover:underline"
-                    onClick={() =>
-                      setSelectedTopics(topics.map((t) => t.topicId))
-                    }
-                    tabIndex={0}
-                  >
-                    Select All
-                  </button>
-                </div>
-                {/* List topics */}
-                {topics.map((topic) => (
-                  <div
-                    key={topic.topicId}
-                    className="flex items-center mb-2 px-2"
-                  >
-                    <input
-                      type="checkbox"
-                      id={`topic-${topic.topicId}`}
-                      checked={selectedTopics.includes(topic.topicId)}
-                      onChange={() => handleTopicChange(topic.topicId)}
-                      className="mr-2"
-                    />
-                    <label
-                      htmlFor={`topic-${topic.topicId}`}
-                      className="text-base text-gray-900 cursor-pointer"
-                    >
-                      {topic.topicName}
-                    </label>
-                  </div>
-                ))}
+              <div>
+                <div style={{ marginBottom: 8, fontWeight: 500 }}>Disciplines</div>
+                <Checkbox.Group
+                  style={{ width: "100%" }}
+                  value={selectedTopics}
+                  onChange={handleTopicChange}
+                >
+                  <Space direction="vertical">
+                    {topics.map((topic) => (
+                      <Checkbox key={topic.topicId} value={topic.topicId}>
+                        {topic.topicName}
+                      </Checkbox>
+                    ))}
+                  </Space>
+                </Checkbox.Group>
+                <Button
+                  size="small"
+                  type="link"
+                  style={{ paddingLeft: 0 }}
+                  onClick={() => setSelectedTopics(topics.map((t) => t.topicId))}
+                >
+                  Select All
+                </Button>
+                <Button
+                  size="small"
+                  type="link"
+                  style={{ paddingLeft: 0 }}
+                  onClick={() => setSelectedTopics([])}
+                >
+                  Clear
+                </Button>
               </div>
-            </div>
-          </div>
+            </Space>
+          </Card>
         </aside>
         {/* Main Content */}
         <main className="flex-1">
-          {/* Results */}
-          <div className="mb-4 text-gray-600"></div>
           {loading ? (
             <div className="text-center py-10 text-lg text-gray-500">
               Loading...
             </div>
           ) : (
             <div className="flex flex-col gap-6">
-              {conferences.map((conf) => (
+              {pagedConferences.map((conf) => (
                 <div
                   key={conf.conferenceId}
                   className="bg-white rounded-lg shadow flex flex-col md:flex-row items-center p-6 gap-6 cursor-pointer hover:bg-gray-100 transition"
@@ -233,11 +211,11 @@ const ConferenceSearch = () => {
             </div>
           )}
           {/* Pagination Ant Design */}
-          {!loading && totalCount > PAGE_SIZE && (
+          {!loading && filteredConferences.length > PAGE_SIZE && (
             <div className="flex justify-center mt-8">
               <Pagination
                 current={page}
-                total={totalCount}
+                total={filteredConferences.length}
                 pageSize={PAGE_SIZE}
                 onChange={(p) => setPage(p)}
                 showSizeChanger={false}
