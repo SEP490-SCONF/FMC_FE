@@ -10,6 +10,8 @@ import { defaultLayoutPlugin } from "@react-pdf-viewer/default-layout";
 import { highlightPlugin, MessageIcon } from "@react-pdf-viewer/highlight";
 import { getPdfUrlByReviewId } from "../../../services/PaperRevisionService";
 import { translatePaperPdf } from "../../../services/PaperSerice";
+import { translateHighlightedText } from "../../../services/TranslateService";
+
 
 import {
   addReviewWithHighlightAndComment,
@@ -39,9 +41,11 @@ const ReviewContent = ({ review }) => {
   const [currentDoc, setCurrentDoc] = useState(null);
 
   // --- Trạng thái dịch ---
-  const [targetLang, setTargetLang] = useState("en"); // mặc định English
+  const [targetLang, setTargetLang] = useState("en-US"); // mặc định English
   const [translating, setTranslating] = useState(false);
   const [translatedText, setTranslatedText] = useState("");
+  const [highlightLang, setHighlightLang] = useState(targetLang);
+
 
   // --- Modal xem bản dịch ---
   const [showTranslatedModal, setShowTranslatedModal] = useState(false);
@@ -55,30 +59,32 @@ const ReviewContent = ({ review }) => {
 
   // Dịch toàn bộ notes
   const handleTranslateNotes = async () => {
-    if (!review || !review.paperId) {
-      setPopup({ open: true, text: "Review or paper not loaded yet.", type: "error" });
-      return;
+  if (!review || !review.paperId) return;
+
+  setTranslating(true);
+  try {
+    const res = await translatePaperPdf(review.paperId, targetLang);
+    let translatedText = res?.data?.translatedText || "";
+
+    // Xử lý: nếu API trả text liền, ta tách dựa vào dấu chấm hoặc khoảng trắng dài
+    // Hoặc dùng text gốc để tách
+    if (!translatedText.includes('\n') && review.originalText) {
+      const lines = review.originalText.split('\n');
+      // map từng dòng gốc sang bản dịch tương ứng (nếu API trả 1 chuỗi liền)
+      translatedText = lines.map((_, idx) => {
+        const words = translatedText.split(' ');
+        const portion = words.slice(idx*30, (idx+1)*30).join(' '); // chia 30 từ / dòng
+        return portion;
+      }).join('\n');
     }
 
-    setTranslating(true);
-    try {
-      const res = await translatePaperPdf(review.paperId, targetLang);
-      const translatedText = res?.data?.translatedText || res?.translatedText || "";
-      setTranslatedText(translatedText);
+    setTranslatedText(translatedText);
+  } catch (err) {
+    setPopup({ open: true, text: "Failed to translate notes.", type: "error" });
+  }
+  setTranslating(false);
+};
 
-      setNotes((prevNotes) =>
-        prevNotes.map((note) => ({
-          ...note,
-          content: translatedText,
-        }))
-      );
-
-      setPopup({ open: true, text: "Notes translated successfully!", type: "success" });
-    } catch (error) {
-      setPopup({ open: true, text: "Failed to translate notes.", type: "error" });
-    }
-    setTranslating(false);
-  };
 
   const renderHighlightTarget = (props) => (
   <div
@@ -99,31 +105,56 @@ const ReviewContent = ({ review }) => {
       content={() => <div style={{ width: "100px" }}>Add a note</div>}
       offset={{ left: 0, top: -8 }}
     />
+     {/* Dropdown chọn ngôn ngữ */}
+      <select
+        value={highlightLang}
+        onChange={(e) => setHighlightLang(e.target.value)}
+        style={{ padding: "2px 4px", borderRadius: 4, border: "1px solid #ccc" }}
+      >
+        <option value="en-US">English</option>
+        <option value="vi">Vietnamese</option>
+        <option value="fr">French</option>
+        <option value="ja">Japanese</option>
+        <option value="zh">Chinese</option>
+      </select>
 
     {/* Nút Translate */}
-    <Tooltip
-      position={Position.TopCenter}
-      target={
-        <Button
-          onClick={async () => {
-            setTranslating(true);
-            try {
-              // Gửi text được chọn để dịch
-              const res = await translatePaperPdf(null, targetLang, props.selectedText);
-              setTranslatedText(res?.data?.translatedText || res?.translatedText || "");
-              setShowTranslatedModal(true);
-            } catch (err) {
-              setPopup({ open: true, text: "Failed to translate selected text", type: "error" });
-            }
-            setTranslating(false);
-          }}
-        >
-          T
-        </Button>
-      }
-      content={() => <div style={{ width: "100px" }}>Translate text</div>}
-      offset={{ left: 0, top: -8 }}
-    />
+<Tooltip
+  position={Position.TopCenter}
+  target={
+    <Button
+      onClick={async () => {
+        if (!props.selectedText) return;
+        setTranslating(true);
+        try {
+          console.log("Selected text to translate:", props.selectedText); // log text được chọn
+
+          const res = await translateHighlightedText(props.selectedText, highlightLang);
+          console.log("API response:", res); // log toàn bộ response
+
+                const translated =
+                  res?.data?.translatedText ||
+                  res?.data?.TranslatedText ||
+                  res?.translatedText ||
+                  res?.TranslatedText ||
+                  "";
+                                      console.log("Translated text extracted:", translated);
+
+          setTranslatedText(translated);
+          setShowTranslatedModal(true);
+        } catch (err) {
+          setPopup({ open: true, text: "Failed to translate selected text", type: "error" });
+        }
+        setTranslating(false);
+      }}
+    >
+      T
+    </Button>
+  }
+  content={() => <div style={{ width: "100px" }}>Translate text</div>}
+  offset={{ left: 0, top: -8 }}
+/>
+
   </div>
 );
 
@@ -606,26 +637,31 @@ const ReviewContent = ({ review }) => {
 
       {/* Hiển thị nội dung dịch dưới cùng (không tiêu đề) */}
       <div
-        style={{
-          marginTop: 20,
-          padding: 12,
-          border: "1px solid #ccc",
-          borderRadius: 6,
-          backgroundColor: "#f9f9f9",
-          maxHeight: 400,
-          overflowY: "auto",
-          whiteSpace: "pre-wrap",
-          fontSize: 14,
-          lineHeight: 1.5,
-          minHeight: 100,
-        }}
-      >
-        {translating ? (
-          <p>Translating...</p>
-        ) : (
-          <p>{translatedText || "No translated text yet."}</p>
-        )}
-      </div>
+  style={{
+    marginTop: 20,
+    padding: 12,
+    border: "1px solid #ccc",
+    borderRadius: 6,
+    backgroundColor: "#f9f9f9",
+    maxHeight: 400,
+    overflowY: "auto",
+    whiteSpace: "pre-wrap",
+    fontSize: 14,
+    lineHeight: 1.5,
+    minHeight: 100,
+  }}
+>
+  {translating ? (
+    "Translating..."
+  ) : translatedText ? (
+    translatedText.split("\n").map((line, idx) => (
+      <div key={idx}>{line}</div>
+    ))
+  ) : (
+    "No translated text yet."
+  )}
+</div>
+
 
       {/* Modal hiện bản dịch */}
       {showTranslatedModal && (
