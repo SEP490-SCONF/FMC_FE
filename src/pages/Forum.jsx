@@ -295,9 +295,9 @@ const Forum = () => {
             >
               ← Back to list
             </button>
-            <h1 className="text-2xl font-bold text-gray-800 mb-2">
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
               Create new question
-            </h1>
+            </h2>
           </div>
 
           {/* Create Question Form */}
@@ -371,9 +371,9 @@ const Forum = () => {
       <div className="max-w-4xl mx-auto p-6">
         {/* Forum Header */}
         <div className="mb-8 pb-4 border-b border-gray-200">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">
+          <h2 className="text-3xl font-bold text-gray-800 mb-2">
             {forumData ? forumData.title : 'Loading...'}
-          </h1>
+          </h2>
           <p className="text-gray-600">
             {forumData ? `Created: ${formatDate(forumData.createdAt)} • Total questions: ${forumData.totalQuestions}` : 'Loading forum information...'}
           </p>
@@ -470,7 +470,7 @@ const Forum = () => {
                   {/* Recent Answers */}
                   {question.recentAnswers && question.recentAnswers.length > 0 && (
                     <div className="space-y-3">
-                      <h3 className="font-medium text-gray-700 text-sm">Latest answers:</h3>
+                      <h5 className="font-medium text-gray-700 text-sm">Latest answers:</h5>
                       {question.recentAnswers.slice(0, 2).map((answer) => (
                         <div key={answer.answerId} className="bg-gray-50 p-3 rounded">
                           <div className="flex justify-between items-start mb-1">
