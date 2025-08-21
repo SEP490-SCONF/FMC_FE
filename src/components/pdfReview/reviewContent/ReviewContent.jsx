@@ -56,34 +56,74 @@ const ReviewContent = ({ review }) => {
       setNotes([]);
     }
   };
+  
+  const prepareTextForApi = (text) => {
+    // Chuẩn hóa mọi CRLF và CR thành LF
+    return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+};
+  // Chia text thành các dòng dựa trên text gốc
+const formatTranslatedTextByOriginal = (translated, original) => {
+  if (!translated || !original) return translated || "";
+
+  const originalLines = original.split("\n"); // tách theo dòng gốc
+  let words = translated.split(/\s+/); // tách tất cả từ
+  let pointer = 0;
+
+  const resultLines = originalLines.map(line => {
+    const wordCount = line.trim().split(/\s+/).length; // số từ dòng gốc
+    const portion = words.slice(pointer, pointer + wordCount).join(" ");
+    pointer += wordCount;
+    return portion;
+  });
+
+  return resultLines.join("\n"); // nối lại theo dòng gốc
+};
+
+
+const unescapeNewlines = (text) => {
+    if (!text) return "";
+    return text.replace(/\\n/g, '\n');
+};
+
+
+const addLineBreaksBySentence = (text) => {
+  if (!text) return "";
+
+  // Regex: kết thúc câu bằng dấu chấm, chấm than, chấm hỏi, hoặc xuống dòng, không tách số thập phân
+  const sentences = text.match(/[^.!?\n]+[.!?\n]+|.+$/g);
+
+  if (!sentences) return text;
+
+  return sentences.map(s => s.trim()).join('\n');
+};
+
+
+
+
 
   // Dịch toàn bộ notes
   const handleTranslateNotes = async () => {
   if (!review || !review.paperId) return;
-
   setTranslating(true);
+
   try {
-    const res = await translatePaperPdf(review.paperId, targetLang);
-    let translatedText = res?.data?.translatedText || "";
+    let res = await translatePaperPdf(review.paperId, targetLang);
+   let translated = res?.data?.translatedText || "";
+translated = unescapeNewlines(translated)
+  .replace(/\r\n/g, '\n')
+  .replace(/\r/g, '\n');
+setTranslatedText(translated);
 
-    // Xử lý: nếu API trả text liền, ta tách dựa vào dấu chấm hoặc khoảng trắng dài
-    // Hoặc dùng text gốc để tách
-    if (!translatedText.includes('\n') && review.originalText) {
-      const lines = review.originalText.split('\n');
-      // map từng dòng gốc sang bản dịch tương ứng (nếu API trả 1 chuỗi liền)
-      translatedText = lines.map((_, idx) => {
-        const words = translatedText.split(' ');
-        const portion = words.slice(idx*30, (idx+1)*30).join(' '); // chia 30 từ / dòng
-        return portion;
-      }).join('\n');
-    }
 
-    setTranslatedText(translatedText);
   } catch (err) {
     setPopup({ open: true, text: "Failed to translate notes.", type: "error" });
   }
+
   setTranslating(false);
 };
+
+
+
 
 
   const renderHighlightTarget = (props) => (
@@ -127,21 +167,41 @@ const ReviewContent = ({ review }) => {
         if (!props.selectedText) return;
         setTranslating(true);
         try {
-          console.log("Selected text to translate:", props.selectedText); // log text được chọn
+          console.log("=== Selected text from PDF ===");
+          console.log(props.selectedText);
 
-          const res = await translateHighlightedText(props.selectedText, highlightLang);
-          console.log("API response:", res); // log toàn bộ response
+// Chuẩn hóa xuống dòng và giữ line break như PDF gốc
+const preparedText = props.selectedText
+  .replace(/\r\n/g, '\n') // Windows -> LF
+  .replace(/\r/g, '\n')   // Mac -> LF
+  .split('\n')             // tách thành các dòng
+  .map(line => line.trim()) // loại khoảng trắng dư
+  .join('\n');             // nối lại bằng LF
+          console.log("=== Prepared text for API (newlines normalized) ===");
+          console.log(preparedText);
+          console.log("String with explicit \\n:");
+          console.log(JSON.stringify(preparedText)); // hiển thị rõ \n trong chuỗi
 
-                const translated =
-                  res?.data?.translatedText ||
-                  res?.data?.TranslatedText ||
-                  res?.translatedText ||
-                  res?.TranslatedText ||
-                  "";
-                                      console.log("Translated text extracted:", translated);
+          const res = await translateHighlightedText(preparedText, highlightLang);
 
-          setTranslatedText(translated);
+          console.log("=== API response ===");
+          console.log(res);
+
+          const translated = res || "";
+          console.log("=== Translated text ===");
+          console.log(translated);
+          console.log("String with explicit \\n:");
+          console.log(JSON.stringify(translated));
+
+          const unescapedTranslated = unescapeNewlines(translated);
+          console.log("=== Unescaped translated ===");
+console.log(unescapedTranslated);
+console.log("=== JSON after unescape ===");
+console.log(JSON.stringify(unescapedTranslated));
+
+          setTranslatedText(unescapedTranslated);
           setShowTranslatedModal(true);
+
         } catch (err) {
           setPopup({ open: true, text: "Failed to translate selected text", type: "error" });
         }
@@ -154,7 +214,6 @@ const ReviewContent = ({ review }) => {
   content={() => <div style={{ width: "100px" }}>Translate text</div>}
   offset={{ left: 0, top: -8 }}
 />
-
   </div>
 );
 
@@ -636,31 +695,14 @@ const ReviewContent = ({ review }) => {
       </div>
 
       {/* Hiển thị nội dung dịch dưới cùng (không tiêu đề) */}
-      <div
-  style={{
-    marginTop: 20,
-    padding: 12,
-    border: "1px solid #ccc",
-    borderRadius: 6,
-    backgroundColor: "#f9f9f9",
-    maxHeight: 400,
-    overflowY: "auto",
-    whiteSpace: "pre-wrap",
-    fontSize: 14,
-    lineHeight: 1.5,
-    minHeight: 100,
-  }}
->
-  {translating ? (
-    "Translating..."
-  ) : translatedText ? (
-    translatedText.split("\n").map((line, idx) => (
-      <div key={idx}>{line}</div>
-    ))
-  ) : (
-    "No translated text yet."
-  )}
+     <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+  {translatedText}
 </div>
+
+
+
+
+
 
 
       {/* Modal hiện bản dịch */}
@@ -674,11 +716,18 @@ const ReviewContent = ({ review }) => {
             onClick={(e) => e.stopPropagation()}
           >
             <h2 className="text-xl font-bold mb-4">Translated Paper</h2>
-            <div
-              style={{ whiteSpace: "pre-wrap", fontSize: 14, lineHeight: 1.6 }}
-            >
-              {translatedText || "No translated text available."}
-            </div>
+            <div style={{ fontSize: 14, lineHeight: 1.6 }}>
+  {translatedText.split('\n').map((line, idx) => (
+  <div key={idx}>{line}</div>
+  
+  
+))}
+
+
+</div>
+
+
+
             <button
               className="absolute top-4 right-4 text-gray-500 hover:text-gray-900 font-bold"
               onClick={() => setShowTranslatedModal(false)}
