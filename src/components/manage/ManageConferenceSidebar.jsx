@@ -3,13 +3,13 @@ import { NavLink, useParams } from "react-router-dom";
 const navItems = [
   { label: "Submitted Papers", to: "/manage-conference/:id/submitted-papers" },
   // { label: "Committee", to: "/manage-conference/committee" },
-  // { label: "Settings", to: "/manage-conference/settings" },
+  { label: "Track income", to: "/manage-conference/:id/income" },
   { label: "Conference Information", to: "/manage-conference/:id/edit" },
-  { label: "Manage Timelines", to: "/manage-conference/:conferenceId/timelines" }, 
+  { label: "Manage Timelines", to: "/manage-conference/:conferenceId/timelines" },
   { label: "Reviewer List", to: "/manage-conference/:conferenceId/reviewers" },
   { label: "Published Papers", to: "/manage-conference/:conferenceId/published-papers" },
   { label: "Manage Call For Papers", to: "/manage-conference/:conferenceId/call-for-paper" },
-  
+
 
 
 
@@ -49,12 +49,12 @@ export default function ManageConferenceSidebar() {
                   end
                 >
                   {item.label === "Submitted Papers" && <span>📄</span>}
-                  {/* {item.label === "Committee" && <span>👥</span>}
-                  {item.label === "Settings" && <span>⚙️</span>} */}
+                  {/* {item.label === "Committee" && <span>👥</span>}*/}
                   {item.label === "Conference Information" && <span>✏️</span>}
                   {item.label === "Manage Timelines" && <span>🗓️</span>}
                   {item.label === "Reviewer List" && <span>🧑‍⚖️</span>}
                   {item.label === "Published Papers" && <span>📚</span>}
+                  {item.label === "Track income" && <span>💵</span>}
                   {item.label === "Manage Call For Papers" && <span>📢</span>}
 
 

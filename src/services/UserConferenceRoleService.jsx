@@ -71,3 +71,15 @@ export const getCommitteeByConference = async (conferenceId) => {
 export const getUserConferenceRolesByUserId = async (userId) => {
     return apiService.get(`/UserConferenceRoles/user/${userId}`);
 };
+
+export const getReviewerAssignedPaperCount = async (conferenceId, reviewerId) => {
+  return apiService.get(
+    `/UserConferenceRoles/reviewers/${reviewerId}/assigned-paper-count?conferenceId=${conferenceId}`
+  );
+};
+
+export const resolveAuthors = async (emails) => {
+  return apiService.post("/UserConferenceRoles/resolve-authors", {
+    emails: emails,
+  });
+};

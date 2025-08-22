@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import OrganizerListView from "../../components/layout/organizer/Organizerlistview";
+import OrganizerListView from "../../components/conference/OrganizerConferenceList";
 import { getConferencesByUserAndRole } from "../../services/UserConferenceRoleService";
 import { useUser } from "../../context/UserContext";
 

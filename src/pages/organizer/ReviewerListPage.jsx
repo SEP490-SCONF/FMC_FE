@@ -55,7 +55,7 @@ const ReviewerListPage = () => {
       });
       const data = res.data || res;
       const reviewersList = data.value || data;
-      console.log("📦 Loaded reviewers:", reviewersList); // ✅ Log sau khi fetch
+      
 
       setReviewers(reviewersList);
       const total =

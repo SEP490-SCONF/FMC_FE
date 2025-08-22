@@ -20,11 +20,13 @@ import {
   deleteReviewWithHighlightAndComment,
 } from "../../../services/ReviewWithHighlightService";
 import { useUser } from "../../../context/UserContext";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 
-const ReviewContent = ({ review }) => {
+const ReviewContent = ({ review, onChunksGenerated }) => {
   const { user } = useUser();
 
   const [fileUrl, setFileUrl] = useState("");
@@ -39,6 +41,7 @@ const ReviewContent = ({ review }) => {
 
   const noteEles = useRef(new Map());
   const [currentDoc, setCurrentDoc] = useState(null);
+  const [aiAnalysisResult, setAiAnalysisResult] = useState(null);
 
   // --- Trạng thái dịch ---
   const [targetLang, setTargetLang] = useState("en-US"); // mặc định English
@@ -50,10 +53,67 @@ const ReviewContent = ({ review }) => {
   // --- Modal xem bản dịch ---
   const [showTranslatedModal, setShowTranslatedModal] = useState(false);
 
-  const handleDocumentLoad = (e) => {
+  const handleDocumentLoad = async (e) => {
     setCurrentDoc(e.doc);
     if (currentDoc && currentDoc !== e.doc) {
       setNotes([]);
+    }
+
+    // Trích xuất text từ PDF
+    const numPages = e.doc.numPages;
+    let fullText = "";
+    for (let i = 1; i <= numPages; i++) {
+      const page = await e.doc.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items
+        .map((item) => item.str)
+        .join(" ")
+        .replace(/\[.*?\]/g, "")
+        .replace(/Figure \d+/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+      fullText += pageText + " ";
+    }
+
+    // Chia nhỏ thành chunk với tối đa 512 token
+    const maxTokens = 512;
+    const chunks = [];
+    const words = fullText
+      .split(" ")
+      .filter((word) => word.length > 0 && !/^\d+$/.test(word));
+    let currentChunk = [];
+    let currentTokenCount = 0;
+
+    for (let word of words) {
+      const wordTokenCount = Math.ceil(word.length / 4) || 1;
+      if (currentTokenCount + wordTokenCount <= maxTokens) {
+        currentChunk.push(word);
+        currentTokenCount += wordTokenCount;
+      } else {
+        if (currentChunk.length > 0) {
+          chunks.push({
+            ChunkId: chunks.length,
+            Text: currentChunk.join(" ").trim(),
+            TokenCount: currentTokenCount,
+            Hash: null,
+          });
+        }
+        currentChunk = [word];
+        currentTokenCount = wordTokenCount;
+      }
+    }
+
+    if (currentChunk.length > 0) {
+      chunks.push({
+        ChunkId: chunks.length,
+        Text: currentChunk.join(" ").trim(),
+        TokenCount: currentTokenCount,
+        Hash: null,
+      });
+    }
+
+    if (onChunksGenerated) {
+      onChunksGenerated(chunks);
     }
   };
   
@@ -242,7 +302,7 @@ console.log(JSON.stringify(unescapedTranslated));
           const highlightId = res?.highlight?.highlightId;
 
           if (!highlightId) {
-            setPopup({ open: true, text: "Failed to save note (missing ID)", type: "error" });
+            toast.error("Failed to save note (missing ID)");
             return;
           }
 
@@ -256,9 +316,9 @@ console.log(JSON.stringify(unescapedTranslated));
           setNotes((prev) => [...prev, note]);
           setMessage("");
           props.cancel();
-          setPopup({ open: true, text: "Note added successfully!", type: "success" });
+          toast.success("Note added successfully!");
         } catch (err) {
-          setPopup({ open: true, text: "Failed to save note!", type: "error" });
+          toast.error("Failed to save note!");
         }
       }
     };
@@ -295,7 +355,7 @@ console.log(JSON.stringify(unescapedTranslated));
     );
   };
 
-  const [activateTab, setActivateTab] = useState(() => () => {});
+  const [activateTab, setActivateTab] = useState(() => () => { });
 
   const jumpToNote = (note) => {
     activateTab(3);
@@ -354,9 +414,9 @@ console.log(JSON.stringify(unescapedTranslated));
     try {
       await deleteReviewWithHighlightAndComment(highlightId);
       setNotes((notes) => notes.filter((note) => note.id !== highlightId));
-      setPopup({ open: true, text: "Note deleted successfully!", type: "success" });
+      toast.success("Note deleted successfully!");
     } catch (err) {
-      setPopup({ open: true, text: "Failed to delete note!", type: "error" });
+      toast.error("Failed to delete note!");
     }
   };
 
@@ -388,9 +448,9 @@ console.log(JSON.stringify(unescapedTranslated));
       });
 
       await updateReviewWithHighlightAndComment(review.reviewId, formData);
-      setPopup({ open: true, text: "Note updated successfully!", type: "success" });
+      toast.success("Note updated successfully!");
     } catch (err) {
-      setPopup({ open: true, text: "Failed to update note!", type: "error" });
+      toast.error("Failed to update note!");
     }
   };
 
@@ -623,6 +683,25 @@ console.log(JSON.stringify(unescapedTranslated));
                 Save
               </button>
               <button
+                className="bg-red-100 text-red-600 rounded-lg px-6 py-2 font-semibold shadow hover:bg-red-200 transition"
+                onClick={async () => {
+                  try {
+                    await deleteReviewWithHighlightAndComment(
+                      selectedHighlight.note.id
+                    );
+                    setNotes((notes) =>
+                      notes.filter((n) => n.id !== selectedHighlight.note.id)
+                    );
+                    setSelectedHighlight(null);
+                    toast.success("Note deleted successfully!");
+                  } catch (err) {
+                    toast.error("Failed to delete note!");
+                  }
+                }}
+              >
+                Delete
+              </button>
+              <button
                 className="bg-gray-100 text-gray-700 rounded-lg px-6 py-2 font-semibold shadow hover:bg-gray-200 transition"
                 onClick={() => setSelectedHighlight(null)}
               >
@@ -699,12 +778,6 @@ console.log(JSON.stringify(unescapedTranslated));
   {translatedText}
 </div>
 
-
-
-
-
-
-
       {/* Modal hiện bản dịch */}
       {showTranslatedModal && (
         <div
@@ -723,10 +796,7 @@ console.log(JSON.stringify(unescapedTranslated));
   
 ))}
 
-
 </div>
-
-
 
             <button
               className="absolute top-4 right-4 text-gray-500 hover:text-gray-900 font-bold"

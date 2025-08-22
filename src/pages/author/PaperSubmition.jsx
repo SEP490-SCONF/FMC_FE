@@ -1,5 +1,5 @@
 import React from "react";
-import SubmitPapers from "../../components/layout/SubmitPapers";
+import SubmitPapers from "../../components/paper/PaperSubmissionForm";
 
 
 const PaperSubmition = () => {
