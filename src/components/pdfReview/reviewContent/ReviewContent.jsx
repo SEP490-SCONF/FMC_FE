@@ -192,7 +192,7 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
         ></textarea>
         <div className="flex flex-row gap-3 justify-end">
           <button
-            className="bg-blue-600 text-green rounded-lg px-4 py-1 font-semibold hover:bg-blue-700 transition"
+            className="bg-green-600 text-green rounded-lg px-4 py-1 font-semibold hover:bg-blue-700 transition"
             onClick={addNote}
           >
             Add
@@ -340,7 +340,7 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
               />
               <div className="flex flex-row gap-3 justify-end">
                 <button
-                  className="bg-blue-600 text-green rounded-lg px-4 py-1 font-semibold shadow hover:bg-blue-700 transition"
+                  className="bg-white-600 text-green rounded-lg px-4 py-1 font-semibold shadow hover:bg-blue-700 transition"
                   onClick={async (e) => {
                     e.stopPropagation();
                     setNotes((notes) =>
@@ -370,7 +370,7 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
               <div className="text-base text-gray-800 mb-2">{note.content}</div>
               <div className="flex flex-row gap-3 justify-end">
                 <button
-                  className="bg-yellow-100 text-yellow-700 rounded-lg px-4 py-1 font-semibold shadow hover:bg-yellow-200 transition"
+                  className="bg-white-100 text-yellow-700 rounded-lg px-4 py-1 font-semibold shadow hover:bg-yellow-200 transition"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleEditNote(note.id);
@@ -379,7 +379,7 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
                   Edit
                 </button>
                 <button
-                  className="bg-red-100 text-red-600 rounded-lg px-4 py-1 font-semibold shadow hover:bg-red-200 transition"
+                  className="bg-white-100 text-red-600 rounded-lg px-4 py-1 font-semibold shadow hover:bg-red-200 transition"
                   onClick={async (e) => {
                     e.stopPropagation();
                     await handleDeleteNote(note.id);
@@ -475,7 +475,7 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
             />
             <div className="flex flex-row gap-4 justify-end">
               <button
-                className="bg-red-100 text-green-600 rounded-lg px-6 py-2 font-semibold shadow hover:bg-red-200 transition"
+                className="bg-white-100 text-green-600 rounded-lg px-6 py-2 font-semibold shadow hover:bg-red-200 transition"
                 onClick={async () => {
                   setNotes((notes) =>
                     notes.map((n) =>
@@ -494,7 +494,7 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
                 Save
               </button>
               <button
-                className="bg-red-100 text-red-600 rounded-lg px-6 py-2 font-semibold shadow hover:bg-red-200 transition"
+                className="bg-white-100 text-red-600 rounded-lg px-6 py-2 font-semibold shadow hover:bg-red-200 transition"
                 onClick={async () => {
                   try {
                     await deleteReviewWithHighlightAndComment(
@@ -513,7 +513,7 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
                 Delete
               </button>
               <button
-                className="bg-gray-100 text-gray-700 rounded-lg px-6 py-2 font-semibold shadow hover:bg-gray-200 transition"
+                className="bg-white-100 text-gray-700 rounded-lg px-6 py-2 font-semibold shadow hover:bg-gray-200 transition"
                 onClick={() => setSelectedHighlight(null)}
               >
                 Cancel
