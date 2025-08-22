@@ -27,7 +27,7 @@ const SubmittedPaperAuthor = () => {
   }, [user, conferenceId, navigate]);
 
   return (
-    <main>
+    <main className="pt-10 pb-10">
       <Submited
         submissions={papers}
         userId={user?.userId}

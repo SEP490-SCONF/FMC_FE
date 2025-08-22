@@ -1,84 +1,92 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo } from "react";
+import {
+  Table,
+  Button,
+  Tag,
+  message,
+  Modal,
+  Pagination,
+  Input,
+  Select,
+  Row,
+  Col,
+} from "antd";
+import {
+  UploadOutlined,
+  EyeOutlined,
+  RedoOutlined,
+  DollarOutlined,
+  FileSearchOutlined,
+  SearchOutlined,
+} from "@ant-design/icons";
 import { uploadRevision } from "../../services/PaperRevisionService";
 import { useNavigate } from "react-router-dom";
 
-const ITEMS_PER_PAGE = 3;
+const ITEMS_PER_PAGE = 5;
+const { Option } = Select;
 
 const Submited = ({ submissions = [], userId, conferenceId }) => {
   const [openIdx, setOpenIdx] = useState(null);
-  const [message, setMessage] = useState("");
   const [uploadingIdx, setUploadingIdx] = useState(null);
-  const fileInputRef = useRef();
   const [pendingPaperId, setPendingPaperId] = useState(null);
   const navigate = useNavigate();
 
-  // Pagination state
   const [page, setPage] = useState(1);
 
-  // Sort submissions by latest submittedAt (descending)
-  const sortedSubmissions = [...submissions].sort((a, b) => {
-    const aTime =
-      a.paperRevisions && a.paperRevisions.length > 0
-        ? new Date(
-          a.paperRevisions[a.paperRevisions.length - 1].submittedAt
-        ).getTime()
-        : 0;
-    const bTime =
-      b.paperRevisions && b.paperRevisions.length > 0
-        ? new Date(
-          b.paperRevisions[b.paperRevisions.length - 1].submittedAt
-        ).getTime()
-        : 0;
-    return bTime - aTime;
-  });
+  // --- Filters & Sorting ---
+  const [searchText, setSearchText] = useState("");
+  const [searchBy, setSearchBy] = useState("title");
+  const [statusFilter, setStatusFilter] = useState("All");
+  const [sortBy, setSortBy] = useState("latest");
 
-  // Pagination logic
-  const totalPages = Math.ceil(sortedSubmissions.length / ITEMS_PER_PAGE);
-  const pagedSubmissions = sortedSubmissions.slice(
+  // Sort + Filter logic
+  const filteredAndSortedSubmissions = useMemo(() => {
+    let filtered = submissions.filter((item) => {
+      const field = (item[searchBy] || "").toString().toLowerCase();
+      const matchSearch = field.includes(searchText.toLowerCase());
+      const matchStatus =
+        statusFilter === "All" || item.status === statusFilter;
+      return matchSearch && matchStatus;
+    });
+
+    return filtered.sort((a, b) => {
+      const getTime = (record) => {
+        const lastRevision = record.paperRevisions?.[record.paperRevisions.length - 1];
+        return lastRevision
+          ? new Date(lastRevision.submittedAt).getTime()
+          : 0;
+      };
+      if (sortBy === "latest") return getTime(b) - getTime(a);
+      if (sortBy === "oldest") return getTime(a) - getTime(b);
+      if (sortBy === "titleAsc")
+        return a.title.localeCompare(b.title, "en", { sensitivity: "base" });
+      if (sortBy === "titleDesc")
+        return b.title.localeCompare(a.title, "en", { sensitivity: "base" });
+      return 0;
+    });
+  }, [submissions, searchText, searchBy, statusFilter, sortBy]);
+
+  const totalPages = Math.ceil(filteredAndSortedSubmissions.length / ITEMS_PER_PAGE);
+  const pagedSubmissions = filteredAndSortedSubmissions.slice(
     (page - 1) * ITEMS_PER_PAGE,
     page * ITEMS_PER_PAGE
   );
 
-  // Xử lý khi bấm nút Resubmit
+  // --- Handle resubmit ---
   const handleResubmit = (status, paperId) => {
     if (status === "Need Revision") {
-      setMessage("");
       setPendingPaperId(paperId);
-      // Mở file input để chọn file PDF
-      fileInputRef.current.value = "";
-      fileInputRef.current.click();
+      document.getElementById("upload-input").click();
     } else {
-      switch (status) {
-        case "Submitted":
-          setMessage(
-            "You cannot resubmit this paper because it has already been submitted."
-          );
-          break;
-        case "Under Review":
-          setMessage(
-            "You cannot resubmit this paper while it is under review."
-          );
-          break;
-        case "Rejected":
-          setMessage("This paper was rejected. Please revise and resubmit.");
-          break;
-        case "Accepted":
-          setMessage("This paper is accepted. No need to resubmit.");
-          break;
-        default:
-          setMessage("Unknown status. You cannot resubmit this paper.");
-      }
-      setTimeout(() => setMessage(""), 3000);
+      message.warning("You cannot resubmit this paper unless it needs revision.");
     }
   };
 
-  // Xử lý khi chọn file xong
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     if (file.type !== "application/pdf") {
-      setMessage("Only PDF files are allowed.");
-      setTimeout(() => setMessage(""), 3000);
+      message.error("Only PDF files are allowed.");
       return;
     }
     if (!pendingPaperId) return;
@@ -90,267 +98,236 @@ const Submited = ({ submissions = [], userId, conferenceId }) => {
 
     try {
       await uploadRevision(formData);
-      setMessage("Resubmission successful!");
-      setTimeout(() => {
-        window.location.reload(); // Reload trang sau khi nộp lại thành công
-      }, 2000); // Đợi 2s cho user thấy thông báo
+      message.success("Resubmission successful!");
+      setTimeout(() => window.location.reload(), 2000);
     } catch (err) {
-      setMessage(err.message || "Resubmission failed!");
+      message.error(err.message || "Resubmission failed!");
     } finally {
       setUploadingIdx(null);
       setPendingPaperId(null);
-      setTimeout(() => setMessage(""), 3000);
     }
   };
 
+  // --- Table Columns ---
+  const columns = [
+    {
+      title: "Title",
+      dataIndex: "title",
+      key: "title",
+    },
+    {
+      title: "Topic",
+      dataIndex: "topicName",
+      key: "topicName",
+      render: (topic) => topic || "N/A",
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (status) => {
+        const colors = {
+          Submitted: "green",
+          "Need Revision": "gold",
+          Rejected: "red",
+          "Under Review": "blue",
+          Accepted: "purple",
+        };
+        return <Tag color={colors[status] || "default"}>{status}</Tag>;
+      },
+    },
+    {
+      title: "Last Submitted",
+      key: "lastSubmitted",
+      render: (_, record) => {
+        const lastRevision = record.paperRevisions?.[record.paperRevisions.length - 1];
+        return lastRevision
+          ? new Date(lastRevision.submittedAt).toLocaleString("en-GB", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "";
+      },
+    },
+    {
+      title: "Actions",
+      key: "actions",
+      render: (_, record) => (
+        <>
+          <Button
+            icon={<EyeOutlined />}
+            type="link"
+            onClick={() => setOpenIdx(record.paperId)}
+          >
+            View Revisions
+          </Button>
+          <Button
+            icon={<RedoOutlined />}
+            type="link"
+            disabled={record.status !== "Need Revision" || uploadingIdx === record.paperId}
+            onClick={() => handleResubmit(record.status, record.paperId)}
+          >
+            {uploadingIdx === record.paperId ? "Uploading..." : "Resubmit"}
+          </Button>
+          {record.status === "Accepted" && (
+            <>
+              <Button
+                icon={<FileSearchOutlined />}
+                type="link"
+                onClick={() => navigate(`/author/view-certificates/${record.paperId}`)}
+              >
+                Certificate
+              </Button>
+              <Button
+                icon={<DollarOutlined />}
+                type="link"
+                onClick={() =>
+                  navigate(`/author/payment/${record.paperId}`, {
+                    state: { userId, conferenceId, paperId: record.paperId },
+                  })
+                }
+              >
+                Payment
+              </Button>
+            </>
+          )}
+        </>
+      ),
+    },
+  ];
+
   return (
-    <div className="bg-white min-h-screen pb-10 flex flex-col">
+    <div style={{ padding: 24 }}>
       <input
+        id="upload-input"
         type="file"
         accept="application/pdf"
-        ref={fileInputRef}
         style={{ display: "none" }}
         onChange={handleFileChange}
       />
-      <div className="border-b border-gray-200 py-6 px-8">
-        <h2 className="font-bold text-3xl text-center"> History Submission</h2>
-      </div>
-      <div className="w-full max-w-6xl mx-auto mt-8 bg-white flex-1 flex flex-col">
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-base bg-white">
-            <thead>
-              <tr>
-                <th className={thClass}>Title</th>
-                <th className={thClass}>Topic</th>
-                <th className={thClass}>Status</th>
-                <th className={thClass}>Last Submitted</th>
-                <th className={thClass}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {pagedSubmissions.map((s, idx) => {
-                const lastRevision =
-                  s.paperRevisions && s.paperRevisions.length > 0
-                    ? s.paperRevisions[s.paperRevisions.length - 1]
-                    : null;
-                return (
-                  <tr key={s.paperId || idx} className="hover:bg-gray-50">
-                    <td className={tdClass}>{s.title}</td>
-                    <td className={tdClass}>{s.topicName || "N/A"}</td>
-                    <td className={tdClass}>
-                      <span
-                        className={
-                          s.status === "Submitted"
-                            ? "bg-green-100 text-green-700 px-3 py-1 rounded-full font-semibold text-xs inline-block"
-                            : s.status === "Need Revision"
-                              ? "bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full font-semibold text-xs inline-block"
-                              : s.status === "Rejected"
-                                ? "bg-red-100 text-red-700 px-3 py-1 rounded-full font-semibold text-xs inline-block"
-                                : s.status === "Under Review"
-                                  ? "bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-semibold text-xs inline-block"
-                                  : "bg-gray-100 text-gray-700 px-3 py-1 rounded-full font-semibold text-xs inline-block"
-                        }
-                      >
-                        {s.status}
-                      </span>
-                    </td>
-                    <td className={tdClass}>
-                      {lastRevision && lastRevision.submittedAt
-                        ? new Date(lastRevision.submittedAt).toLocaleString(
-                          "en-GB",
-                          {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          }
-                        )
-                        : ""}
-                    </td>
-                    <td className={tdClass}>
-                      <div className="grid grid-cols-2 gap-2 w-72 mx-auto">
-                        <button
-                          className="w-36 inline-flex items-center gap-1 px-3 py-1 border border-blue-500 text-blue-700 bg-blue-50 rounded-full hover:bg-blue-100 transition text-xs font-medium shadow-sm justify-center"
-                          onClick={() =>
-                            setOpenIdx((page - 1) * ITEMS_PER_PAGE + idx)
-                          }
-                        >
-                          <span className="mr-1">🕑</span>
-                          View Revisions
-                        </button>
-                        <button
-                          className={`w-36 inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium shadow-sm border transition justify-center
-        ${s.status === "Need Revision"
-                              ? "border-yellow-500 text-yellow-700 bg-yellow-50 hover:bg-yellow-100"
-                              : "border-gray-300 text-gray-400 bg-gray-100 cursor-not-allowed"
-                            }
-      `}
-                          onClick={() => handleResubmit(s.status, s.paperId)}
-                          disabled={
-                            s.status !== "Need Revision" ||
-                            uploadingIdx === s.paperId
-                          }
-                        >
-                          <span className="mr-1">🔄</span>
-                          {uploadingIdx === s.paperId
-                            ? "Uploading..."
-                            : "Resubmit"}
-                        </button>
-                        {s.status === "Accepted" && (
-                          <>
-                            <button
-                              className="w-36 inline-flex items-center gap-1 px-3 py-1 border border-green-500 text-green-700 bg-green-50 rounded-full hover:bg-green-100 transition text-xs font-medium shadow-sm justify-center"
-                              onClick={() => navigate(`/author/view-certificates/${s.paperId}`)}
-                            >
-                              🎓 View Certificate
-                            </button>
-                            {s.isPublished ? (
-                              <button
-                                className="  w-36 inline-flex items-center gap-1 px-3 py-1 border border-gray-400 text-gray-500 bg-gray-100 rounded-full cursor-not-allowed text-xs font-medium shadow-sm justify-center"
-                                disabled
-                              >
-                                💳 Payment Complete
-                              </button>
-                            ) : (
-                              <button
-                                className="w-36 inline-flex items-center gap-1 px-3 py-1 border border-purple-500 text-purple-700 bg-purple-50 rounded-full hover:bg-purple-100 transition text-xs font-medium shadow-sm justify-center"
-                                onClick={() => navigate(`/author/payment/${s.paperId}`, {
-                                  state: {
-                                    userId,
-                                    conferenceId,
-                                    paperId: s.paperId
-                                  }
-                                })}
-                              >
-                                💳 Payment
-                              </button>
-                            )}
-                          </>
-                        )}
 
+      {/* Search and Filters */}
+      <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+        <Col xs={24} sm={6}>
+          <Select
+            value={searchBy}
+            onChange={setSearchBy}
+            style={{ width: "100%" }}
+          >
+            <Option value="title">Title</Option>
+            <Option value="topicName">Topic</Option>
+            <Option value="status">Status</Option>
+          </Select>
+        </Col>
+        <Col xs={24} sm={10}>
+          <Input
+            placeholder={`Search by ${searchBy}`}
+            prefix={<SearchOutlined />}
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+          />
+        </Col>
+        <Col xs={24} sm={4}>
+          <Select
+            value={statusFilter}
+            onChange={setStatusFilter}
+            style={{ width: "100%" }}
+          >
+            <Option value="All">All Status</Option>
+            <Option value="Submitted">Submitted</Option>
+            <Option value="Need Revision">Need Revision</Option>
+            <Option value="Under Review">Under Review</Option>
+            <Option value="Accepted">Accepted</Option>
+            <Option value="Rejected">Rejected</Option>
+          </Select>
+        </Col>
+        <Col xs={24} sm={4}>
+          <Select
+            value={sortBy}
+            onChange={setSortBy}
+            style={{ width: "100%" }}
+          >
+            <Option value="latest">Latest Submission</Option>
+            <Option value="oldest">Oldest Submission</Option>
+            <Option value="titleAsc">Title A-Z</Option>
+            <Option value="titleDesc">Title Z-A</Option>
+          </Select>
+        </Col>
+      </Row>
 
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-        {/* Pagination controls */}
-        <div className="flex justify-center mt-6 gap-2 mb-4">
-          {Array.from({ length: totalPages }, (_, i) => (
-            <button
-              key={i}
-              className={`w-10 h-10 flex items-center justify-center rounded border text-base font-semibold transition
-              ${page === i + 1
-                  ? "bg-blue-600 text-green border-blue-600"
-                  : "bg-white text-blue-600 border-gray-300 hover:bg-blue-50"
-                }
-            `}
-              onClick={() => setPage(i + 1)}
-            >
-              {i + 1}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/* Table */}
+      <Table
+        dataSource={pagedSubmissions}
+        columns={columns}
+        rowKey="paperId"
+        pagination={false}
+      />
 
-      {/* Hiển thị thông báo nếu không thể nộp lại bài */}
-      {message && (
-        <div className="fixed bottom-4 right-4 bg-red-100 text-red-700 py-2 px-4 rounded-lg shadow-lg text-center max-w-xs z-50">
-          {message}
-        </div>
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <Pagination
+          current={page}
+          total={filteredAndSortedSubmissions.length}
+          pageSize={ITEMS_PER_PAGE}
+          onChange={(p) => setPage(p)}
+          style={{ marginTop: 16, textAlign: "center" }}
+        />
       )}
-      {/* Popup hiển thị danh sách revision */}
-      {openIdx !== null && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/20">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 min-w-[350px] max-w-lg w-full relative border border-gray-200 animate-fadeIn">
-            <button
-              className="absolute top-3 right-5 text-2xl font-bold text-gray-400 hover:text-gray-700 transition"
-              onClick={() => setOpenIdx(null)}
-              aria-label="Close"
-            >
-              ×
-            </button>
-            <h3 className="text-2xl font-bold mb-6 text-center text-blue-900 tracking-wide">
-              Paper Revisions
-            </h3>
-            <table className="w-full border-collapse text-base bg-white rounded-lg overflow-hidden shadow">
-              <thead>
-                <tr>
-                  <th className="bg-blue-50 border-b px-4 py-2 font-semibold text-blue-900 text-center rounded-tl-lg">
-                    #
-                  </th>
-                  <th className="bg-blue-50 border-b px-4 py-2 font-semibold text-blue-900 text-center">
-                    Status
-                  </th>
-                  <th className="bg-blue-50 border-b px-4 py-2 font-semibold text-blue-900 text-center">
-                    Submitted At
-                  </th>
-                  <th className="bg-blue-50 border-b px-4 py-2 font-semibold text-blue-900 text-center rounded-tr-lg">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {(sortedSubmissions[openIdx]?.paperRevisions || []).map(
-                  (rev, i) => (
-                    <tr
-                      key={rev.revisionId || i}
-                      className="hover:bg-blue-50 transition"
-                    >
-                      <td className="border-b px-4 py-2 text-center">
-                        {i + 1}
-                      </td>
-                      <td className="border-b px-4 py-2 text-center">
-                        <span
-                          className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${rev.status === "Submitted"
-                            ? "bg-green-100 text-green-700"
-                            : rev.status === "Need Revision"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : rev.status === "Rejected"
-                                ? "bg-red-100 text-red-700"
-                                : "bg-gray-100 text-gray-700"
-                            }`}
-                        >
-                          {rev.status}
-                        </span>
-                      </td>
-                      <td className="border-b px-4 py-2 text-center">
-                        {rev.submittedAt
-                          ? new Date(rev.submittedAt).toLocaleString("en-GB", {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
-                          : ""}
-                      </td>
-                      <td className="border-b px-4 py-2 text-center">
-                        <button
-                          className="px-3 py-1 bg-blue-500 text-green-500 rounded hover:bg-blue-600 transition"
-                          onClick={() => navigate(`/author/view-paper-review/${rev.revisionId}`)}
-                        >
-                          View Review
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+
+      {/* Modal for viewing revisions */}
+      <Modal
+        open={openIdx !== null}
+        title="Paper Revisions"
+        onCancel={() => setOpenIdx(null)}
+        footer={null}
+        width={600}
+      >
+        {openIdx !== null && (
+          <Table
+            dataSource={
+              submissions.find((s) => s.paperId === openIdx)?.paperRevisions || []
+            }
+            columns={[
+              { title: "#", render: (_, __, i) => i + 1 },
+              { title: "Status", dataIndex: "status", render: (status) => <Tag>{status}</Tag> },
+              {
+                title: "Submitted At",
+                dataIndex: "submittedAt",
+                render: (date) =>
+                  date
+                    ? new Date(date).toLocaleString("en-GB", {
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
+                    : "",
+              },
+              {
+                title: "Actions",
+                render: (_, record) => (
+                  <Button
+                    icon={<EyeOutlined />}
+                    onClick={() =>
+                      navigate(`/author/view-paper-review/${record.revisionId}`)
+                    }
+                  >
+                    View Review
+                  </Button>
+                ),
+              },
+            ]}
+            rowKey="revisionId"
+            pagination={false}
+          />
+        )}
+      </Modal>
     </div>
   );
 };
-
-const thClass =
-  "border border-gray-200 px-3 py-2 font-semibold bg-gray-50 text-xs";
-const tdClass = "border border-gray-100 px-3 py-2 text-center";
 
 export default Submited;

@@ -3,6 +3,8 @@ import { useParams, Link } from "react-router-dom";
 import { getCallForPapersByConferenceId } from "../../services/CallForPaperService";
 import { getTimelinesByConferenceId } from "../../services/TimelineService";
 import dayjs from "dayjs";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+
 import {
   CalendarDays,
   MapPin,
@@ -57,7 +59,7 @@ const CFP = () => {
 // Loading
 if (loading)
   return (
-    <div className="text-center py-10 text-gray-500 text-lg">Loading...</div>
+    <LoadingSpinner />
   );
 
 // Không có CFP

@@ -1,543 +1,172 @@
-import React, { useRef, useState, useEffect } from "react";
-import {
-  Button,
-  Position,
-  PrimaryButton,
-  Tooltip,
-  Viewer,
-  Worker,
-} from "@react-pdf-viewer/core";
-import { defaultLayoutPlugin } from "@react-pdf-viewer/default-layout";
-import { highlightPlugin, MessageIcon } from "@react-pdf-viewer/highlight";
-import { getPdfUrlByReviewId } from "../../services/PaperRevisionService";
-import {
-  addReviewWithHighlightAndComment,
-  getReviewWithHighlightAndComment,
-  updateReviewWithHighlightAndComment,
-  deleteReviewWithHighlightAndComment,
-} from "../../services/ReviewWithHighlightService";
-import { useUser } from "../../context/UserContext";
+import React, { useState } from "react";
+import { updateReview, sendFeedback } from "../../services/ReviewService";
+import AnalyzeAiService from "../../services/AnalyzeAiService";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-import "@react-pdf-viewer/core/lib/styles/index.css";
-import "@react-pdf-viewer/default-layout/lib/styles/index.css";
+// Thêm `readOnly` vào danh sách props
+const ReviewSidebar = ({
+  review,
+  chunks,
+  onChange,
+  onSave,
+  onSendFeedback,
+  readOnly = false, // Đặt giá trị mặc định là false
+}) => {
+  const [aiPercentage, setAiPercentage] = useState(review?.percentAi || 0);
 
-const ReviewContent = ({ review, onChunksGenerated }) => {
-  const { user } = useUser();
+  const safePaperStatus = review?.paperStatus || "Need Revision";
 
-  const [fileUrl, setFileUrl] = useState("");
-  const [message, setMessage] = useState("");
-  const [notes, setNotes] = useState([]);
-  const notesContainerRef = useRef(null);
-  let noteId = notes.length;
-
-  const [selectedHighlight, setSelectedHighlight] = useState(null);
-  const [highlightEditContent, setHighlightEditContent] = useState("");
-  const noteEles = useRef(new Map());
-  const [currentDoc, setCurrentDoc] = useState(null);
-  const [aiAnalysisResult, setAiAnalysisResult] = useState(null);
-
-  const handleDocumentLoad = async (e) => {
-    setCurrentDoc(e.doc);
-    if (currentDoc && currentDoc !== e.doc) {
-      setNotes([]);
-    }
-
-    // Trích xuất text từ PDF
-    const numPages = e.doc.numPages;
-    let fullText = "";
-    for (let i = 1; i <= numPages; i++) {
-      const page = await e.doc.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items
-        .map((item) => item.str)
-        .join(" ")
-        .replace(/\[.*?\]/g, "")
-        .replace(/Figure \d+/g, "")
-        .replace(/\s+/g, " ")
-        .trim();
-      fullText += pageText + " ";
-    }
-
-    // Chia nhỏ thành chunk với tối đa 512 token
-    const maxTokens = 512;
-    const chunks = [];
-    const words = fullText
-      .split(" ")
-      .filter((word) => word.length > 0 && !/^\d+$/.test(word));
-    let currentChunk = [];
-    let currentTokenCount = 0;
-
-    for (let word of words) {
-      const wordTokenCount = Math.ceil(word.length / 4) || 1;
-      if (currentTokenCount + wordTokenCount <= maxTokens) {
-        currentChunk.push(word);
-        currentTokenCount += wordTokenCount;
-      } else {
-        if (currentChunk.length > 0) {
-          chunks.push({
-            ChunkId: chunks.length,
-            Text: currentChunk.join(" ").trim(),
-            TokenCount: currentTokenCount,
-            Hash: null,
-          });
-        }
-        currentChunk = [word];
-        currentTokenCount = wordTokenCount;
-      }
-    }
-
-    if (currentChunk.length > 0) {
-      chunks.push({
-        ChunkId: chunks.length,
-        Text: currentChunk.join(" ").trim(),
-        TokenCount: currentTokenCount,
-        Hash: null,
-      });
-    }
-
-    if (onChunksGenerated) {
-      onChunksGenerated(chunks);
-    }
-  };
-
-  const renderHighlightTarget = (props) => (
-    <div
-      style={{
-        background: "#eee",
-        display: "flex",
-        position: "absolute",
-        left: `${props.selectionRegion.left}%`,
-        top: `${props.selectionRegion.top + props.selectionRegion.height}%`,
-        transform: "translate(0, 8px)",
-        zIndex: 1,
-      }}
-    >
-      <Tooltip
-        position={Position.TopCenter}
-        target={
-          <Button onClick={props.toggle}>
-            <MessageIcon />
-          </Button>
-        }
-        content={() => <div style={{ width: "100px" }}>Add a note</div>}
-        offset={{ left: 0, top: -8 }}
-      />
-    </div>
-  );
-
-  const renderHighlightContent = (props) => {
-    const addNote = async () => {
-      if (message !== "") {
-        try {
-          const formData = new FormData();
-          formData.append("ReviewId", review.reviewId);
-          formData.append("RevisionId", review.revisionId);
-          formData.append("ReviewerId", user.userId);
-          formData.append("TextHighlighted", props.selectedText);
-          formData.append("UserId", user.userId);
-          formData.append("CommentText", message);
-          formData.append("Status", "Draft");
-
-          props.highlightAreas.forEach((area, idx) => {
-            formData.append(
-              `HighlightAreas[${idx}][PageIndex]`,
-              area.pageIndex
-            );
-            formData.append(`HighlightAreas[${idx}][Left]`, area.left || 0);
-            formData.append(`HighlightAreas[${idx}][Top]`, area.top || 0);
-            formData.append(`HighlightAreas[${idx}][Width]`, area.width || 0);
-            formData.append(`HighlightAreas[${idx}][Height]`, area.height || 0);
-          });
-
-          const res = await addReviewWithHighlightAndComment(formData);
-          const highlightId = res?.highlight?.highlightId;
-
-          if (!highlightId) {
-            toast.error("Failed to save note (missing ID)");
-            return;
-          }
-
-          const note = {
-            id: highlightId,
-            content: message,
-            highlightAreas: props.highlightAreas,
-            quote: props.selectedText,
-          };
-
-          setNotes((prev) => [...prev, note]);
-          setMessage("");
-          props.cancel();
-          toast.success("Note added successfully!");
-        } catch (err) {
-          toast.error("Failed to save note!");
-        }
-      }
-    };
-
+  if (!review) {
     return (
-      <div
-        className="bg-white border border-gray-300 rounded-lg p-4 absolute z-10"
-        style={{
-          left: `${props.selectionRegion.left}%`,
-          top: `${props.selectionRegion.top + props.selectionRegion.height}%`,
-        }}
-      >
-        <textarea
-          rows={3}
-          className="w-full border border-gray-300 rounded p-2 mb-3"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-        ></textarea>
-        <div className="flex flex-row gap-3 justify-end">
-          <button
-            className="bg-blue-600 text-green rounded-lg px-4 py-1 font-semibold hover:bg-blue-700 transition"
-            onClick={addNote}
-          >
-            Add
-          </button>
-          <button
-            className="bg-gray-100 text-gray-700 rounded-lg px-4 py-1 font-semibold hover:bg-gray-200 transition"
-            onClick={props.cancel}
-          >
-            Cancel
-          </button>
-        </div>
+      <div className="flex-1 p-6 border-r border-gray-200 bg-white">
+        <h2 className="text-center text-xl font-bold border-b pb-2 mb-4">
+          Review Info
+        </h2>
+        <div className="text-gray-500 text-center">No review data</div>
       </div>
     );
-  };
+  }
 
-  const [activateTab, setActivateTab] = useState(() => () => { });
-
-  const jumpToNote = (note) => {
-    activateTab(3);
-    const notesContainer = notesContainerRef.current;
-    if (noteEles.current.has(note.id) && notesContainer) {
-      notesContainer.scrollTop = noteEles.current
-        .get(note.id)
-        .getBoundingClientRect().top;
+  const handleChange = (field, value) => {
+    // Chỉ cho phép thay đổi khi KHÔNG phải chế độ readOnly
+    if (!readOnly && onChange) {
+      if (field === "paperStatus" && !value) {
+        value = "Need Revision";
+      }
+      onChange({ ...review, [field]: value });
     }
   };
 
-  const renderHighlights = (props) => (
-    <div>
-      {notes.map((note) => (
-        <React.Fragment key={note.id}>
-          {note.highlightAreas
-            .filter((area) => area.pageIndex === props.pageIndex)
-            .map((area, idx) => (
-              <div
-                key={idx}
-                style={{
-                  position: "absolute",
-                  background: "rgba(255, 255, 0, 0.4)",
-                  left: `${area.left}%`,
-                  top: `${area.top}%`,
-                  width: `${area.width}%`,
-                  height: `${area.height}%`,
-                  pointerEvents: "auto",
-                  zIndex: 2,
-                }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedHighlight({
-                    note,
-                    area,
-                    pageIndex: props.pageIndex,
-                  });
-                  setHighlightEditContent(note.content);
-                }}
-              />
-            ))}
-        </React.Fragment>
-      ))}
-    </div>
-  );
-
-  const highlightPluginInstance = highlightPlugin({
-    renderHighlightTarget,
-    renderHighlightContent,
-    renderHighlights,
-  });
-
-  const { jumpToHighlightArea } = highlightPluginInstance;
-
-  useEffect(() => {
-    return () => {
-      noteEles.current.clear();
-    };
-  }, []);
-
-  const handleDeleteNote = async (highlightId) => {
+  const handleSave = async () => {
+    // Không chạy hàm nếu ở chế độ readOnly
+    if (readOnly) return;
+    const formData = new FormData();
+    formData.append("Comments", review.comments ?? "");
+    formData.append("Score", review.score ?? "");
+    formData.append("PaperStatus", safePaperStatus);
     try {
-      await deleteReviewWithHighlightAndComment(highlightId);
-      setNotes((notes) => notes.filter((note) => note.id !== highlightId));
-      toast.success("Note deleted successfully!");
+      await updateReview(review.reviewId, formData);
+      toast.success("Review updated successfully!");
+      if (onSave) onSave();
     } catch (err) {
-      toast.error("Failed to delete note!");
+      toast.error("Update failed!");
     }
   };
 
-  const [editingNoteId, setEditingNoteId] = useState(null);
-  const [editingContent, setEditingContent] = useState("");
-
-  const handleEditNote = (id) => {
-    const note = notes.find((n) => n.id === id);
-    setEditingNoteId(id);
-    setEditingContent(note.content);
-  };
-
-  const handleUpdateNote = async (note, newContent) => {
-    if (!review || !review.reviewId) return;
+  const handleSendFeedback = async () => {
+    // Không chạy hàm nếu ở chế độ readOnly
+    if (readOnly) return;
+    const formData = new FormData();
+    formData.append("Comments", review.comments ?? "");
+    formData.append("Score", review.score ?? "");
+    formData.append("PaperStatus", safePaperStatus);
     try {
-      const formData = new FormData();
-      formData.append("HighlightId", note.id);
-      formData.append("ReviewId", review.reviewId);
-      formData.append("RevisionId", review.revisionId);
-      formData.append("TextHighlighted", note.quote);
-      formData.append("CommentText", newContent);
-
-      note.highlightAreas.forEach((area, idx) => {
-        formData.append(`HighlightAreas[${idx}][PageIndex]`, area.pageIndex);
-        formData.append(`HighlightAreas[${idx}][Left]`, area.left || 0);
-        formData.append(`HighlightAreas[${idx}][Top]`, area.top || 0);
-        formData.append(`HighlightAreas[${idx}][Width]`, area.width || 0);
-        formData.append(`HighlightAreas[${idx}][Height]`, area.height || 0);
-      });
-
-      await updateReviewWithHighlightAndComment(review.reviewId, formData);
-      toast.success("Note updated successfully!");
+      await updateReview(review.reviewId, formData);
+      await sendFeedback(review.reviewId);
+      toast.success("Feedback sent and statuses updated!");
+      if (onSendFeedback) onSendFeedback();
     } catch (err) {
-      toast.error("Failed to update note!");
+      toast.error("Error sending feedback!");
     }
   };
 
-  const sidebarNotes = (
-    <div ref={notesContainerRef} className="overflow-auto w-full space-y-4">
-      {notes.length === 0 && (
-        <div className="text-center text-gray-400 py-8">There is no note</div>
-      )}
-      {notes.map((note) => (
-        <div
-          key={note.id}
-          className="bg-white rounded-xl shadow border border-gray-200 p-4 transition hover:shadow-lg"
-          onClick={() => jumpToHighlightArea(note.highlightAreas[0])}
-          ref={(ref) => {
-            noteEles.current.set(note.id, ref);
-          }}
-        >
-          <blockquote className="border-l-4 border-blue-200 pl-3 mb-2 text-sm text-gray-700 italic bg-blue-50 rounded">
-            {note.quote}
-          </blockquote>
-          {editingNoteId === note.id ? (
-            <div className="flex flex-col gap-3 mt-2">
-              <textarea
-                value={editingContent}
-                onChange={(e) => setEditingContent(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-gray-50"
-                rows={3}
-              />
-              <div className="flex flex-row gap-3 justify-end">
-                <button
-                  className="bg-blue-600 text-green rounded-lg px-4 py-1 font-semibold shadow hover:bg-blue-700 transition"
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    setNotes((notes) =>
-                      notes.map((n) =>
-                        n.id === note.id ? { ...n, content: editingContent } : n
-                      )
-                    );
-                    setEditingNoteId(null);
-                    await handleUpdateNote(note, editingContent);
-                  }}
-                >
-                  Save
-                </button>
-                <button
-                  className="bg-gray-100 text-gray-700 rounded-lg px-4 py-1 font-semibold shadow hover:bg-gray-200 transition"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setEditingNoteId(null);
-                  }}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="text-base text-gray-800 mb-2">{note.content}</div>
-              <div className="flex flex-row gap-3 justify-end">
-                <button
-                  className="bg-yellow-100 text-yellow-700 rounded-lg px-4 py-1 font-semibold shadow hover:bg-yellow-200 transition"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEditNote(note.id);
-                  }}
-                >
-                  Edit
-                </button>
-                <button
-                  className="bg-red-100 text-red-600 rounded-lg px-4 py-1 font-semibold shadow hover:bg-red-200 transition"
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    await handleDeleteNote(note.id);
-                  }}
-                >
-                  Delete
-                </button>
-              </div>
-            </>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-
-  const defaultLayoutPluginInstance = defaultLayoutPlugin({
-    transformToolbarSlot: (slot) => ({
-      ...slot,
-      Download: () => <></>,
-      DownloadMenuItem: () => <></>,
-      Print: () => <></>,
-      PrintMenuItem: () => <></>,
-      Open: () => <></>,
-      OpenMenuItem: () => <></>,
-      EnterFullScreen: () => <></>,
-      EnterFullScreenMenuItem: () => <></>,
-    }),
-    sidebarTabs: (defaultTabs) =>
-      defaultTabs.concat({
-        content: sidebarNotes,
-        icon: <MessageIcon />,
-        title: "Notes",
-      }),
-  });
-
-  useEffect(() => {
-    if (review && review.reviewId) {
-      getPdfUrlByReviewId(review.reviewId)
-        .then((res) => {
-          if (res && res.pdfUrl) {
-            setFileUrl(res.pdfUrl);
-          } else {
-            setFileUrl("");
-          }
-        })
-        .catch(() => setFileUrl(""));
-
-      getReviewWithHighlightAndComment(review.reviewId)
-        .then((res) => {
-          if (res && res.highlights && res.comments) {
-            const notes = res.highlights.map((h) => {
-              const relatedComments = res.comments.filter(
-                (c) => c.highlightId === h.highlightId
-              );
-              return {
-                id: h.highlightId,
-                content:
-                  relatedComments.length > 0
-                    ? relatedComments[0].commentText
-                    : "",
-                highlightAreas: h.areas.map((a) => ({
-                  pageIndex: a.pageIndex,
-                  left: a.left,
-                  top: a.top,
-                  width: a.width,
-                  height: a.height,
-                })),
-                quote: h.textHighlighted,
-                comments: relatedComments,
-              };
-            });
-            setNotes(notes);
-          } else {
-            setNotes([]);
-          }
-        })
-        .catch(() => setNotes([]));
+  const handleCheckAiAgain = async () => {
+    if (readOnly) return;
+    try {
+      console.log("Chunks being sent");
+      const data = await AnalyzeAiService.analyzeDocument(
+        review.reviewId,
+        chunks || []
+      );
+      setAiPercentage(data.percentAi || 0);
+      toast.info("AI check completed!");
+    } catch (err) {
+      console.error("Error checking AI:", err);
+      toast.error("Failed to re-check AI.");
     }
-  }, [review]);
-
-
+  };
 
   return (
-    <div style={{ height: "100%" }}>
-      {selectedHighlight && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30">
-          <div className="bg-white rounded-xl shadow-2xl border border-gray-200 p-6 min-w-[300px] max-w-md w-full">
-            <textarea
-              value={highlightEditContent}
-              onChange={(e) => setHighlightEditContent(e.target.value)}
-              className="w-full mb-6 border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-blue-400 text-base"
-              rows={4}
-            />
-            <div className="flex flex-row gap-4 justify-end">
-              <button
-                className="bg-red-100 text-green-600 rounded-lg px-6 py-2 font-semibold shadow hover:bg-red-200 transition"
-                onClick={async () => {
-                  setNotes((notes) =>
-                    notes.map((n) =>
-                      n.id === selectedHighlight.note.id
-                        ? { ...n, content: highlightEditContent }
-                        : n
-                    )
-                  );
-                  await handleUpdateNote(
-                    selectedHighlight.note,
-                    highlightEditContent
-                  );
-                  setSelectedHighlight(null);
-                }}
-              >
-                Save
-              </button>
-              <button
-                className="bg-red-100 text-red-600 rounded-lg px-6 py-2 font-semibold shadow hover:bg-red-200 transition"
-                onClick={async () => {
-                  try {
-                    await deleteReviewWithHighlightAndComment(
-                      selectedHighlight.note.id
-                    );
-                    setNotes((notes) =>
-                      notes.filter((n) => n.id !== selectedHighlight.note.id)
-                    );
-                    setSelectedHighlight(null);
-                    toast.success("Note deleted successfully!");
-                  } catch (err) {
-                    toast.error("Failed to delete note!");
-                  }
-                }}
-              >
-                Delete
-              </button>
-              <button
-                className="bg-gray-100 text-gray-700 rounded-lg px-6 py-2 font-semibold shadow hover:bg-gray-200 transition"
-                onClick={() => setSelectedHighlight(null)}
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
+    <div className="flex-1 p-6 border-r border-gray-200 bg-white flex flex-col h-full">
+      <h2 className="text-center text-xl font-bold border-b pb-2 mb-4">
+        Review Info
+      </h2>
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-1">Score</label>
+        <input
+          type="number"
+          value={review.score ?? ""}
+          onChange={(e) => handleChange("score", e.target.value)}
+          className="w-full border rounded px-3 py-2 bg-gray-100"
+          // Vô hiệu hóa input khi ở chế độ readOnly
+          disabled={readOnly}
+        />
+      </div>
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-1">Comments</label>
+        <textarea
+          value={review.comments ?? ""}
+          onChange={(e) => handleChange("comments", e.target.value)}
+          className="w-full border rounded px-3 py-2 bg-gray-100"
+          rows={3}
+          // Vô hiệu hóa textarea khi ở chế độ readOnly
+          disabled={readOnly}
+        />
+      </div>
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-1">Status</label>
+        <select
+          value={safePaperStatus}
+          onChange={(e) => handleChange("paperStatus", e.target.value)}
+          className="w-full border rounded px-3 py-2 bg-gray-100"
+          // Vô hiệu hóa select khi ở chế độ readOnly
+          disabled={readOnly}
+        >
+          <option value="Need Revision">Need Revision</option>
+          <option value="Accepted">Accepted</option>
+          <option value="Rejected">Rejected</option>
+        </select>
+      </div>
+      <div className="mb-4">
+        <label className="block text-sm font-medium mb-1">AI Percentage</label>
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={aiPercentage + "%"}
+            className="w-full border rounded px-3 py-2 bg-gray-100"
+            disabled
+          />
+          {/* Ẩn nút "Check Again" khi ở chế độ readOnly */}
+          {!readOnly && (
+            <button
+              className="px-4 py-2 bg-blue-100 text-blue-700 border border-blue-600 rounded font-semibold hover:bg-blue-600 hover:text-white transition"
+              onClick={handleCheckAiAgain}
+            >
+              Check Again
+            </button>
+          )}
+        </div>
+      </div>
+      {/* Ẩn toàn bộ nút "Save" và "Send Feedback" khi ở chế độ readOnly */}
+      {!readOnly && (
+        <div className="flex gap-4 mt-auto">
+          <button
+            className="flex-1 px-6 py-2 bg-blue-100 text-blue-700 border border-blue-600 rounded font-semibold hover:bg-blue-600 hover:text-white transition"
+            onClick={handleSave}
+          >
+            Save
+          </button>
+          <button
+            className="flex-1 px-6 py-2 bg-green-100 text-green-700 border border-green-600 rounded font-semibold hover:bg-green-600 hover:text-white transition"
+            onClick={handleSendFeedback}
+          >
+            Send Feedback
+          </button>
         </div>
       )}
-
-      <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
-        {fileUrl ? (
-          <Viewer
-            fileUrl={fileUrl}
-            plugins={[highlightPluginInstance, defaultLayoutPluginInstance]}
-            onDocumentLoad={handleDocumentLoad}
-          />
-        ) : (
-          <div style={{ textAlign: "center", marginTop: 40, color: "#888" }}>
-            PDF not found or loading...
-          </div>
-        )}
-      </Worker>
     </div>
   );
 };
 
-export default ReviewContent;
+export default ReviewSidebar;

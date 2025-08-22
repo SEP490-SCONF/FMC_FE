@@ -7,9 +7,10 @@ function App() {
   return (
     <div>
       <MainHeader />
-      {/* Sidebar nếu có, thêm ở đây */}
+     
       <Outlet />
       
+      <Footer />
     </div>
   );
 }

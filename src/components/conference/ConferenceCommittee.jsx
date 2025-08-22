@@ -1,11 +1,10 @@
+import LoadingSpinner from "../../components/common/LoadingSpinner";
 
 
 const Committee = ({ committee, loading }) => {
   if (loading) {
     return (
-      <div className="py-20 text-center text-lg text-gray-500">
-        Loading committee...
-      </div>
+     <LoadingSpinner />
     );
   }
 

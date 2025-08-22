@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Modal from "../ui/Modal";
 import { getSubmittedPapersByConferenceId } from "../../services/PaperSerice";
-import { getConferenceReviewers } from "../../services/UserConferenceRoleService";
+import { getConferenceReviewers,getReviewerAssignedPaperCount } from "../../services/UserConferenceRoleService";
 import { deleteReviewerAssignment } from "../../services/ReviewerAssignmentService";
 import { generateCertificatesForPaper } from "../../services/CertificateService";
 import { toast } from "react-toastify";
@@ -91,21 +91,34 @@ const SubmittedOrga = () => {
 
   // Fetch reviewers
   useEffect(() => {
-    if (conferenceId) {
-      getConferenceReviewers(conferenceId)
-        .then((res) => {
-          // Nếu API trả về { value: [...] }
-          const reviewersArr = Array.isArray(res.value)
-            ? res.value
-            : Array.isArray(res)
-              ? res
-              : [];
-          setReviewers(reviewersArr);
-          console.log("Loaded reviewers:", reviewersArr);
-        })
-        .catch(() => setReviewers([]));
-    }
-  }, [conferenceId]);
+  if (conferenceId) {
+    getConferenceReviewers(conferenceId)
+      .then(async (res) => {
+        const reviewersArr = Array.isArray(res.value)
+          ? res.value
+          : Array.isArray(res)
+          ? res
+          : [];
+
+       
+        const reviewersWithCount = await Promise.all(
+          reviewersArr.map(async (r) => {
+            try {
+              const countRes = await getReviewerAssignedPaperCount(conferenceId, r.userId);
+              return { ...r, assignedPaperCount: countRes.assignedPaperCount };
+            } catch {
+              return { ...r, assignedPaperCount: 0 };
+            }
+          })
+        );
+
+        setReviewers(reviewersWithCount);
+        
+      })
+      .catch(() => setReviewers([]));
+  }
+}, [conferenceId]);
+
 
   const openAssign = (idx) => {
     setAssignIdx(idx);
@@ -452,6 +465,7 @@ const SubmittedOrga = () => {
                     Name
                   </th>
                   <th className="border px-2 py-1 font-semibold">Email</th>
+                  <th className="border px-2 py-1 font-semibold text-center">Assigned Papers</th>
                 </tr>
               </thead>
               <tbody>
@@ -482,6 +496,7 @@ const SubmittedOrga = () => {
                       </td>
                       <td className="border px-2 py-1">{r.userName}</td>
                       <td className="border px-2 py-1">{r.userEmail}</td>
+                      <td className="border px-2 py-1 text-center">{r.assignedPaperCount ?? 0}</td>
                     </tr>
                   ))
                 ) : (

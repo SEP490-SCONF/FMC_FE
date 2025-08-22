@@ -120,7 +120,7 @@ export default function NotificationDropdown({ notifications = [] }) {
               <DropdownItem
                 onItemClick={closeDropdown}
                 className={`flex flex-col gap-1 rounded-lg border-b border-gray-100 p-3 px-4.5 py-3 hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-white/5 ${
-                  noti.isRead ? "opacity-60" : "font-semibold bg-orange-50"
+                  noti.isRead ? "opacity-60" : ""
                 }`}
               >
                 <span className="text-base text-gray-800 dark:text-white/90">

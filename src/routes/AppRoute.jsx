@@ -35,81 +35,103 @@ import MainHomePage from "../pages/User/MainHomePage";
 import ConferenceSearch from "../pages/User/ConferenceSearch"; // Import ConferenceSearch component
 import CommitteeForm from "../pages/conference/CommitteeForm";
 import ViewCertificate from "../pages/author/ViewCertificate";
-
-
-
+import { UserProvider } from "../context/UserContext";
+import { AuthProvider } from "../context/AuthContext";
 
 export default function AppRoutes() {
   return (
     <BrowserRouter>
-      <ScrollToTop />
-      <Routes>
-        <Route path="/" element={<App />}>
-          <Route index element={<MainHomePage />} />
-          <Route path="/committee-form" element={<CommitteeForm />} />
-          <Route path="/forbidden" element={<ForbiddenPage />} />
-          <Route path="/not-found" element={<NotFoundPage />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/conferences" element={<ConferenceSearch />} />
-          <Route path="user" element={<UserP />} />
-          <Route path="/reviewer/assigned-papers" element={<PaperAss />} />
-          <Route path="/review/paper/:assignmentId" element={<PaperReview />} />
-          <Route path="/manage-conference" element={<OrganizerView />} />
-          <Route
-            path="/author/conference/:conferenceId/submittedPaper"
-            element={<SubmittedPaperAuthor />}
-          />
-          <Route path="/author/conference" element={<AuthorConference />} />
-          <Route path="/author/view-certificates/:paperId" element={<ViewCertificate />} />
+      <AuthProvider>
+        <UserProvider>
+          <ScrollToTop />
+          <Routes>
+            <Route path="/" element={<App />}>
+              <Route index element={<MainHomePage />} />
+              <Route path="/committee-form" element={<CommitteeForm />} />
+              <Route path="/forbidden" element={<ForbiddenPage />} />
+              <Route path="/not-found" element={<NotFoundPage />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/conferences" element={<ConferenceSearch />} />
+              <Route path="user" element={<UserP />} />
+              <Route path="/reviewer/assigned-papers" element={<PaperAss />} />
+              <Route
+                path="/review/paper/:assignmentId"
+                element={<PaperReview />}
+              />
+              <Route path="/manage-conference" element={<OrganizerView />} />
+              <Route
+                path="/author/conference/:conferenceId/submittedPaper"
+                element={<SubmittedPaperAuthor />}
+              />
+              <Route path="/author/conference" element={<AuthorConference />} />
+              <Route
+                path="/author/view-certificates/:paperId"
+                element={<ViewCertificate />}
+              />
+              <Route
+                path="/author/view-paper-review/:revisionId"
+                element={<ViewPaperReview />}
+              />{" "}
+              <Route path="*" element={<NotFoundPage />} />
+            </Route>
 
-          <Route
-            path="/author/view-paper-review/:revisionId"
-            element={<ViewPaperReview />}
-          />{" "}
-          <Route path="*" element={<NotFoundPage />} />
-        </Route>
+            <Route element={<ConferenceLayout />}>
+              <Route path="*" element={<NotFoundPage />} />
+              <Route path="/conference/:id" element={<Home />} />
+              <Route
+                path="/conference/:id/committee"
+                element={<CommitteeList />}
+              />
+              <Route
+                path="/conference/:id/call-for-paper"
+                element={<CallForPaper />}
+              />
+              <Route
+                path="/conference/:id/paper-submition"
+                element={<PaperSubmition />}
+              />
 
-        <Route element={<ConferenceLayout />}>
-          <Route path="*" element={<NotFoundPage />} />
-          <Route path="/conference/:id" element={<Home />} />
-          <Route path="/conference/:id/committee" element={<CommitteeList />} />
-          <Route
-            path="/conference/:id/call-for-paper"
-            element={<CallForPaper />}
-          />
-          <Route
-            path="/conference/:id/paper-submition"
-            element={<PaperSubmition />}
-          />
-          <Route
-            path="/conference/:id/paper-review"
-            element={<PaperReview />}
-          />
-          <Route
-            path="/conference/:id/submitted-papers"
-            element={<SubmittedOrga />}
-          />
-          <Route path="/author/payment/:id" element={<PaperPay />} />
-          <Route path="/payment-success" element={<PaymentSuccess />} />
-          <Route path="/payment-cancel" element={<PaymentCancel />} />
-        </Route>
 
-        <Route element={<ManageConferenceLayout />}>
-          <Route
-            path="/manage-conference/:id/submitted-papers"
-            element={<SubOrganizer />}
-          />
-          <Route path="/manage-conference/:conferenceId/edit" element={<EditConferencePage />} />
-          <Route path="/manage-conference/:conferenceId/reviewers" element={<ReviewerListPage />} />
-          <Route path="/manage-conference/:conferenceId/published-papers" element={<PublishedPaperList />} />
-          <Route path="/manage-conference/:conferenceId/call-for-paper" element={<ManageCallForPaper />} />
-          <Route path="/manage-conference/:conferenceId/timelines" element={<ManageTimeline />} />
-          <Route path="/manage-conference/:conferenceId/income" element={<OrganizerTrack />} />
+              <Route path="/author/payment/:id" element={<PaperPay />} />
+              <Route path="/payment-success" element={<PaymentSuccess />} />
+              <Route path="/payment-cancel" element={<PaymentCancel />} />
+            </Route>
 
-        </Route>
-
-      </Routes>
+            <Route element={<ManageConferenceLayout />}>
+              <Route
+                path="/manage-conference/:id/submitted-papers"
+                element={<SubOrganizer />}
+              />
+              <Route
+                path="/manage-conference/:conferenceId/edit"
+                element={<EditConferencePage />}
+              />
+              <Route
+                path="/manage-conference/:conferenceId/reviewers"
+                element={<ReviewerListPage />}
+              />
+              <Route
+                path="/manage-conference/:conferenceId/published-papers"
+                element={<PublishedPaperList />}
+              />
+              <Route
+                path="/manage-conference/:conferenceId/call-for-paper"
+                element={<ManageCallForPaper />}
+              />
+              <Route
+                path="/manage-conference/:conferenceId/timelines"
+                element={<ManageTimeline />}
+              />
+              <Route
+                path="/manage-conference/:id/income"
+                element={<OrganizerTrackincome />}
+              />
+              <Route path="/manage-conference/:conferenceId/income" element={<OrganizerTrack />} />
+            </Route>
+          </Routes>
+        </UserProvider>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

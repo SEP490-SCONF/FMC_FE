@@ -2,14 +2,14 @@ import { useState } from "react";
 import { DropdownItem } from "../../ui/dropdown/DropdownItem";
 import { Dropdown } from "../../ui/dropdown/Dropdown";
 import { Link, useNavigate } from "react-router-dom";
-import { logout } from "../../../services/AuthenService";
-import { useUser } from "../../../context/UserContext"; // hoặc đúng path của bạn
 
+import { useUser } from "../../../context/UserContext"; // hoặc đúng path của bạn
+import { useAuth } from "../../../context/AuthContext";
 export default function UserDropdown({ user }) {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const { setUser } = useUser();
-
+  const { logout } = useAuth();
   function toggleDropdown() {
     setIsOpen(!isOpen);
   }
@@ -108,18 +108,13 @@ export default function UserDropdown({ user }) {
               Submitted Papers
             </DropdownItem>
           </li>
-
         </ul>
         <Link
           to="/login"
-          onClick={async (e) => {
+          onClick={(e) => {
             e.preventDefault();
-            try {
-              await logout();
-            } catch (err) {}
-            localStorage.removeItem("accessToken");
             setUser(null);
-            navigate("/login");
+            logout(); 
           }}
           className="flex items-center gap-3 px-3 py-2 mt-3 font-medium text-gray-700 rounded-lg group text-theme-sm hover:bg-gray-100 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-300"
         >
