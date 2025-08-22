@@ -19,7 +19,7 @@ import {
 import { useUser } from "../../../context/UserContext";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import AnalyzeAiService from "../../../services/AnalyzeAiService"; // Thêm import
+import AnalyzeAiService from "../../../services/AnalyzeAiService";
 
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import "@react-pdf-viewer/default-layout/lib/styles/index.css";
@@ -38,6 +38,34 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
   const noteEles = useRef(new Map());
   const [currentDoc, setCurrentDoc] = useState(null);
   const [aiAnalysisResult, setAiAnalysisResult] = useState(null);
+
+  // Hàm đếm số từ trong text
+  const countWords = (text) => {
+    return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+  };
+
+  // Hàm chia nhỏ text dựa trên số từ (proxy cho token)
+  const splitTextWithOverlap = (text, maxWords, overlapWords) => {
+    const chunks = [];
+    if (!text) return chunks;
+
+    const words = text.trim().split(/\s+/).filter(word => word.length > 0);
+    for (let start = 0; start < words.length; start += (maxWords - overlapWords)) {
+      const remainingWords = words.length - start;
+      const length = Math.min(maxWords, remainingWords);
+      if (length <= 0) break;
+
+      const chunkWords = words.slice(start, start + length);
+      const chunk = chunkWords.join(" ").trim();
+      if (chunk) {
+        chunks.push({ RawText: chunk });
+      }
+
+      if (start + length >= words.length) break;
+    }
+
+    return chunks.length > 0 ? chunks : [{ RawText: text }];
+  };
 
   const handleDocumentLoad = async (e) => {
     setCurrentDoc(e.doc);
@@ -58,17 +86,22 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
       fullText += pageText + "\n"; // Giữ xuống dòng giữa các trang
     }
 
-    // Gửi toàn bộ raw text về BE thông qua prop onChunksGenerated
+    // Chia nhỏ text tại FE dựa trên số từ
+    const maxWords = 384;
+    const overlapWords = 96;
+    const chunks = splitTextWithOverlap(fullText, maxWords, overlapWords);
+
+    // Gửi mảng chunk về BE thông qua prop onChunksGenerated
     if (onChunksGenerated) {
-      onChunksGenerated([{ RawText: fullText }]); // Gửi raw text nguyên bản
+      onChunksGenerated(chunks); // Gửi mảng các chunk
+      console.log('Generated chunks:', chunks.map(c => ({ wordCount: countWords(c.RawText), content: c.RawText.substring(0, 50) + '...' })));
     }
 
-    // (Tùy chọn) Gọi API phân tích AI
+    // (Tùy chọn) Gọi API phân tích AI với fullText nguyên bản
     try {
-      if (review?.reviewId) { // Sử dụng reviewId thay vì id để nhất quán
+      if (review?.reviewId) {
         const response = await AnalyzeAiService.analyzeDocument(review.reviewId, fullText);
         setAiAnalysisResult(response);
-        // Không gọi onChunksGenerated với response.Chunks để tránh xung đột
       }
     } catch (error) {
       console.error('AI analysis failed:', error);
@@ -283,7 +316,7 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
       await updateReviewWithHighlightAndComment(review.reviewId, formData);
       toast.success("Note updated successfully!");
     } catch (err) {
-      toast.error("Failed to update note!");
+      toast.error("Failed to delete note!");
     }
   };
 
