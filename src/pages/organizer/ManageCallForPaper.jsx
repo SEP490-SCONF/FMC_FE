@@ -47,7 +47,11 @@ export default function ManageCallForPaper() {
   const [searchText, setSearchText] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [filterDeadline, setFilterDeadline] = useState([]);
-
+  
+  const [descriptionModal, setDescriptionModal] = useState({
+    visible: false,
+    content: "",
+  });
 
   const showDeleteConfirm = (id, onDelete) => {
     Modal.confirm({
@@ -97,101 +101,88 @@ export default function ManageCallForPaper() {
   }, [conferenceId]);
 
   const handleSearch = (value) => {
-  setSearchText(value);
-  applyFilters(filterStatus, filterDeadline, value);
-};
+    setSearchText(value);
+    applyFilters(filterStatus, filterDeadline, value);
+  };
 
   const handleFilterStatus = (status) => {
-  setFilterStatus(status);
-  applyFilters(status, filterDeadline, searchText);
-};
+    setFilterStatus(status);
+    applyFilters(status, filterDeadline, searchText);
+  };
 
-const handleFilterDeadline = (range) => {
-  const validRange = Array.isArray(range) && range[0] && range[1] ? range : [];
-  setFilterDeadline(validRange);
-  applyFilters(filterStatus, validRange, searchText);
-};
+  const handleFilterDeadline = (range) => {
+    const validRange = Array.isArray(range) && range[0] && range[1] ? range : [];
+    setFilterDeadline(validRange);
+    applyFilters(filterStatus, validRange, searchText);
+  };
 
+  const applyFilters = (status, deadlineRange, searchValue) => {
+    const filtered = list.filter((item) => {
+      const matchesStatus = status === "" || item.status === status;
+      const matchesSearch = item.description
+        .toLowerCase()
+        .includes(searchValue.toLowerCase());
+      const matchesDeadline =
+        !Array.isArray(deadlineRange) || deadlineRange.length !== 2 || !deadlineRange[0] || !deadlineRange[1]
+          ? true
+          : dayjs(item.deadline).isSameOrAfter(dayjs(deadlineRange[0]), "day") &&
+            dayjs(item.deadline).isSameOrBefore(dayjs(deadlineRange[1]), "day");
 
+      return matchesStatus && matchesSearch && matchesDeadline;
+    });
 
-
-
-
-const applyFilters = (status, deadlineRange, searchValue) => {
-  const filtered = list.filter((item) => {
-    const matchesStatus = status === "" || item.status === status;
-    const matchesSearch = item.description
-      .toLowerCase()
-      .includes(searchValue.toLowerCase());
-    const matchesDeadline =
-  !Array.isArray(deadlineRange) || deadlineRange.length !== 2 || !deadlineRange[0] || !deadlineRange[1]
-    ? true
-    : dayjs(item.deadline).isSameOrAfter(dayjs(deadlineRange[0]), "day") &&
-      dayjs(item.deadline).isSameOrBefore(dayjs(deadlineRange[1]), "day");
-
-
-    return matchesStatus && matchesSearch && matchesDeadline;
-  });
-
-  setFilteredList(filtered);
-};
-
+    setFilteredList(filtered);
+  };
 
   const handleSubmit = async (values) => {
-  const formData = new FormData();
-  formData.append("conferenceId", conferenceId);
-  formData.append("description", values.description);
-  formData.append("deadline", values.deadline.format("YYYY-MM-DD"));
+    const formData = new FormData();
+    formData.append("conferenceId", conferenceId);
+    formData.append("description", values.description);
+    formData.append("deadline", values.deadline.format("YYYY-MM-DD"));
 
-  if (values.templateFile?.file) {
-    formData.append("templateFile", values.templateFile.file);
-  }
-
-  // Bắt đầu loading
-  setLoading(true);
-
-  try {
-    // Nếu đang Edit và muốn đặt status = true (Active)
-    if (editing && values.status === true) {
-  const existingActive = list.find(
-    (item) => item.cfpid !== editing.cfpid && item.status === true
-  );
-
-  if (existingActive) {
-    message.error(
-      `❌ Only one Call For Paper can be Active at a time.\n CPF"${existingActive.cfpid}" is already active.`
-    );
-    setLoading(false);
-    return; // ⚠️ Dừng lại, không update
-  }
-}
-
-
-    // Nếu đang edit và có status thì gửi lên
-    if (editing && values.status !== undefined) {
-      formData.append("status", values.status);
+    if (values.templateFile?.file) {
+      formData.append("templateFile", values.templateFile.file);
     }
 
-    // Tạo hoặc cập nhật
-    const action = editing
-      ? updateCallForPaper(editing.cfpid, formData)
-      : createCallForPaper(formData);
+    setLoading(true);
 
-    await action;
+    try {
+      if (editing && values.status === true) {
+        const existingActive = list.find(
+          (item) => item.cfpid !== editing.cfpid && item.status === true
+        );
 
-    message.success(`${editing ? "Updated" : "Created"} successfully`);
-    setOpen(false);
-    form.resetFields();
-    setEditing(null);
-    fetchData();
-  } catch (error) {
-    console.error("Error:", error);
-    message.error("Something went wrong");
-  } finally {
-    setLoading(false);
-  }
-};
+        if (existingActive) {
+          message.error(
+            `❌ Only one Call For Paper can be Active at a time. CPF "${existingActive.cfpid}" is already active.`
+          );
+          setLoading(false);
+          return;
+        }
+      }
 
+      if (editing && values.status !== undefined) {
+        formData.append("status", values.status);
+      }
+
+      const action = editing
+        ? updateCallForPaper(editing.cfpid, formData)
+        : createCallForPaper(formData);
+
+      await action;
+
+      message.success(`${editing ? "Updated" : "Created"} successfully`);
+      setOpen(false);
+      form.resetFields();
+      setEditing(null);
+      fetchData();
+    } catch (error) {
+      console.error("Error:", error);
+      message.error("Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEdit = (item) => {
     setEditing(item);
@@ -217,16 +208,26 @@ const applyFilters = (status, deadlineRange, searchValue) => {
 
   const columns = [
     {
-    title: "ID",
-    dataIndex: "cfpid",
-    key: "cfpid",
-    width: 70,
-    sorter: (a, b) => a.cfpid - b.cfpid,
-  },
-
+      title: "ID",
+      dataIndex: "cfpid",
+      key: "cfpid",
+      width: 70,
+      sorter: (a, b) => a.cfpid - b.cfpid,
+    },
     {
       title: "Description",
       dataIndex: "description",
+      render: (text) => (
+        <Text
+          ellipsis={{ tooltip: false }}
+          style={{ cursor: "pointer", maxWidth: 300, display: "block" }}
+          onClick={() =>
+            setDescriptionModal({ visible: true, content: text })
+          }
+        >
+          {text}
+        </Text>
+      ),
     },
     {
       title: "Deadline",
@@ -234,10 +235,10 @@ const applyFilters = (status, deadlineRange, searchValue) => {
       render: (value) => dayjs(value).format("YYYY-MM-DD"),
     },
     {
-  title: "Status",
-  dataIndex: "status",
-  render: (value) => (value ? "Active" : "Inactive"),
-},
+      title: "Status",
+      dataIndex: "status",
+      render: (value) => (value ? "Active" : "Inactive"),
+    },
     {
       title: "Template",
       dataIndex: "templatePath",
@@ -297,25 +298,22 @@ const applyFilters = (status, deadlineRange, searchValue) => {
           style={{ width: "300px" }}
         />
         <Select
-      
-      placeholder="Filter by status"
-      value={filterStatus}
-      onChange={(value) => handleFilterStatus(value)}
-      style={{ width: "200px" }}
-      allowClear
+          placeholder="Filter by status"
+          value={filterStatus}
+          onChange={(value) => handleFilterStatus(value)}
+          style={{ width: "200px" }}
+          allowClear
         >
-          
-        <Option value="">All</Option>
-        <Option value={true}>Active</Option>
-        <Option value={false}>Inactive</Option>
-      </Select>
+          <Option value="">All</Option>
+          <Option value={true}>Active</Option>
+          <Option value={false}>Inactive</Option>
+        </Select>
 
-      <DatePicker.RangePicker
-  allowEmpty={[true, true]}
-  onChange={(dates) => handleFilterDeadline(dates || [])}
-  style={{ width: "300px" }}
-/>
-
+        <DatePicker.RangePicker
+          allowEmpty={[true, true]}
+          onChange={(dates) => handleFilterDeadline(dates || [])}
+          style={{ width: "300px" }}
+        />
       </div>
 
       <Table
@@ -352,25 +350,36 @@ const applyFilters = (status, deadlineRange, searchValue) => {
           >
             <DatePicker style={{ width: "100%" }} />
           </Form.Item>
-          
+
           <Form.Item name="templateFile" label="Upload Template">
             <Upload beforeUpload={() => false} maxCount={1}>
               <Button icon={<UploadOutlined />}>Choose File</Button>
             </Upload>
           </Form.Item>
           {editing && (
-    <Form.Item
-      name="status"
-      label="Status"
-      rules={[{ required: true, message: "Please select status" }]}
-    >
-      <Select>
-        <Option value={true}>Active</Option>
-        <Option value={false}>Inactive</Option>
-      </Select>
-    </Form.Item>
-    )}
+            <Form.Item
+              name="status"
+              label="Status"
+              rules={[{ required: true, message: "Please select status" }]}
+            >
+              <Select>
+                <Option value={true}>Active</Option>
+                <Option value={false}>Inactive</Option>
+              </Select>
+            </Form.Item>
+          )}
         </Form>
+      </Modal>
+
+      {/* Modal hiển thị full description */}
+      <Modal
+        open={descriptionModal.visible}
+        footer={null}
+        onCancel={() =>
+          setDescriptionModal({ visible: false, content: "" })
+        }
+      >
+        <p>{descriptionModal.content}</p>
       </Modal>
     </div>
   );

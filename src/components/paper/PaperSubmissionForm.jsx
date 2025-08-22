@@ -5,7 +5,7 @@ import { getConferenceTopicsByConferenceId } from "../../services/ConferenceTopi
 import { resolveAuthors } from "../../services/UserConferenceRoleService";
 import { useParams } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
-import { uploadPaperPdf } from "../../services/PaperSerice";
+import { uploadPaperPdf, uploadAndSpellCheck } from "../../services/PaperSerice"; // thêm import
 import { toast } from "react-toastify";
 
 const rules = [
@@ -29,9 +29,9 @@ const SubmitPapers = () => {
   const [topic, setTopic] = useState("");
   const [topics, setTopics] = useState([]);
   const [authorIds, setAuthorIds] = useState(user ? [user.userId] : []);
-  const [message, setMessage] = useState("");
-  const [messageType, setMessageType] = useState("success"); // "success" or "error"
   const [coAuthorEmails, setCoAuthorEmails] = useState([""]);
+  const [highlightedUrl, setHighlightedUrl] = useState(""); // thêm state highlight
+  const [isChecking, setIsChecking] = useState(false);       // state đang check
 
   const authors = user ? [{ id: user.userId, name: user.name }] : [];
 
@@ -53,7 +53,36 @@ const SubmitPapers = () => {
     setFile(e.target.files[0]);
   };
 
- 
+  // === Hàm check chính tả ===
+  const handleSpellCheck = async () => {
+    if (!file) {
+      toast.error("Please upload a file before checking spelling.");
+      return;
+    }
+
+    if (file.size > 30 * 1024 * 1024) {
+      toast.error("File exceeds 30MB limit.");
+      return;
+    }
+
+    setIsChecking(true);
+    setHighlightedUrl("");
+
+    try {
+      const res = await uploadAndSpellCheck(file);
+      if (res.highlightedFileUrl) {
+        setHighlightedUrl(res.highlightedFileUrl);
+        toast.success("Spell check completed. Download highlighted PDF below.");
+      } else {
+        toast.error("No highlighted PDF returned from server.");
+      }
+    } catch (error) {
+      console.error("Spell check error:", error);
+      toast.error("Spell check failed.");
+    } finally {
+      setIsChecking(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -71,7 +100,6 @@ const SubmitPapers = () => {
     }
 
     try {
-      // Gọi API để resolve co-author email → userId
       const coAuthorIds =
         coAuthorEmails.length > 0
           ? await resolveAuthors(coAuthorEmails.filter((e) => e.trim() !== ""))
@@ -94,15 +122,13 @@ const SubmitPapers = () => {
         error: "Failed to submit paper.",
       });
 
-      // Reset state khi thành công
       setFile(null);
       setTitle("");
       setAbstract("");
       setKeywords("");
       setTopic("");
       setCoAuthorEmails([""]);
-      setMessage("");
-      setMessageType("success");
+      setHighlightedUrl(""); // reset highlight sau submit
     } catch (error) {
       console.error("Error during submission:", error);
       toast.error("Error resolving co-authors or submitting paper.");
@@ -131,6 +157,7 @@ const SubmitPapers = () => {
               </ul>
             </div>
             <form onSubmit={handleSubmit} className="grid gap-4">
+              {/* Title */}
               <div>
                 <label htmlFor="title" className="font-semibold mb-2 block">
                   Title
@@ -144,6 +171,7 @@ const SubmitPapers = () => {
                   required
                 />
               </div>
+              {/* Abstract */}
               <div>
                 <label htmlFor="abstract" className="font-semibold mb-2 block">
                   Abstract
@@ -157,6 +185,7 @@ const SubmitPapers = () => {
                   required
                 />
               </div>
+              {/* Topic */}
               <div>
                 <label htmlFor="topic" className="font-semibold mb-2 block">
                   Topic
@@ -176,6 +205,7 @@ const SubmitPapers = () => {
                   ))}
                 </select>
               </div>
+              {/* Keywords */}
               <div>
                 <label htmlFor="keywords" className="font-semibold mb-2 block">
                   Keywords
@@ -190,6 +220,7 @@ const SubmitPapers = () => {
                   placeholder="Enter keywords separated by commas"
                 />
               </div>
+              {/* Co-authors */}
               <div>
                 <label className="font-semibold mb-2 block">
                   Co-authors (emails)
@@ -211,9 +242,7 @@ const SubmitPapers = () => {
                       type="button"
                       className="px-3 py-1 bg-red-100 border border-red-400 text-red-600 rounded"
                       onClick={() => {
-                        const newEmails = coAuthorEmails.filter(
-                          (_, i) => i !== index
-                        );
+                        const newEmails = coAuthorEmails.filter((_, i) => i !== index);
                         setCoAuthorEmails(newEmails);
                       }}
                     >
@@ -229,7 +258,7 @@ const SubmitPapers = () => {
                   + Add Co-author
                 </button>
               </div>
-
+              {/* Upload Paper */}
               <div>
                 <label htmlFor="paperFile" className="font-semibold mb-2 block">
                   Upload Paper (PDF only, max 30MB)
@@ -248,23 +277,36 @@ const SubmitPapers = () => {
                   </div>
                 )}
               </div>
-              <Buttonsubmit />
+              {/* Buttons: Submit + Spell Check */}
+              <div className="flex gap-4 mt-4">
+                <Buttonsubmit />
+                <button
+                  type="button"
+                  onClick={handleSpellCheck}
+                  disabled={isChecking}
+                  className={`px-4 py-2 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded
+                    ${isChecking ? "opacity-50 cursor-not-allowed" : ""}`}
+                >
+                  {isChecking ? "Checking..." : "Check Spelling"}
+                </button>
+              </div>
+              {/* Link download PDF highlight */}
+              {highlightedUrl && (
+                <div className="mt-2">
+                  <a
+                    href={highlightedUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-700 underline"
+                  >
+                    📑 Download Spell-Checked PDF
+                  </a>
+                </div>
+              )}
             </form>
           </div>
         </div>
       </div>
-      {message && (
-        <div
-          className={`fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg text-center max-w-xs z-50
-                        ${
-                          messageType === "success"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-700"
-                        }`}
-        >
-          {message}
-        </div>
-      )}
     </section>
   );
 };

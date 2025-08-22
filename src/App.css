@@ -43,3 +43,34 @@
 .read-the-docs {
   color: #888;
 } */
+
+.btn-spell-check {
+    background-color: #fbbf24; /* vàng */
+    color: #fff;
+    font-weight: 600;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    transition: all 0.2s ease-in-out;
+    border: none;
+}
+
+.btn-spell-check:hover {
+    background-color: #f59e0b; /* vàng đậm hơn */
+    transform: translateY(-1px);
+}
+
+.spell-check-link {
+    margin-top: 1rem;
+    font-size: 0.95rem;
+    font-weight: 500;
+}
+
+.spell-check-link a {
+    color: #2563eb; /* xanh đậm */
+    text-decoration: underline;
+}
+
+.spell-check-link a:hover {
+    color: #1d4ed8;
+}

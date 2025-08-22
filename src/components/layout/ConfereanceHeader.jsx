@@ -109,6 +109,18 @@ const Header = () => {
                 Paper Submission
               </Link>
             </li>
+             <li>
+              <Link
+                to={
+                  conferenceId
+                    ? `/conference/${conferenceId}/forum`
+                    : "#"
+                }
+                className="text-gray-700 font-semibold hover:text-blue-700 transition uppercase"
+              >
+                Forum
+              </Link>
+            </li>
           </ul>
 
           {/* Right: User and Notifications */}

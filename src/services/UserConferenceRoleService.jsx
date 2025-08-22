@@ -67,6 +67,10 @@ export const completeCommitteeForm = async (id, data) => {
 export const getCommitteeByConference = async (conferenceId) => {
   return apiService.get(`/UserConferenceRoles/conference/${conferenceId}/committee`);
 };
+// Lấy UserConferenceRole theo userId
+export const getUserConferenceRolesByUserId = async (userId) => {
+    return apiService.get(`/UserConferenceRoles/user/${userId}`);
+};
 
 export const getReviewerAssignedPaperCount = async (conferenceId, reviewerId) => {
   return apiService.get(

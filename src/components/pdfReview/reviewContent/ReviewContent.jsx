@@ -2,7 +2,6 @@ import React, { useRef, useState, useEffect } from "react";
 import {
   Button,
   Position,
-  PrimaryButton,
   Tooltip,
   Viewer,
   Worker,
@@ -10,6 +9,10 @@ import {
 import { defaultLayoutPlugin } from "@react-pdf-viewer/default-layout";
 import { highlightPlugin, MessageIcon } from "@react-pdf-viewer/highlight";
 import { getPdfUrlByReviewId } from "../../../services/PaperRevisionService";
+import { translatePaperPdf } from "../../../services/PaperSerice";
+import { translateHighlightedText } from "../../../services/TranslateService";
+
+
 import {
   addReviewWithHighlightAndComment,
   getReviewWithHighlightAndComment,
@@ -31,10 +34,12 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
   const [message, setMessage] = useState("");
   const [notes, setNotes] = useState([]);
   const notesContainerRef = useRef(null);
-  let noteId = notes.length;
 
   const [selectedHighlight, setSelectedHighlight] = useState(null);
   const [highlightEditContent, setHighlightEditContent] = useState("");
+
+  const [popup, setPopup] = useState({ open: false, text: "", type: "error" });
+
   const noteEles = useRef(new Map());
   const [currentDoc, setCurrentDoc] = useState(null);
   const [aiAnalysisResult, setAiAnalysisResult] = useState(null);
@@ -66,6 +71,15 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
 
     return chunks.length > 0 ? chunks : [{ RawText: text }];
   };
+  // --- Trạng thái dịch ---
+  const [targetLang, setTargetLang] = useState("en-US"); // mặc định English
+  const [translating, setTranslating] = useState(false);
+  const [translatedText, setTranslatedText] = useState("");
+  const [highlightLang, setHighlightLang] = useState(targetLang);
+
+
+  // --- Modal xem bản dịch ---
+  const [showTranslatedModal, setShowTranslatedModal] = useState(false);
 
   const handleDocumentLoad = async (e) => {
     setCurrentDoc(e.doc);
@@ -109,26 +123,161 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
     }
   };
 
+  const prepareTextForApi = (text) => {
+    // Chuẩn hóa mọi CRLF và CR thành LF
+    return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  };
+  // Chia text thành các dòng dựa trên text gốc
+  const formatTranslatedTextByOriginal = (translated, original) => {
+    if (!translated || !original) return translated || "";
+
+    const originalLines = original.split("\n"); // tách theo dòng gốc
+    let words = translated.split(/\s+/); // tách tất cả từ
+    let pointer = 0;
+
+    const resultLines = originalLines.map(line => {
+      const wordCount = line.trim().split(/\s+/).length; // số từ dòng gốc
+      const portion = words.slice(pointer, pointer + wordCount).join(" ");
+      pointer += wordCount;
+      return portion;
+    });
+
+    return resultLines.join("\n"); // nối lại theo dòng gốc
+  };
+
+
+  const unescapeNewlines = (text) => {
+    if (!text) return "";
+    return text.replace(/\\n/g, '\n');
+  };
+
+
+  const addLineBreaksBySentence = (text) => {
+    if (!text) return "";
+
+    // Regex: kết thúc câu bằng dấu chấm, chấm than, chấm hỏi, hoặc xuống dòng, không tách số thập phân
+    const sentences = text.match(/[^.!?\n]+[.!?\n]+|.+$/g);
+
+    if (!sentences) return text;
+
+    return sentences.map(s => s.trim()).join('\n');
+  };
+
+
+
+
+
+  // Dịch toàn bộ notes
+  const handleTranslateNotes = async () => {
+    if (!review || !review.paperId) return;
+    setTranslating(true);
+
+    try {
+      let res = await translatePaperPdf(review.paperId, targetLang);
+      let translated = res?.data?.translatedText || "";
+      translated = unescapeNewlines(translated)
+        .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '\n');
+      setTranslatedText(translated);
+
+
+    } catch (err) {
+      setPopup({ open: true, text: "Failed to translate notes.", type: "error" });
+    }
+
+    setTranslating(false);
+  };
+
+
+
+
+
   const renderHighlightTarget = (props) => (
     <div
       style={{
-        background: "#eee",
         display: "flex",
         position: "absolute",
         left: `${props.selectionRegion.left}%`,
         top: `${props.selectionRegion.top + props.selectionRegion.height}%`,
         transform: "translate(0, 8px)",
-        zIndex: 1,
+        zIndex: 10,
+        gap: "8px",
       }}
     >
+      {/* Nút Note */}
+      <Tooltip
+        position={Position.TopCenter}
+        target={<Button onClick={props.toggle}><MessageIcon /></Button>}
+        content={() => <div style={{ width: "100px" }}>Add a note</div>}
+        offset={{ left: 0, top: -8 }}
+      />
+      {/* Dropdown chọn ngôn ngữ */}
+      <select
+        value={highlightLang}
+        onChange={(e) => setHighlightLang(e.target.value)}
+        style={{ padding: "2px 4px", borderRadius: 4, border: "1px solid #ccc" }}
+      >
+        <option value="en-US">English</option>
+        <option value="vi">Vietnamese</option>
+        <option value="fr">French</option>
+        <option value="ja">Japanese</option>
+        <option value="zh">Chinese</option>
+      </select>
+
+      {/* Nút Translate */}
       <Tooltip
         position={Position.TopCenter}
         target={
-          <Button onClick={props.toggle}>
-            <MessageIcon />
+          <Button
+            onClick={async () => {
+              if (!props.selectedText) return;
+              setTranslating(true);
+              try {
+                console.log("=== Selected text from PDF ===");
+                console.log(props.selectedText);
+
+                // Chuẩn hóa xuống dòng và giữ line break như PDF gốc
+                const preparedText = props.selectedText
+                  .replace(/\r\n/g, '\n') // Windows -> LF
+                  .replace(/\r/g, '\n')   // Mac -> LF
+                  .split('\n')             // tách thành các dòng
+                  .map(line => line.trim()) // loại khoảng trắng dư
+                  .join('\n');             // nối lại bằng LF
+                console.log("=== Prepared text for API (newlines normalized) ===");
+                console.log(preparedText);
+                console.log("String with explicit \\n:");
+                console.log(JSON.stringify(preparedText)); // hiển thị rõ \n trong chuỗi
+
+                const res = await translateHighlightedText(preparedText, highlightLang);
+
+                console.log("=== API response ===");
+                console.log(res);
+
+                const translated = res || "";
+                console.log("=== Translated text ===");
+                console.log(translated);
+                console.log("String with explicit \\n:");
+                console.log(JSON.stringify(translated));
+
+                const unescapedTranslated = unescapeNewlines(translated);
+                console.log("=== Unescaped translated ===");
+                console.log(unescapedTranslated);
+                console.log("=== JSON after unescape ===");
+                console.log(JSON.stringify(unescapedTranslated));
+
+                setTranslatedText(unescapedTranslated);
+                setShowTranslatedModal(true);
+
+              } catch (err) {
+                setPopup({ open: true, text: "Failed to translate selected text", type: "error" });
+              }
+              setTranslating(false);
+            }}
+          >
+            T
           </Button>
         }
-        content={() => <div style={{ width: "100px" }}>Add a note</div>}
+        content={() => <div style={{ width: "100px" }}>Translate text</div>}
         offset={{ left: 0, top: -8 }}
       />
     </div>
@@ -148,10 +297,7 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
           formData.append("Status", "Draft");
 
           props.highlightAreas.forEach((area, idx) => {
-            formData.append(
-              `HighlightAreas[${idx}][PageIndex]`,
-              area.pageIndex
-            );
+            formData.append(`HighlightAreas[${idx}][PageIndex]`, area.pageIndex);
             formData.append(`HighlightAreas[${idx}][Left]`, area.left || 0);
             formData.append(`HighlightAreas[${idx}][Top]`, area.top || 0);
             formData.append(`HighlightAreas[${idx}][Width]`, area.width || 0);
@@ -221,9 +367,7 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
     activateTab(3);
     const notesContainer = notesContainerRef.current;
     if (noteEles.current.has(note.id) && notesContainer) {
-      notesContainer.scrollTop = noteEles.current
-        .get(note.id)
-        .getBoundingClientRect().top;
+      notesContainer.scrollTop = noteEles.current.get(note.id).getBoundingClientRect().top;
     }
   };
 
@@ -248,11 +392,7 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  setSelectedHighlight({
-                    note,
-                    area,
-                    pageIndex: props.pageIndex,
-                  });
+                  setSelectedHighlight({ note, area, pageIndex: props.pageIndex });
                   setHighlightEditContent(note.content);
                 }}
               />
@@ -416,7 +556,52 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
     }),
     sidebarTabs: (defaultTabs) =>
       defaultTabs.concat({
-        content: sidebarNotes,
+        content: (
+          <div className="flex flex-col h-full">
+            {/* Chọn ngôn ngữ + nút dịch */}
+            <div className="px-4 py-2 border-b border-gray-300 flex items-center gap-3">
+              <select
+                className="border border-gray-300 rounded px-2 py-1"
+                value={targetLang}
+                onChange={(e) => setTargetLang(e.target.value)}
+              >
+                <option value="en-US">English</option>
+                <option value="vi">Vietnamese</option>
+                <option value="fr">French</option>
+                <option value="ja">Japanese</option>
+                <option value="zh">Chinese</option>
+              </select>
+              <button
+                style={{
+                  padding: "10px 20px",
+                  backgroundColor: translating ? "#4d7c0f" : "#22c55e", // xanh lá đậm khi hover: #4d7c0f, bình thường: #22c55e
+                  color: "white",
+                  borderRadius: 8,
+                  fontWeight: 600,
+                  cursor: translating ? "not-allowed" : "pointer",
+                  border: "none",
+                  transition: "background-color 0.3s ease",
+                  userSelect: "none",
+                  opacity: translating ? 0.6 : 1,
+                }}
+                onClick={handleTranslateNotes}
+                disabled={translating}
+                onMouseEnter={(e) => {
+                  if (!translating) e.currentTarget.style.backgroundColor = "#4d7c0f";
+                }}
+                onMouseLeave={(e) => {
+                  if (!translating) e.currentTarget.style.backgroundColor = "#22c55e";
+                }}
+              >
+                {translating ? "Translating..." : "Translate Notes"}
+              </button>
+            </div>
+
+
+            {/* Nội dung notes */}
+            <div className="overflow-auto w-full flex-grow">{sidebarNotes}</div>
+          </div>
+        ),
         icon: <MessageIcon />,
         title: "Notes",
       }),
@@ -467,8 +652,16 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
     }
   }, [review]);
 
+  useEffect(() => {
+    if (popup.open) {
+      const timer = setTimeout(() => setPopup((p) => ({ ...p, open: false })), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [popup.open]);
+
   return (
     <div style={{ height: "100%" }}>
+      {/* Popup Edit/Delete khi chọn highlight */}
       {selectedHighlight && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30">
           <div className="bg-white rounded-xl shadow-2xl border border-gray-200 p-6 min-w-[300px] max-w-md w-full">
@@ -489,10 +682,7 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
                         : n
                     )
                   );
-                  await handleUpdateNote(
-                    selectedHighlight.note,
-                    highlightEditContent
-                  );
+                  await handleUpdateNote(selectedHighlight.note, highlightEditContent);
                   setSelectedHighlight(null);
                 }}
               >
@@ -528,19 +718,101 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
         </div>
       )}
 
+      {popup.open && (
+        <div
+          className={`fixed bottom-6 right-6 px-4 py-3 rounded-md font-semibold shadow-md text-white ${popup.type === "success" ? "bg-green-500" : "bg-red-500"
+            }`}
+          role="alert"
+          style={{
+            zIndex: 9999,
+            userSelect: "none",
+            pointerEvents: "auto",
+            boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+            maxWidth: "300px",
+            wordWrap: "break-word",
+          }}
+        >
+          {popup.text}
+        </div>
+      )}
+
+      {/* Hiển thị file PDF */}
       <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
         {fileUrl ? (
           <Viewer
             fileUrl={fileUrl}
-            plugins={[highlightPluginInstance, defaultLayoutPluginInstance]}
+            plugins={[defaultLayoutPluginInstance, highlightPluginInstance]}
             onDocumentLoad={handleDocumentLoad}
+            ini tialPage={0}
           />
         ) : (
-          <div style={{ textAlign: "center", marginTop: 40, color: "#888" }}>
-            PDF not found or loading...
-          </div>
+          <p className="text-center py-20 text-gray-500">No PDF file available</p>
         )}
       </Worker>
+
+      {/* Nút View Translated Paper nằm dưới PDF */}
+      <div style={{ textAlign: "center", marginTop: 16 }}>
+        <button
+          style={{
+            padding: "10px 20px",
+            backgroundColor: translatedText ? "#dc2626" : "#aaa",
+            color: "white",
+            borderRadius: 8,
+            fontWeight: 600,
+            cursor: translatedText ? "pointer" : "not-allowed",
+            border: "none",
+            transition: "background-color 0.3s ease",
+            userSelect: "none",
+            opacity: translatedText ? 1 : 0.6,
+          }}
+          onClick={() => setShowTranslatedModal(true)}
+          disabled={!translatedText}
+          onMouseEnter={(e) => {
+            if (translatedText) e.currentTarget.style.backgroundColor = "#b91c1c";
+          }}
+          onMouseLeave={(e) => {
+            if (translatedText) e.currentTarget.style.backgroundColor = "#dc2626";
+          }}
+        >
+          View Translated Paper
+        </button>
+      </div>
+
+      {/* Hiển thị nội dung dịch dưới cùng (không tiêu đề) */}
+      <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+        {translatedText}
+      </div>
+
+      {/* Modal hiện bản dịch */}
+      {showTranslatedModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
+          onClick={() => setShowTranslatedModal(false)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-lg max-w-3xl max-h-[80vh] overflow-auto p-6 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-xl font-bold mb-4">Translated Paper</h2>
+            <div style={{ fontSize: 14, lineHeight: 1.6 }}>
+              {translatedText.split('\n').map((line, idx) => (
+                <div key={idx}>{line}</div>
+
+
+              ))}
+
+            </div>
+
+            <button
+              className="absolute top-4 right-4 text-gray-500 hover:text-gray-900 font-bold"
+              onClick={() => setShowTranslatedModal(false)}
+              aria-label="Close modal"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

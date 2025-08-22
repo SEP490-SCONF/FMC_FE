@@ -20,6 +20,8 @@ import EditConferencePage from "../pages/organizer/EditConferencePage";
 import ReviewerListPage from "../pages/organizer/ReviewerListPage";
 import PublishedPaperList from "../pages/organizer/PublishedPaperList";
 import ManageCallForPaper from "../pages/organizer/ManageCallForPaper";
+import Forum from "../pages/Forum"; // Import Forum component
+import ForumQuestionDetail from "../pages/ForumQuestionDetail"; // Import ForumQuestionDetail component
 import ManageTimeline from "../pages/organizer/ManageTimeline";
 import PaymentSuccess from "../pages/author/PaymentSuccess";
 import PaymentCancel from "../pages/author/PaymentCancel";
