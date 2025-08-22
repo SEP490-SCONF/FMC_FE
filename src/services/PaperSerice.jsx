@@ -69,5 +69,8 @@ export const getPapersByUser = async (userId) => {
     return apiService.get(`/Papers/user/${userId}`);
 };
 
+export const getPresentedPapersByConferenceId = async (conferenceId) => {
+    return apiService.get(`/Papers/conference/${conferenceId}/presented`);
+};
 
 

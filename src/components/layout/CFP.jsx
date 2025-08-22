@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { getCallForPapersByConferenceId } from "../../services/CallForPaperService";
 import { getTimelinesByConferenceId } from "../../services/TimelineService";
+import { getSchedulesByTimeline } from "../../services/ScheduleService"; // <-- import này
+
 import dayjs from "dayjs";
 import {
   CalendarDays,
@@ -18,12 +20,53 @@ import {
 
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
+import { Eye } from "lucide-react";
+import { Modal, List } from "antd"; // dùng Ant Design Modal và List
 
 const CFP = () => {
   const { id } = useParams(); // conferenceId
   const [cfp, setCfp] = useState(null);
   const [loading, setLoading] = useState(true);
   const [timelineList, setTimelineList] = useState([]);
+  const [scheduleModalVisible, setScheduleModalVisible] = useState(false);
+const [selectedTimelineSchedules, setSelectedTimelineSchedules] = useState([]);
+const [scheduleList, setScheduleList] = useState([]); 
+const [presentedPapers, setPresentedPapers] = useState([]);
+
+
+const handleViewSchedule = async (timelineId) => {
+  try {
+    const res = await getSchedulesByTimeline(timelineId);
+    console.log("API response for timelineId", timelineId, res);
+
+    // res đã là mảng, không cần res.data
+    const schedules = res || [];
+    console.log("Parsed schedules:", schedules);
+
+    setSelectedTimelineSchedules(schedules);
+    setScheduleModalVisible(true);
+  } catch (err) {
+    console.error("Error fetching schedules:", err);
+    setSelectedTimelineSchedules([]);
+    setScheduleModalVisible(true);
+  }
+};
+
+
+
+useEffect(() => {
+  const fetchPresentedPapers = async () => {
+    try {
+      const res = await getPresentedPapersByConferenceId(id);
+      setPresentedPapers(res || []);
+    } catch (err) {
+      console.error("Error fetching presented papers:", err);
+      setPresentedPapers([]);
+    }
+  };
+  fetchPresentedPapers();
+}, [id]);
+
 
 
   useEffect(() => {
@@ -222,18 +265,72 @@ if (!cfp) {
               {index > 0 && (
                 <div className="w-6 h-1 bg-gray-300 mx-2 rounded"></div>
               )}
-              <div className={`${bgColor} rounded-xl p-4 shadow w-40`}>
-                <p className={`font-bold ${textColor}`}>
-                  {dayjs(item.date).format("MMM D, HH:mm")}
-                </p>
-                <p>{item.description}</p>
-              </div>
+              <div className={`${bgColor} rounded-xl p-4 shadow w-40 relative`}>
+  <p className={`font-bold ${textColor}`}>
+    {dayjs(item.date).format("MMM D, HH:mm")}
+  </p>
+  <p>{item.description}</p>
+
+  {/* Icon View Schedule */}
+  <button
+  onClick={() => handleViewSchedule(item.timeLineId)}
+  className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
+  title="View Schedule"
+>
+  <Eye size={18} />
+</button>
+
+</div>
+
             </div>
           );
         })
     )}
   </div>
 </div>
+
+<Modal
+  title="View Schedule"
+  open={scheduleModalVisible}
+  onCancel={() => setScheduleModalVisible(false)}
+  footer={null}
+  width={600}
+>
+  {selectedTimelineSchedules.length === 0 ? (
+    <p className="text-gray-500 text-center">No schedules available</p>
+  ) : (
+    <List
+      dataSource={selectedTimelineSchedules}
+      renderItem={(item) => {
+        const paper =
+          item.paper || presentedPapers.find(p => p.paperId === item.paperId) || null;
+        const presenter =
+          item.presenter?.name
+            ? item.presenter
+            : paper?.paperAuthors?.[0]?.author
+            ? paper.paperAuthors[0].author
+            : item.presenterName
+            ? { name: item.presenterName }
+            : null;
+
+        return (
+          <List.Item>
+            <div className="space-y-1">
+              <p className="font-semibold">
+                {dayjs(item.presentationStartTime).format("HH:mm")} -{" "}
+                {dayjs(item.presentationEndTime).format("HH:mm")} :{" "}
+                {item.sessionTitle}
+              </p>
+              {paper?.title && <p>📝 Paper: {paper.title}</p>}
+              {presenter?.name && <p>👤 Presenter: {presenter.name}</p>}
+              {item.location && <p>📍 Location: {item.location}</p>}
+            </div>
+          </List.Item>
+        );
+      }}
+    />
+  )}
+</Modal>
 
 
         {/* Submit Button */}

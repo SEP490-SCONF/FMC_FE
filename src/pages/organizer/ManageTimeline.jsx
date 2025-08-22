@@ -11,6 +11,9 @@ import {
   updateSchedule,
   deleteSchedule,
 } from "../../services/ScheduleService";
+import { getPresentedPapersByConferenceId } from "../../services/PaperSerice";
+import { Select } from "antd";
+
 import {
   Table,
   Button,
@@ -43,6 +46,17 @@ export default function ManageTimeline() {
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState("");
+  const [presentedPapers, setPresentedPapers] = useState([]);
+  const [scheduleFormModalVisible, setScheduleFormModalVisible] = useState(false);
+  const [paperSelectModalVisible, setPaperSelectModalVisible] = useState(false);
+const [selectedPaperForSchedule, setSelectedPaperForSchedule] = useState(null);
+const [expandedScheduleId, setExpandedScheduleId] = useState(null);
+const [isExpanded, setIsExpanded] = useState({});
+
+
+
+
+
 
   // Schedule states
   const [scheduleModalVisible, setScheduleModalVisible] = useState(false);
@@ -50,7 +64,6 @@ export default function ManageTimeline() {
   const [selectedTimeline, setSelectedTimeline] = useState(null);
   const [scheduleForm] = Form.useForm();
   const [editingSchedule, setEditingSchedule] = useState(null);
-  const [showScheduleForm, setShowScheduleForm] = useState(false);
   const [page, setPage] = useState(1);
   const pageSize = 5;
 
@@ -78,6 +91,38 @@ export default function ManageTimeline() {
     });
   };
 
+  // 1️⃣ Sắp xếp schedules
+const sortedSchedules = schedules.sort(
+  (a, b) => new Date(a.presentationStartTime) - new Date(b.presentationStartTime)
+);
+
+// 2️⃣ Tạo groupedSchedules (theo buổi) nếu cần hiển thị toàn bộ
+const groupedSchedules = {
+  morning: sortedSchedules.filter(s => dayjs(s.presentationStartTime).hour() < 12),
+  afternoon: sortedSchedules.filter(s => {
+    const h = dayjs(s.presentationStartTime).hour();
+    return h >= 12 && h < 18;
+  }),
+  evening: sortedSchedules.filter(s => dayjs(s.presentationStartTime).hour() >= 18),
+};
+
+const allSchedules = [...groupedSchedules.morning, ...groupedSchedules.afternoon, ...groupedSchedules.evening];
+
+// 3️⃣ Slice theo page
+const pagedSchedules = allSchedules.slice((page - 1) * pageSize, page * pageSize);
+
+// 4️⃣ Sau đó mới group theo buổi
+const groupedPagedSchedules = {
+  morning: pagedSchedules.filter(s => dayjs(s.presentationStartTime).hour() < 12),
+  afternoon: pagedSchedules.filter(s => {
+    const h = dayjs(s.presentationStartTime).hour();
+    return h >= 12 && h < 18;
+  }),
+  evening: pagedSchedules.filter(s => dayjs(s.presentationStartTime).hour() >= 18),
+};
+
+
+
   const fetchData = () => {
     if (!conferenceId) {
       message.error("Missing conferenceId");
@@ -102,6 +147,24 @@ export default function ManageTimeline() {
       fetchData();
     }
   }, [conferenceId]);
+
+  useEffect(() => {
+      console.log("🔹 selectedPaperForSchedule updated:", selectedPaperForSchedule); // <- kiểm tra
+
+  if (selectedPaperForSchedule) {
+    scheduleForm.setFieldsValue({
+      paperId: selectedPaperForSchedule.paperId,
+      presenterId: selectedPaperForSchedule.paperAuthors?.[0]?.author?.authorId || null,
+    });
+  } else {
+    scheduleForm.setFieldsValue({
+      paperId: null,
+      presenterId: null,
+    });
+  }
+}, [selectedPaperForSchedule, scheduleForm]);
+
+
 
   const handleSearch = (value) => {
     setSearchText(value);
@@ -168,51 +231,81 @@ export default function ManageTimeline() {
       })
       .catch((err) => {
         console.error("❌ Failed to load schedules", err);
-        message.error("Failed to load schedules");
         setSchedules([]);
         setScheduleModalVisible(true);
       });
+
+  // load presented papers
+   getPresentedPapersByConferenceId(conferenceId).then(res => {
+  const papersWithPresenter = res.map(paper => {
+    const presenterAuthor = paper.paperAuthors?.[0]?.author;
+    return {
+      ...paper,
+      presenter: presenterAuthor
+        ? {
+            userId: presenterAuthor.authorId,
+            name: presenterAuthor.name,
+            email: presenterAuthor.email,
+            avatarUrl: presenterAuthor.avatarUrl,
+          }
+        : null, // Nếu không có author thì null
+    };
+  });
+
+      console.log("✅ Presented papers loaded:", papersWithPresenter); // <- kiểm tra
+
+  setPresentedPapers(papersWithPresenter);
+});
+
+
+
   };
 
   // CRUD Schedule
   const handleScheduleSubmit = (values) => {
-    const baseDate = dayjs(selectedTimeline.date).format("YYYY-MM-DD");
-    const startTime = dayjs(
-      `${baseDate} ${values.presentationStartTime.format("HH:mm")}`
-    );
-    const endTime = dayjs(
-      `${baseDate} ${values.presentationEndTime.format("HH:mm")}`
-    );
+  const baseDate = dayjs(selectedTimeline.date).format("YYYY-MM-DD");
+  const startTime = dayjs(`${baseDate} ${values.presentationStartTime.format("HH:mm")}`);
+  const endTime = dayjs(`${baseDate} ${values.presentationEndTime.format("HH:mm")}`);
 
-    const data = {
-      timeLineId: selectedTimeline?.timeLineId,
-      sessionTitle: values.sessionTitle,
-      location: values.location || "",
-      paperId: values.paperId || null,
-      presenterId: values.presenterId || null,
-      presentationStartTime: startTime ? startTime.toISOString() : null,
-      presentationEndTime: endTime ? endTime.toISOString() : null,
-    };
+  const data = {
+    timeLineId: selectedTimeline?.timeLineId,
+    sessionTitle: values.sessionTitle,
+    location: values.location || "",
+    paperId: values.paperId ?? null,
+  presenterId: values.presenterId ?? null, // sẽ có id từ step 2
 
-    const action = editingSchedule
-      ? updateSchedule(editingSchedule.scheduleId, data)
-      : createSchedule(data);
-
-    action
-      .then(() => {
-        message.success(
-          `Schedule ${editingSchedule ? "updated" : "created"} successfully`
-        );
-        scheduleForm.resetFields();
-        setEditingSchedule(null);
-        setShowScheduleForm(false);
-        handleViewSchedules(selectedTimeline); // reload
-      })
-      .catch((err) => {
-        console.error("❌ Schedule save failed", err);
-        message.error("Failed to save schedule");
-      });
+    presentationStartTime: startTime ? startTime.toISOString() : null,
+    presentationEndTime: endTime ? endTime.toISOString() : null,
   };
+
+  const action = editingSchedule
+    ? updateSchedule(editingSchedule.scheduleId, data)
+    : createSchedule(data);
+
+  action
+    .then(() => {
+      message.success(`Schedule ${editingSchedule ? "updated" : "created"} successfully`);
+      scheduleForm.resetFields();
+      setEditingSchedule(null);
+      setScheduleFormModalVisible(false); // tắt form
+
+      // 🔄 reload lại danh sách theo timeline hiện tại
+      getSchedulesByTimeline(selectedTimeline.timeLineId)
+        .then((res) => {
+          setSchedules(res || []);
+          setScheduleModalVisible(true); // đảm bảo modal danh sách mở
+        })
+        .catch((err) => {
+          console.error("❌ Failed to load schedules", err);
+          setSchedules([]);
+          setScheduleModalVisible(true); // vẫn mở modal danh sách
+        });
+    })
+    .catch((err) => {
+      console.error("❌ Schedule save failed", err);
+      message.error("Failed to save schedule");
+    });
+};
 
   const handleScheduleDelete = (id) => {
     deleteSchedule(id)
@@ -239,7 +332,7 @@ export default function ManageTimeline() {
     };
   };
 
-  const groupedSchedules = groupBySession(schedules);
+
 
   const columns = [
     {
@@ -325,186 +418,260 @@ export default function ManageTimeline() {
       />
 
       {/* --- Schedule Modal --- */}
-      <Modal
-        width={700}
-        title={`📌 Schedules for "${selectedTimeline?.description || ""}"`}
-        open={scheduleModalVisible}
-        onCancel={() => {
-          setScheduleModalVisible(false);
-          setEditingSchedule(null);
-          setShowScheduleForm(false);
-          scheduleForm.resetFields();
-        }}
-        footer={null}
-      >
-        {/* Button Add Schedule */}
-        <div className="flex justify-end mb-4">
-          <Button
-            type="primary"
-            onClick={() => {
-              setEditingSchedule(null);
-              scheduleForm.resetFields();
-              setShowScheduleForm(true);
-            }}
-          >
-            + Add Schedule
-          </Button>
-        </div>
-
-        {/* Form thêm/sửa schedule (ẩn/hiện khi bấm nút) */}
-        {showScheduleForm && (
-          <Form
-            form={scheduleForm}
-            layout="vertical"
-            onFinish={handleScheduleSubmit}
-            className="mb-6 p-4 border rounded-lg bg-gray-50"
-          >
-            <Form.Item
-              name="sessionTitle"
-              label="Session Title"
-              rules={[{ required: true, message: "Please enter session title" }]}
-            >
-              <Input />
-            </Form.Item>
-            <Form.Item name="location" label="Location">
-              <Input />
-            </Form.Item>
-            <Form.Item
-              name="presentationStartTime"
-              label="Start Time"
-              rules={[{ required: true, message: "Please select start time" }]}
-            >
-              <DatePicker
-                picker="time"
-                format="HH:mm"
-                style={{ width: "100%" }}
-              />
-            </Form.Item>
-            <Form.Item
-              name="presentationEndTime"
-              label="End Time"
-              rules={[{ required: true, message: "Please select end time" }]}
-            >
-              <DatePicker
-                picker="time"
-                format="HH:mm"
-                style={{ width: "100%" }}
-              />
-            </Form.Item>
-            <Form.Item name="presenterId" label="Presenter Id">
-              <Input />
-            </Form.Item>
-            <Form.Item name="paperId" label="Paper Id">
-              <Input />
-            </Form.Item>
-
-            <div className="flex justify-end gap-2">
-              <Button
-                onClick={() => {
-                  setShowScheduleForm(false);
-                  setEditingSchedule(null);
+<Modal
+  width={700}
+  title={`📌 Schedules for "${selectedTimeline?.description || ""}"`}
+  open={scheduleModalVisible}
+  onCancel={() => {
+    setScheduleModalVisible(false);
+    setEditingSchedule(null);
+    scheduleForm.resetFields();
+  }}
+  footer={null} // Footer ẩn, nút Save/Cancel trong form
+>
+ {/* Button Add Schedule */}
+<div className="flex justify-end mb-4">
+  <Button
+    type="primary"
+    onClick={() => {
+            setSelectedPaperForSchedule(null);
                   scheduleForm.resetFields();
-                }}
-              >
-                Cancel
-              </Button>
-              <Button type="primary" htmlType="submit">
-                {editingSchedule ? "Update" : "Save"}
-              </Button>
-            </div>
-          </Form>
-        )}
 
-        {/* hiển thị grouped schedule */}
-        <div className="mt-6">
-          {["morning", "afternoon", "evening"].map((sessionKey) => {
-            const label =
-              sessionKey === "morning"
-                ? "🌅 Morning"
-                : sessionKey === "afternoon"
-                ? "🌞 Afternoon"
-                : "🌙 Evening";
-            const data = groupedSchedules[sessionKey] || [];
-            return (
-              <div key={sessionKey} className="mb-4">
-                <h4 className="font-semibold text-blue-600 mb-2">{label}</h4>
-                {data.length === 0 ? (
-                  <div className="text-gray-400">No schedule</div>
-                ) : (
-                 <List
-  dataSource={data.slice((page - 1) * pageSize, page * pageSize)}
-  renderItem={(item) => {
-    console.log("Schedule item:", item); // 👈 thêm log ở đây
-    return (
-      <List.Item
-        actions={[
-          <Button
-            size="small"
-            onClick={() => {
-              setEditingSchedule(item);
-              scheduleForm.setFieldsValue({
-                sessionTitle: item.sessionTitle,
-                location: item.location,
-                presenterId: item.presenterId,
-                paperId: item.paperId,
-                presentationStartTime: dayjs(item.presentationStartTime),
-                presentationEndTime: dayjs(item.presentationEndTime),
-              });
-              setShowScheduleForm(true);
-            }}
-          >
-            Edit
-          </Button>,
-          <Popconfirm
-            title="Delete schedule?"
-            onConfirm={() => handleScheduleDelete(item.scheduleId)}
-          >
-            <Button size="small" danger>
-              Delete
-            </Button>
-          </Popconfirm>,
-        ]}
-      >
-       <div>
-  <p className="font-semibold">
-    {dayjs(item.presentationStartTime).format("HH:mm")} -{" "}
-    {dayjs(item.presentationEndTime).format("HH:mm")} :{" "}
-    {item.sessionTitle}
-  </p>
 
-  {/* Paper chỉ hiển thị nếu có */}
-  {item.paper?.title && <p>📝 Paper: {item.paper.title}</p>}
+      setEditingSchedule(null);
 
-  {/* Presenter chỉ hiển thị nếu có */}
-  {item.presenterName ? (
-    <p>👤 Presenter: {item.presenterName}</p>
-  ) : item.presenter?.name ? (
-    <p>👤 Presenter: {item.presenter.name}</p>
-  ) : null}
-
-  {/* Location */}
-  {item.location && <p>📍 Location: {item.location}</p>}
+      setScheduleFormModalVisible(true); // mở modal riêng
+    }}
+  >
+    + Add Schedule
+  </Button>
 </div>
 
-      </List.Item>
-    );
-  }}
-/>
+ 
+{/* Danh sách grouped schedules */}
+<div className="mt-6">
+  {allSchedules.length === 0 ? (
+    <p className="text-center text-gray-500">No schedule</p>
+  ) : (
+    ["morning", "afternoon", "evening"].map((sessionKey) => {
+      const data = groupedPagedSchedules[sessionKey] || [];
+      if (data.length === 0) return null; // bỏ qua buổi trống
 
-                )}
-              </div>
-            );
-          })}
+      const label =
+        sessionKey === "morning"
+          ? "🌅 Morning"
+          : sessionKey === "afternoon"
+          ? "🌞 Afternoon"
+          : "🌙 Evening";
+
+      return (
+        <div key={sessionKey} className="mb-4">
+          <h4 className="font-semibold text-blue-600 mb-2">{label}</h4>
+          <List
+            dataSource={data}
+            renderItem={(item) => {
+              // tìm paper trong danh sách presentedPapers
+              const paper =
+  item.paper || presentedPapers.find((p) => p.paperId === item.paperId) || null;
+
+              // tìm presenter ưu tiên từ item, nếu null thì từ paperAuthors
+              const presenter =
+  item.presenter?.name
+    ? item.presenter
+    : paper?.paperAuthors?.[0]?.author
+    ? paper.paperAuthors[0].author
+    : item.presenterName
+    ? { name: item.presenterName }
+    : null;
+
+              return (
+                <List.Item
+                  key={item.scheduleId}
+                  actions={[
+                    <Button
+                      size="small"
+                      onClick={() => {
+                        setEditingSchedule(item);
+
+                        setSelectedPaperForSchedule(paper);
+                        scheduleForm.setFieldsValue({
+                          sessionTitle: item.sessionTitle,
+                          location: item.location,
+                          paperId: paper?.paperId || null,
+                          presenterId: presenter?.authorId || null,
+                          presentationStartTime: dayjs(item.presentationStartTime),
+                          presentationEndTime: dayjs(item.presentationEndTime),
+                        });
+
+                        setScheduleFormModalVisible(true);
+                      }}
+                    >
+                      Edit
+                    </Button>,
+                    <Popconfirm
+                      title="Delete schedule?"
+                      onConfirm={() => handleScheduleDelete(item.scheduleId)}
+                    >
+                      <Button size="small" danger>
+                        Delete
+                      </Button>
+                    </Popconfirm>,
+                  ]}
+                >
+                  <div>
+                    {/* Title có thể click để toggle chi tiết */}
+                    <p
+                      className="font-semibold cursor-pointer"
+                      onClick={() =>
+                        setIsExpanded((prev) => ({
+                          ...prev,
+                          [item.scheduleId]: !prev[item.scheduleId],
+                        }))
+                      }
+                    >
+                      {dayjs(item.presentationStartTime).format("HH:mm")} -{" "}
+                      {dayjs(item.presentationEndTime).format("HH:mm")} :{" "}
+                      {item.sessionTitle}
+                    </p>
+
+                    {/* Chi tiết chỉ hiển thị khi expanded */}
+                    {isExpanded[item.scheduleId] && (
+  <div className="mt-1 ml-4 space-y-1">
+    {paper?.title && <p>📝 Paper: {paper.title}</p>}
+    {presenter?.name && <p>👤 Presenter: {presenter.name}</p>}
+    {item.location && <p>📍 Location: {item.location}</p>}
+  </div>
+)}
+
+                  </div>
+                </List.Item>
+              );
+            }}
+          />
         </div>
+      );
+    })
+  )}
+</div>
 
-        <Pagination
-          className="mt-4 text-center"
-          current={page}
-          pageSize={pageSize}
-          total={schedules.length}
-          onChange={(p) => setPage(p)}
-        />
-      </Modal>
+
+
+
+  <Pagination
+    className="mt-4 text-center"
+    current={page}
+    pageSize={pageSize}
+    total={schedules.length}
+    onChange={(p) => setPage(p)}
+  />
+</Modal>
+
+<Modal
+  title={editingSchedule ? "Update Schedule" : "Add Schedule"}
+  open={scheduleFormModalVisible}
+  onCancel={() => {
+    setScheduleFormModalVisible(false);
+    setEditingSchedule(null);
+    scheduleForm.resetFields();
+  }}
+  onOk={() => scheduleForm.submit()}
+  okText={editingSchedule ? "Update" : "Save"}
+>
+  <Form
+    form={scheduleForm}
+    layout="vertical"
+    onFinish={handleScheduleSubmit}
+  >
+    <Form.Item
+      name="sessionTitle"
+      label="Session Title"
+      rules={[{ required: true, message: "Please enter session title" }]}
+    >
+      <Input />
+    </Form.Item>
+    <Form.Item name="location" label="Location">
+      <Input />
+    </Form.Item>
+    <Form.Item
+      name="presentationStartTime"
+      label="Start Time"
+      rules={[{ required: true, message: "Please select start time" }]}
+    >
+      <DatePicker picker="time" format="HH:mm" style={{ width: "100%" }} />
+    </Form.Item>
+    <Form.Item
+      name="presentationEndTime"
+      label="End Time"
+      rules={[{ required: true, message: "Please select end time" }]}
+    >
+      <DatePicker picker="time" format="HH:mm" style={{ width: "100%" }} />
+    </Form.Item>
+
+    {/* ← Thêm nút Choose Paper ở đây */}
+    <Form.Item label="Select Paper">
+      <Button
+        icon={<PlusOutlined />}
+        onClick={() => setPaperSelectModalVisible(true)}
+      >
+        Choose Paper
+      </Button>
+      {selectedPaperForSchedule && (
+        <div className="mt-2">
+          📝 {selectedPaperForSchedule.title} | Score: {selectedPaperForSchedule.paperScore ?? "N/A"}
+        </div>
+      )}
+    </Form.Item>
+
+    {/* Hidden fields */}
+    <Form.Item name="paperId" hidden>
+      <Input type="hidden" />
+    </Form.Item>
+    <Form.Item name="presenterId" hidden>
+      <Input type="hidden" />
+    </Form.Item>
+  </Form>
+
+  {/* Modal Paper Select riêng bên ngoài form */}
+  <Modal
+    title="Select Paper"
+    open={paperSelectModalVisible}
+    onCancel={() => setPaperSelectModalVisible(false)}
+    footer={null}
+    width={600}
+  >
+    <List
+      dataSource={presentedPapers}
+      renderItem={(paper) => (
+        <List.Item
+          actions={[
+            <Button
+  type="primary"
+  size="small"
+  onClick={() => {
+        console.log("📝 Paper selected:", paper); // <- kiểm tra
+
+    setSelectedPaperForSchedule(paper);
+    scheduleForm.setFieldsValue({
+      paperId: paper.paperId,
+  presenterId: paper?.paperAuthors?.[0]?.author?.authorId || null, // ✅ safe now
+    });
+    setPaperSelectModalVisible(false);
+  }}
+>
+  Select
+</Button>
+,
+          ]}
+        >
+          <List.Item.Meta
+            title={paper.title}
+            description={`Score: ${paper.paperScore ?? "N/A"}`}
+          />
+        </List.Item>
+      )}
+    />
+  </Modal>
+</Modal>
 
       {/* --- Modal add/edit timeline --- */}
       <Modal
