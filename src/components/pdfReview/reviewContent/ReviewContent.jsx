@@ -18,6 +18,7 @@ import {
 } from "../../../services/ReviewWithHighlightService";
 import { useUser } from "../../../context/UserContext";
 import { toast } from "react-toastify";
+import AnalyzeAiService from "../../../services/AnalyzeAiService"; // Thêm import này
 import "react-toastify/dist/ReactToastify.css";
 
 import "@react-pdf-viewer/core/lib/styles/index.css";
@@ -57,18 +58,9 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
       fullText += pageText + "\n"; // Giữ xuống dòng giữa các trang
     }
 
-    // Gửi toàn bộ raw text về BE
+    // Gửi toàn bộ raw text về BE qua callback, không gọi API trực tiếp
     if (onChunksGenerated) {
       onChunksGenerated([{ RawText: fullText }]); // Gửi raw text nguyên bản
-    }
-
-    // (Tùy chọn) Gọi API ngay nếu cần
-    try {
-      const response = await AnalyzeAiService.analyzeDocument(review.id, fullText);
-      setAiAnalysisResult(response);
-      if (onChunksGenerated) onChunksGenerated(response.Chunks); // Cập nhật chunk từ BE
-    } catch (error) {
-      console.error('AI analysis failed:', error);
     }
   };
 
@@ -429,8 +421,6 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
         .catch(() => setNotes([]));
     }
   }, [review]);
-
-
 
   return (
     <div style={{ height: "100%" }}>

@@ -73,17 +73,21 @@ const ReviewSidebar = ({
 
   const handleCheckAiAgain = async () => {
     if (readOnly) return;
+    if (!review?.reviewId || !chunks?.length || !chunks[0]?.RawText) {
+      console.error('Missing reviewId or rawText in chunks:', { reviewId: review?.reviewId, chunks });
+      toast.error("No data available to check AI.");
+      return;
+    }
+
     try {
-      console.log("Chunks being sent");
-      const data = await AnalyzeAiService.analyzeDocument(
-        review.reviewId,
-        chunks || []
-      );
+      console.log("Chunks being sent", chunks);
+      const rawText = chunks[0].RawText; // Trích xuất RawText từ mảng chunks
+      const data = await AnalyzeAiService.analyzeDocument(review.reviewId, rawText);
       setAiPercentage(data.percentAi || 0);
       toast.info("AI check completed!");
     } catch (err) {
       console.error("Error checking AI:", err);
-      toast.error("Failed to re-check AI.");
+      toast.error(`Failed to re-check AI: ${err.message}`);
     }
   };
 
