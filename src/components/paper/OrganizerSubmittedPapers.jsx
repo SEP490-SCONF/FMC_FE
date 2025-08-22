@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import Modal from "../ui/Modal";
 import { getSubmittedPapersByConferenceId } from "../../services/PaperSerice";
-import { getConferenceReviewers,getReviewerAssignedPaperCount } from "../../services/UserConferenceRoleService";
+import { getConferenceReviewers, getReviewerAssignedPaperCount } from "../../services/UserConferenceRoleService";
 import { deleteReviewerAssignment } from "../../services/ReviewerAssignmentService";
 import { generateCertificatesForPaper } from "../../services/CertificateService";
 import { toast } from "react-toastify";
@@ -27,13 +27,15 @@ const SubmittedOrga = () => {
   const [reviewers, setReviewers] = useState([]);
   const [reviewerPage, setReviewerPage] = useState(1);
   const reviewersPerPage = 2;
-  const [successPopup, setSuccessPopup] = useState(false); // Thêm state cho popup
   const [filterTopic, setFilterTopic] = useState("");
   const [filterAssigned, setFilterAssigned] = useState("");
   const [filterDate, setFilterDate] = useState("");
   const [searchText, setSearchText] = useState("");
   const [page, setPage] = useState(1);
+  const [sortDate, setSortDate] = useState("none"); // New state for sort order
   const pageSize = 5;
+  const [successPopup, setSuccessPopup] = useState(false); // Thêm state cho popup
+
 
   function buildQuery() {
     const filters = [];
@@ -43,7 +45,6 @@ const SubmittedOrga = () => {
     if (filterDate) filters.push(`SubmitDate eq ${filterDate}`);
 
     if (searchText) {
-      // Dùng tolower cho cả trường và giá trị tìm kiếm
       const search = searchText.toLowerCase();
       filters.push(
         `(contains(tolower(Title),'${search}') or contains(tolower(Abstract),'${search}') or contains(tolower(Keywords),'${search}'))`
@@ -56,6 +57,11 @@ const SubmittedOrga = () => {
     if (filters.length > 0)
       queryParams.push(`$filter=${filters.join(" and ")}`);
     queryParams.push(`$top=${pageSize}`, `$skip=${skip}`);
+
+    // Add sorting by SubmitDate
+    if (sortDate !== "none") {
+      queryParams.push(`$orderby=SubmitDate ${sortDate}`);
+    }
 
     return "?" + queryParams.join("&");
   }
@@ -87,38 +93,35 @@ const SubmittedOrga = () => {
         })
         .catch(() => setPaperList([]));
     }
-  }, [conferenceId, filterTopic, filterDate, filterAssigned, searchText, page]);
+  }, [conferenceId, filterTopic, filterDate, filterAssigned, searchText, page, sortDate]);
 
   // Fetch reviewers
   useEffect(() => {
-  if (conferenceId) {
-    getConferenceReviewers(conferenceId)
-      .then(async (res) => {
-        const reviewersArr = Array.isArray(res.value)
-          ? res.value
-          : Array.isArray(res)
-          ? res
-          : [];
+    if (conferenceId) {
+      getConferenceReviewers(conferenceId)
+        .then(async (res) => {
+          const reviewersArr = Array.isArray(res.value)
+            ? res.value
+            : Array.isArray(res)
+            ? res
+            : [];
 
-       
-        const reviewersWithCount = await Promise.all(
-          reviewersArr.map(async (r) => {
-            try {
-              const countRes = await getReviewerAssignedPaperCount(conferenceId, r.userId);
-              return { ...r, assignedPaperCount: countRes.assignedPaperCount };
-            } catch {
-              return { ...r, assignedPaperCount: 0 };
-            }
-          })
-        );
+          const reviewersWithCount = await Promise.all(
+            reviewersArr.map(async (r) => {
+              try {
+                const countRes = await getReviewerAssignedPaperCount(conferenceId, r.userId);
+                return { ...r, assignedPaperCount: countRes.assignedPaperCount };
+              } catch {
+                return { ...r, assignedPaperCount: 0 };
+              }
+            })
+          );
 
-        setReviewers(reviewersWithCount);
-        
-      })
-      .catch(() => setReviewers([]));
-  }
-}, [conferenceId]);
-
+          setReviewers(reviewersWithCount);
+        })
+        .catch(() => setReviewers([]));
+    }
+  }, [conferenceId]);
 
   const openAssign = (idx) => {
     setAssignIdx(idx);
@@ -144,7 +147,7 @@ const SubmittedOrga = () => {
     } else {
       await assignReviewerToPaper(paper.id, reviewerId);
     }
-    const query = buildQuery(); // Sử dụng query hiện tại để giữ trạng thái lọc và phân trang
+    const query = buildQuery();
     getSubmittedPapersByConferenceId(conferenceId, query).then((res) => {
       const mapped = (res || []).map((p) => ({
         id: p.paperId,
@@ -166,14 +169,13 @@ const SubmittedOrga = () => {
       setPaperList(mapped);
     });
     closeModal();
-   toast.success("Assign reviewer successfully!");
+    toast.success("Assign reviewer successfully!");
   };
 
   useEffect(() => {
     setReviewerPage(1);
   }, [search, assignIdx]);
 
-  // Filter reviewers by search
   const filteredReviewers = reviewers.filter(
     (r) =>
       (r.name || "").toLowerCase().includes(search.toLowerCase()) ||
@@ -197,6 +199,16 @@ const SubmittedOrga = () => {
         </span>
       );
     });
+  };
+
+  const handleSendCertificate = async (paperId) => {
+    try {
+      await generateCertificatesForPaper(paperId);
+      alert("🎉 Certificate sent successfully!");
+    } catch (error) {
+      console.error("❌ Failed to send certificate", error);
+      alert("❌ Failed to send certificate.");
+    }
   };
 
   return (
@@ -243,6 +255,19 @@ const SubmittedOrga = () => {
                   <option value="">All</option>
                   <option value="true">Assigned</option>
                   <option value="false">Unassigned</option>
+                </select>
+
+                <select
+                  className="border border-gray-300 rounded px-3 py-2 text-sm"
+                  value={sortDate}
+                  onChange={(e) => {
+                    setSortDate(e.target.value);
+                    setPage(1); // Reset to first page when sort changes
+                  }}
+                >
+                  <option value="none">Sort by Date</option>
+                  <option value="desc">Newest First</option>
+                  <option value="asc">Oldest First</option>
                 </select>
               </div>
             </div>
@@ -547,15 +572,5 @@ const SubmittedOrga = () => {
 const thClass =
   "border border-gray-200 px-3 py-2 font-semibold bg-gray-50 text-xs";
 const tdClass = "border border-gray-100 px-3 py-2 text-center bg-white text-xs";
-
-const handleSendCertificate = async (paperId) => {
-  try {
-    await generateCertificatesForPaper(paperId);
-    alert("🎉 Certificate sent successfully!");
-  } catch (error) {
-    console.error("❌ Failed to send certificate", error);
-    alert("❌ Failed to send certificate.");
-  }
-};
 
 export default SubmittedOrga;
