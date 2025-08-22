@@ -124,7 +124,7 @@ export default function AppRoutes() {
                 element={<ManageTimeline />}
               />
               <Route
-                path="/manage-conference/:id/income"
+                path="/manage-conference/:conferenceId/income"
                 element={<OrganizerTrack />}
               />
             </Route>
