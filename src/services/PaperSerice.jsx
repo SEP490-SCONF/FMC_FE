@@ -73,4 +73,8 @@ export const getPresentedPapersByConferenceId = async (conferenceId) => {
     return apiService.get(`/Papers/conference/${conferenceId}/presented`);
 };
 
+export const getAcceptedPapersByUserAndConference = async (userId, conferenceId) => {
+    return apiService.get(`/Papers/user/${userId}/conference/${conferenceId}/accepted`);
+};
+
 

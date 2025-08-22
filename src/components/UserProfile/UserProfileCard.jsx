@@ -5,13 +5,12 @@ import { Pagination, Input, Select } from "antd";
 import {
   getUserConferenceRolesByUserId
 } from "../../services/UserConferenceRoleService";
-import { getPapersByUserAndConference } from "../../services/PaperSerice";
+import { getAcceptedPapersByUserAndConference } from "../../services/PaperSerice";
 import {
   countCompletedReviewsByUserAndConference,
   getCompletedReviewsByUserAndConference
 } from "../../services/ReviewService";
 import { updateUserProfile } from "../../services/UserService";
-import "../../assets/styles/pages/_section.scss";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 
 
@@ -117,7 +116,7 @@ export default function UserInfo({ user }) {
         userConferences.map(async (ucr) => {
           if (ucr.roleName === "Author") {
             try {
-              const res = await getPapersByUserAndConference(userId, ucr.conferenceId);
+              const res = await getAcceptedPapersByUserAndConference(userId, ucr.conferenceId);
               papersByConference[ucr.conferenceId] = res || [];
             } catch (error) {
               console.error(`❌ Lỗi tải papers conference ${ucr.conferenceId}:`, error);

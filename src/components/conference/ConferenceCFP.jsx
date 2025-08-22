@@ -122,9 +122,11 @@ if (!cfp) {
         <div className="text-center space-y-3">
           <h1 className="text-4xl md:text-5xl font-extrabold text-purple-700 tracking-wide">CALL FOR</h1>
           <h2 className="text-4xl md:text-5xl font-extrabold text-orange-600 tracking-wide mb-2">PAPERS</h2>
-          <p className="text-blue-800 font-medium text-base md:text-lg max-w-3xl mx-auto">
-            {cfp.description}
-          </p>
+          <p className="text-black-800 font-medium text-base md:text-lg max-w-3xl mx-auto text-justify leading-relaxed break-words">
+  {cfp.description}
+</p>
+
+
         </div>
 
         {/* Banner and Topics */}

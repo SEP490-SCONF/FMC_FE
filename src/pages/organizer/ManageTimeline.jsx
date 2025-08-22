@@ -67,6 +67,30 @@ const [isExpanded, setIsExpanded] = useState({});
   const [page, setPage] = useState(1);
   const pageSize = 5;
 
+  const showDeleteScheduleConfirm = (scheduleId) => {
+  Modal.confirm({
+    title: (
+      <Text strong type="danger" style={{ fontSize: "18px" }}>
+        ⚠️ Confirm Deletion
+      </Text>
+    ),
+    icon: <ExclamationCircleOutlined style={{ color: "#faad14" }} />,
+    content: (
+      <div>
+        <p>
+          This action <Text strong>cannot be undone</Text>.
+        </p>
+        <p>Are you sure you want to delete this schedule?</p>
+      </div>
+    ),
+    okText: "Yes, delete it",
+    cancelText: "Cancel",
+    okType: "danger",
+    centered: true,
+    onOk: () => handleScheduleDelete(scheduleId),
+  });
+};
+
   const showDeleteConfirm = (id, onDelete) => {
     Modal.confirm({
       title: (
@@ -486,38 +510,38 @@ const groupedPagedSchedules = {
 
               return (
                 <List.Item
-                  key={item.scheduleId}
-                  actions={[
-                    <Button
-                      size="small"
-                      onClick={() => {
-                        setEditingSchedule(item);
+  key={item.scheduleId}
+  actions={[
+    <Button
+      size="small"
+      onClick={() => {
+        setEditingSchedule(item);
+        setSelectedPaperForSchedule(
+          item.paper || presentedPapers.find((p) => p.paperId === item.paperId) || null
+        );
+        scheduleForm.setFieldsValue({
+          sessionTitle: item.sessionTitle,
+          location: item.location,
+          paperId: item.paperId,
+          presenterId: item.presenterId,
+          presentationStartTime: dayjs(item.presentationStartTime),
+          presentationEndTime: dayjs(item.presentationEndTime),
+        });
+        setScheduleFormModalVisible(true);
+      }}
+    >
+      Edit
+    </Button>,
+    <Button
+      size="small"
+      danger
+      onClick={() => showDeleteScheduleConfirm(item.scheduleId)}
+    >
+      Delete
+    </Button>,
+  ]}
+>
 
-                        setSelectedPaperForSchedule(paper);
-                        scheduleForm.setFieldsValue({
-                          sessionTitle: item.sessionTitle,
-                          location: item.location,
-                          paperId: paper?.paperId || null,
-                          presenterId: presenter?.authorId || null,
-                          presentationStartTime: dayjs(item.presentationStartTime),
-                          presentationEndTime: dayjs(item.presentationEndTime),
-                        });
-
-                        setScheduleFormModalVisible(true);
-                      }}
-                    >
-                      Edit
-                    </Button>,
-                    <Popconfirm
-                      title="Delete schedule?"
-                      onConfirm={() => handleScheduleDelete(item.scheduleId)}
-                    >
-                      <Button size="small" danger>
-                        Delete
-                      </Button>
-                    </Popconfirm>,
-                  ]}
-                >
                   <div>
                     {/* Title có thể click để toggle chi tiết */}
                     <p
