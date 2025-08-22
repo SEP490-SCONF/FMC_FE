@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { getAllConferences } from "../../services/ConferenceService";
 import { getAllTopics } from "../../services/TopicService";
 import { useNavigate } from "react-router-dom";
 import { Pagination, Input, Select, Button, Checkbox, Space, Card } from "antd";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import NotFoundWithClearFilters from "../../components/common/NoResults/NotFoundWithClearFilters";
 const { Search } = Input;
 const { Option } = Select;
 const PAGE_SIZE = 3;
@@ -51,7 +53,13 @@ const ConferenceSearch = () => {
     setFilteredConferences(filtered);
     setPage(1); // Reset về trang 1 khi filter/search
   }, [allConferences, location, searchTitle, selectedTopics]);
-
+  // Hàm để xóa tất cả bộ lọc
+  const handleClearFilters = useCallback(() => {
+    setLocation("");
+    setSearchTitle("");
+    setSelectedTopics([]);
+    setPage(1);
+  }, []);
   // Pagination
   const pagedConferences = filteredConferences.slice(
     (page - 1) * PAGE_SIZE,
@@ -83,7 +91,9 @@ const ConferenceSearch = () => {
                 onChange={(e) => setLocation(e.target.value)}
               />
               <div>
-                <div style={{ marginBottom: 8, fontWeight: 500 }}>Disciplines</div>
+                <div style={{ marginBottom: 8, fontWeight: 500 }}>
+                  Disciplines
+                </div>
                 <Checkbox.Group
                   style={{ width: "100%" }}
                   value={selectedTopics}
@@ -101,7 +111,9 @@ const ConferenceSearch = () => {
                   size="small"
                   type="link"
                   style={{ paddingLeft: 0 }}
-                  onClick={() => setSelectedTopics(topics.map((t) => t.topicId))}
+                  onClick={() =>
+                    setSelectedTopics(topics.map((t) => t.topicId))
+                  }
                 >
                   Select All
                 </Button>
@@ -120,9 +132,9 @@ const ConferenceSearch = () => {
         {/* Main Content */}
         <main className="flex-1">
           {loading ? (
-            <div className="text-center py-10 text-lg text-gray-500">
-              Loading...
-            </div>
+            <LoadingSpinner />
+          ) : filteredConferences.length === 0 ? (
+            <NotFoundWithClearFilters onClear={handleClearFilters} />
           ) : (
             <div className="flex flex-col gap-6">
               {pagedConferences.map((conf) => (

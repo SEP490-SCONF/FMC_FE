@@ -6,7 +6,7 @@ export const loginWithGoogle = async (credential) => {
     const data = await apiService.post("/GoogleLogin/Login", {
       idToken: credential,
     });
-    localStorage.setItem("accessToken", data.accessToken);
+   
     return data;
   } catch (err) {
     throw err;
@@ -17,6 +17,15 @@ export const logout = async () => {
     const res = await apiService.post("/GoogleLogin/Logout");
     
     return res;
+  } catch (err) {
+    throw err;
+  }
+};
+
+export const refreshToken = async () => {
+  try {
+    const res = await apiService.post("/GoogleLogin/RefreshToken", {}, { withCredentials: true });
+    return res; 
   } catch (err) {
     throw err;
   }

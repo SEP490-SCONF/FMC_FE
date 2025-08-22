@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { FaUser, FaEnvelope, FaEdit, FaUserShield } from "react-icons/fa";
 import { getUserProfile, updateUserProfile } from "../../services/UserService";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
 
 export default function UserInfo({ user }) {
   const [userData, setUserData] = useState(user);
@@ -40,7 +41,7 @@ export default function UserInfo({ user }) {
     }
   };
 
-  if (!userData) return <div className="text-center mt-10">Loading...</div>;
+  if (!userData) return <LoadingSpinner />;
 
   return (
     <div className="w-full px-4 md:px-12 py-10 bg-gradient-to-b from-blue-50 to-white dark:from-gray-900 dark:to-gray-800 min-h-screen">
