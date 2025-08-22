@@ -58,11 +58,11 @@ const PaperReview = () => {
             const data = await AnalyzeAiService.analyzeDocument(review.reviewId, rawText);
             console.log('Response at:', new Date().toLocaleString(), data);
             setAiPercentage(data.PercentAi || 0); // Cập nhật với PercentAi (chữ cái đầu in hoa theo convention)
-            setMessage(`AI Percentage: ${data.PercentAi}%, Total Tokens: ${data.TotalTokens}`);
+            // setMessage(`AI Percentage: ${data.PercentAi}%, Total Tokens: ${data.TotalTokens}`);
             setMessageType('success');
         } catch (err) {
             console.error('Time:', new Date().toLocaleString(), 'Error:', err.message, err.response?.data);
-            setMessage(`Failed to analyze AI content! (${err.message}${err.response?.data?.errors ? ': ' + JSON.stringify(err.response.data.errors) : ''})`);
+            // setMessage(`Failed to analyze AI content! (${err.message}${err.response?.data?.errors ? ': ' + JSON.stringify(err.response.data.errors) : ''})`);
             setMessageType('error');
         }
     };
