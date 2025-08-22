@@ -44,7 +44,7 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
       setNotes([]);
     }
 
-    // Trích xuất text từ PDF
+    // Trích xuất text từ PDF, giữ nguyên định dạng
     const numPages = e.doc.numPages;
     let fullText = "";
     for (let i = 1; i <= numPages; i++) {
@@ -52,53 +52,23 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
       const textContent = await page.getTextContent();
       const pageText = textContent.items
         .map((item) => item.str)
-        .join(" ")
-        .replace(/\[.*?\]/g, "")
-        .replace(/Figure \d+/g, "")
-        .replace(/\s+/g, " ")
+        .join("\n") // Giữ xuống dòng từ PDF
         .trim();
-      fullText += pageText + " ";
+      fullText += pageText + "\n"; // Giữ xuống dòng giữa các trang
     }
 
-    // Chia nhỏ thành chunk với tối đa 512 token
-    const maxTokens = 512;
-    const chunks = [];
-    const words = fullText
-      .split(" ")
-      .filter((word) => word.length > 0 && !/^\d+$/.test(word));
-    let currentChunk = [];
-    let currentTokenCount = 0;
-
-    for (let word of words) {
-      const wordTokenCount = Math.ceil(word.length / 4) || 1;
-      if (currentTokenCount + wordTokenCount <= maxTokens) {
-        currentChunk.push(word);
-        currentTokenCount += wordTokenCount;
-      } else {
-        if (currentChunk.length > 0) {
-          chunks.push({
-            ChunkId: chunks.length,
-            Text: currentChunk.join(" ").trim(),
-            TokenCount: currentTokenCount,
-            Hash: null,
-          });
-        }
-        currentChunk = [word];
-        currentTokenCount = wordTokenCount;
-      }
-    }
-
-    if (currentChunk.length > 0) {
-      chunks.push({
-        ChunkId: chunks.length,
-        Text: currentChunk.join(" ").trim(),
-        TokenCount: currentTokenCount,
-        Hash: null,
-      });
-    }
-
+    // Gửi toàn bộ raw text về BE
     if (onChunksGenerated) {
-      onChunksGenerated(chunks);
+      onChunksGenerated([{ RawText: fullText }]); // Gửi raw text nguyên bản
+    }
+
+    // (Tùy chọn) Gọi API ngay nếu cần
+    try {
+      const response = await AnalyzeAiService.analyzeDocument(review.id, fullText);
+      setAiAnalysisResult(response);
+      if (onChunksGenerated) onChunksGenerated(response.Chunks); // Cập nhật chunk từ BE
+    } catch (error) {
+      console.error('AI analysis failed:', error);
     }
   };
 

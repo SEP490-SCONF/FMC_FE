@@ -2,11 +2,11 @@
 import { apiService } from './ApiService';
 
 const AnalyzeAiService = {
-    analyzeDocument: async (reviewId, chunks) => {
+    analyzeDocument: async (reviewId, rawText) => {
         try {
             const response = await apiService.post('/AnalyzeAi', {
                 ReviewId: reviewId,
-                Chunks: chunks,
+                RawText: rawText,
             });
             return response;
         } catch (error) {
