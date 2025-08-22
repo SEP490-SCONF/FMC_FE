@@ -103,8 +103,8 @@ const SubmittedOrga = () => {
           const reviewersArr = Array.isArray(res.value)
             ? res.value
             : Array.isArray(res)
-            ? res
-            : [];
+              ? res
+              : [];
 
           const reviewersWithCount = await Promise.all(
             reviewersArr.map(async (r) => {
@@ -405,12 +405,12 @@ const SubmittedOrga = () => {
                       <td className={tdClass}>
                         {p.submitDate
                           ? new Date(p.submitDate).toLocaleString("en-GB", {
-                              day: "2-digit",
-                              month: "2-digit",
-                              year: "numeric",
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })
+                            day: "2-digit",
+                            month: "2-digit",
+                            year: "numeric",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
                           : ""}
                       </td>
 
