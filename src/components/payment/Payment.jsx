@@ -56,15 +56,14 @@ const PaymentPage = ({ userId, conferenceId, paperId }) => {
 
         try {
             const res = await PaymentService.createPayment(paymentData);
-            const checkoutUrl = res?.data?.checkoutUrl || res?.checkoutUrl || res;
-            if (checkoutUrl) {
-                window.location.href = checkoutUrl;
-            } else {
-                alert('Payment created but no checkout URL returned.');
+            if (res.checkoutUrl) {
+                if (paperId) {
+                    localStorage.setItem("paymentPaperId", paperId);
+                }
+                window.location.href = res.checkoutUrl;
             }
         } catch (err) {
-            console.error('Payment error', err);
-            alert(`Payment failed! ${err.message || 'Please check your input or contact support.'}`);
+            alert('Payment failed!');
         }
     };
 
