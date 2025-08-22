@@ -125,9 +125,8 @@ export default function AppRoutes() {
               />
               <Route
                 path="/manage-conference/:id/income"
-                element={<OrganizerTrackincome />}
+                element={<OrganizerTrack />}
               />
-              <Route path="/manage-conference/:conferenceId/income" element={<OrganizerTrack />} />
             </Route>
           </Routes>
         </UserProvider>
