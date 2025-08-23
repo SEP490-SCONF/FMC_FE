@@ -19,12 +19,21 @@ export const createProceeding = async (formData) => {
 };
 
 // ✏️ Cập nhật proceeding theo ID (PUT)
-export const updateProceeding = async (id, proceedingData) => {
-  // proceedingData là object JSON gồm các field có thể cập nhật: Title, Description, FilePath, Status, Version, Doi
-  return apiService.put(`${API_URL}/update/${id}`, proceedingData);
+export const updateProceeding = async (id, formData) => {
+  // formData: instance FormData gồm các field: Title, Description, PaperIds, CoverImageFile, PublishedBy, Doi
+  return apiService.put(`${API_URL}/update/${id}`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
 };
+
 
 // ⬇️ Download file proceeding
 export const downloadProceeding = async (conferenceId) => {
   return apiService.get(`${API_URL}/download/${conferenceId}`);
+};
+
+export const getAllProceedings = async () => {
+  return apiService.get(`${API_URL}/all`);
 };

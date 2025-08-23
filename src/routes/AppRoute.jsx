@@ -39,6 +39,8 @@ import CommitteeForm from "../pages/conference/CommitteeForm";
 import ViewCertificate from "../pages/author/ViewCertificate";
 import { UserProvider } from "../context/UserContext";
 import { AuthProvider } from "../context/AuthContext";
+import ViewProceedings from "../pages/User/ViewProceedings";
+
 
 export default function AppRoutes() {
   return (
@@ -57,6 +59,7 @@ export default function AppRoutes() {
               <Route path="/conferences" element={<ConferenceSearch />} />
               <Route path="user" element={<UserP />} />
               <Route path="/reviewer/assigned-papers" element={<PaperAss />} />
+              <Route path="/proceedings" element={<ViewProceedings />} />
               <Route
                 path="/review/paper/:assignmentId"
                 element={<PaperReview />}

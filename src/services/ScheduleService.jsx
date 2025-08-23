@@ -62,3 +62,7 @@ export const updateSchedule = async (scheduleId, scheduleData) => {
 export const deleteSchedule = async (scheduleId) => {
   return apiService.delete(`${API_URL}/delete/${scheduleId}`);
 };
+
+export const countSchedulesByTimeline = async (timelineId) => {
+  return apiService.get(`${API_URL}/timeline/${timelineId}/count`);
+};

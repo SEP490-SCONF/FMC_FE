@@ -10,9 +10,12 @@ import {
   createSchedule,
   updateSchedule,
   deleteSchedule,
+  countSchedulesByTimeline,
 } from "../../services/ScheduleService";
 import { getPresentedPapersByConferenceId } from "../../services/PaperSerice";
 import { Select } from "antd";
+import { Eye } from "lucide-react";
+
 
 import {
   Table,
@@ -52,11 +55,7 @@ export default function ManageTimeline() {
 const [selectedPaperForSchedule, setSelectedPaperForSchedule] = useState(null);
 const [expandedScheduleId, setExpandedScheduleId] = useState(null);
 const [isExpanded, setIsExpanded] = useState({});
-
-
-
-
-
+const [scheduleCounts, setScheduleCounts] = useState({});
 
   // Schedule states
   const [scheduleModalVisible, setScheduleModalVisible] = useState(false);
@@ -66,6 +65,8 @@ const [isExpanded, setIsExpanded] = useState({});
   const [editingSchedule, setEditingSchedule] = useState(null);
   const [page, setPage] = useState(1);
   const pageSize = 5;
+  const { RangePicker } = DatePicker;
+  const [dateRange, setDateRange] = useState([null, null]);
 
   const showDeleteScheduleConfirm = (scheduleId) => {
   Modal.confirm({
@@ -115,6 +116,71 @@ const [isExpanded, setIsExpanded] = useState({});
     });
   };
 
+  <div className="mb-4 flex gap-2 items-center">
+  <Input
+  value={searchText}
+  onChange={(e) => setSearchText(e.target.value)}
+/>
+
+<RangePicker
+  value={dateRange}
+  onChange={(dates) => setDateRange(dates)}
+/>
+
+
+
+</div>
+const handleDateRangeFilter = (dates) => {
+  if (!dates || dates.length !== 2) {
+    setFilteredList(list); // reset filter nếu không chọn gì
+    return;
+  }
+
+  const [start, end] = dates;
+
+  const filtered = list.filter((item) => {
+    const timelineDate = dayjs(item.date);
+    return timelineDate.isAfter(start.startOf("day").subtract(1, "second")) &&
+           timelineDate.isBefore(end.endOf("day").add(1, "second"));
+  });
+
+  setFilteredList(filtered);
+};
+
+// --- Filter Timelines (Search + Date + Schedule) ---
+const handleFilter = (searchValue, dates) => {
+  if (!list || list.length === 0) return setFilteredList([]);
+
+  let filtered = [...list];
+
+  // 1️⃣ Filter by description
+  if (searchValue && searchValue.trim() !== "") {
+    filtered = filtered.filter(item =>
+      item.description?.toLowerCase().includes(searchValue.toLowerCase())
+    );
+  }
+
+  // 2️⃣ Filter by date range
+  if (dates && dates.length === 2 && dates[0] && dates[1]) {
+    const [start, end] = dates;
+    filtered = filtered.filter(item => {
+      if (!item.date) return false;
+      const timelineDate = dayjs(item.date);
+      return (
+        timelineDate.isSame(start, "day") ||
+        timelineDate.isSame(end, "day") ||
+        (timelineDate.isAfter(start.startOf("day")) &&
+          timelineDate.isBefore(end.endOf("day")))
+      );
+    });
+  }
+
+  setFilteredList(filtered);
+};
+
+
+
+
   // 1️⃣ Sắp xếp schedules
 const sortedSchedules = schedules.sort(
   (a, b) => new Date(a.presentationStartTime) - new Date(b.presentationStartTime)
@@ -148,23 +214,41 @@ const groupedPagedSchedules = {
 
 
   const fetchData = () => {
-    if (!conferenceId) {
-      message.error("Missing conferenceId");
-      return;
-    }
+  if (!conferenceId) {
+    message.error("Missing conferenceId");
+    return;
+  }
 
-    getTimelinesByConferenceId(conferenceId)
-      .then((res) => {
-        setList(res);
-        setFilteredList(res);
-      })
-      .catch((err) => {
-        console.error("❌ Failed to load timelines", err);
-        message.error("Failed to load timelines");
-        setList([]);
-        setFilteredList([]);
-      });
-  };
+  getTimelinesByConferenceId(conferenceId)
+    .then(async (res) => {
+      const timelines = res || [];
+      setList(timelines);
+      setFilteredList(timelines);
+
+      // Lấy count cho từng timeline
+      const counts = {};
+      await Promise.all(
+  timelines.map(async (tl) => {
+    try {
+      const { data } = await countSchedulesByTimeline(tl.timeLineId);
+      counts[tl.timeLineId] = data?.scheduleCount ?? 0;
+    } catch (err) {
+      counts[tl.timeLineId] = 0;
+    }
+  })
+);
+setScheduleCounts(counts);
+
+    })
+    .catch((err) => {
+      console.warn("No timelines found or failed to load:", err);
+      setList([]);
+      setFilteredList([]);
+      setScheduleCounts({});
+    });
+};
+
+
 
   useEffect(() => {
     if (conferenceId) {
@@ -187,6 +271,9 @@ const groupedPagedSchedules = {
     });
   }
 }, [selectedPaperForSchedule, scheduleForm]);
+
+
+
 
 
 
@@ -246,44 +333,54 @@ const groupedPagedSchedules = {
       });
   };
 
-  const handleViewSchedules = (timeline) => {
-    setSelectedTimeline(timeline);
-    getSchedulesByTimeline(timeline.timeLineId)
-      .then((res) => {
-        setSchedules(res || []);
-        setScheduleModalVisible(true);
-      })
-      .catch((err) => {
-        console.error("❌ Failed to load schedules", err);
-        setSchedules([]);
-        setScheduleModalVisible(true);
-      });
+  const handleViewSchedules = async (timeline) => {
+  setSelectedTimeline(timeline);
+  setPage(1);
 
-  // load presented papers
-   getPresentedPapersByConferenceId(conferenceId).then(res => {
-  const papersWithPresenter = res.map(paper => {
-    const presenterAuthor = paper.paperAuthors?.[0]?.author;
-    return {
-      ...paper,
-      presenter: presenterAuthor
-        ? {
-            userId: presenterAuthor.authorId,
-            name: presenterAuthor.name,
-            email: presenterAuthor.email,
-            avatarUrl: presenterAuthor.avatarUrl,
-          }
-        : null, // Nếu không có author thì null
-    };
+  try {
+    // 1️⃣ Lấy danh sách schedules
+    const schedulesRes = await getSchedulesByTimeline(timeline.timeLineId);
+    setSchedules(schedulesRes || []);
+
+    // 2️⃣ Lấy tổng số schedule từ API Count
+    const countRes = await countSchedulesByTimeline(timeline.timeLineId);
+    setScheduleCounts(prev => ({
+      ...prev,
+    [timeline.timeLineId]: countRes.scheduleCount || 0, // 
+    }));
+    handleFilter(searchText, dateRange); // filter lại ngay
+
+
+    setScheduleModalVisible(true);
+  } catch (err) {
+    console.error("❌ Failed to load schedules or count", err);
+    setSchedules([]);
+    setScheduleCounts(prev => ({
+      ...prev,
+      [timeline.timeLineId]: 0,
+    }));
+    setScheduleModalVisible(true);
+  }
+
+  // 3️⃣ load presented papers
+  getPresentedPapersByConferenceId(conferenceId).then(res => {
+    const papersWithPresenter = res.map(paper => {
+      const presenterAuthor = paper.paperAuthors?.[0]?.author;
+      return {
+        ...paper,
+        presenter: presenterAuthor
+          ? {
+              userId: presenterAuthor.authorId,
+              name: presenterAuthor.name,
+              email: presenterAuthor.email,
+              avatarUrl: presenterAuthor.avatarUrl,
+            }
+          : null,
+      };
+    });
+    setPresentedPapers(papersWithPresenter);
   });
-
-      console.log("✅ Presented papers loaded:", papersWithPresenter); // <- kiểm tra
-
-  setPresentedPapers(papersWithPresenter);
-});
-
-
-
-  };
+};
 
   // CRUD Schedule
   const handleScheduleSubmit = (values) => {
@@ -417,42 +514,73 @@ const groupedPagedSchedules = {
         </Button>
       </div>
 
-      <div className="mb-4">
-        <Input
-          placeholder="Search description..."
-          prefix={<SearchOutlined />}
-          value={searchText}
-          onChange={(e) => handleSearch(e.target.value)}
-          style={{ width: "300px" }}
-        />
-      </div>
+      {/* --- Filter Section --- */}
+<div className="mb-4 flex flex-wrap gap-4 items-center">
+  {/* Search by description */}
+  <Input
+  placeholder="Search description..."
+  prefix={<SearchOutlined />}
+  value={searchText}
+  onChange={(e) => {
+    const value = e.target.value;
+    setSearchText(value);
+    handleFilter(value, dateRange);
+  }}
+  style={{ width: 250 }}
+/>
 
-      <Table
-        columns={columns}
-        dataSource={filteredList}
-        rowKey="timeLineId"
-        pagination={{ pageSize: 5 }}
-        locale={{
-          emptyText: (
-            <div className="text-center text-gray-500">
-              No timeline has been created for this conference.
-            </div>
-          ),
-        }}
-      />
+<RangePicker
+  value={dateRange}
+  onChange={(dates) => {
+    setDateRange(dates);
+    handleFilter(searchText, dates);
+  }}
+  format="YYYY-MM-DD"
+  allowClear
+/>
+
+
+
+
+</div>
+
+
+{/* --- Timeline Table --- */}
+<Table
+  columns={columns}
+  dataSource={filteredList}
+  rowKey="timeLineId"
+  pagination={{ pageSize: 5 }}
+  locale={{
+    emptyText: (
+      <div className="text-center text-gray-500">
+        No timeline has been created for this conference.
+      </div>
+    ),
+  }}
+/>
+
 
       {/* --- Schedule Modal --- */}
 <Modal
   width={700}
-  title={`📌 Schedules for "${selectedTimeline?.description || ""}"`}
   open={scheduleModalVisible}
   onCancel={() => {
     setScheduleModalVisible(false);
     setEditingSchedule(null);
     scheduleForm.resetFields();
   }}
-  footer={null} // Footer ẩn, nút Save/Cancel trong form
+  footer={null}
+  title={
+    <div>
+      <div>📌 Schedules for "{selectedTimeline?.description || ""}"</div>
+      <div style={{ fontSize: 12, color: "#120f0fff" }}>
+  Total schedules: {scheduleCounts[selectedTimeline?.timeLineId] ?? 0}
+      </div>
+    </div>
+  }
 >
+
  {/* Button Add Schedule */}
 <div className="flex justify-end mb-4">
   <Button
@@ -733,54 +861,63 @@ const groupedPagedSchedules = {
       </Modal>
 
       {/* --- Timeline Section --- */}
-      <div className="pt-8">
-        <h3 className="text-xl font-bold text-blue-700 mb-4 text-center">
-          Timeline
-        </h3>
-        <div className="flex flex-wrap justify-center items-center gap-6 text-sm text-center text-gray-700 relative">
-          {list.length === 0 ? (
-            <div className="text-gray-500 text-center">
-              No timeline available
-            </div>
-          ) : (
-            list
-              .sort((a, b) => new Date(a.date) - new Date(b.date))
-              .map((item, index) => {
-                const bgColors = [
-                  "bg-blue-100",
-                  "bg-green-100",
-                  "bg-yellow-100",
-                  "bg-purple-100",
-                  "bg-pink-100",
-                  "bg-orange-100",
-                  "bg-red-100",
-                  "bg-teal-100",
-                ];
-                const textColors = [
-                  "text-blue-800",
-                  "text-green-800",
-                  "text-yellow-800",
-                  "text-purple-800",
-                  "text-pink-800",
-                  "text-orange-800",
-                  "text-red-800",
-                  "text-teal-800",
-                ];
-                const bgColor = bgColors[index % bgColors.length];
-                const textColor = textColors[index % textColors.length];
-                return (
-                  <div
-                    key={item.timeLineId}
-                    className="relative flex items-center"
-                  >
-                    {index > 0 && (
-                      <div className="w-6 h-1 bg-gray-300 mx-2 rounded"></div>
-                    )}
-                    <div className={`${bgColor} rounded-xl p-4 shadow w-40`}>
-                      <p className={`font-bold ${textColor}`}>
-                        {dayjs(item.date).format("MMM D, HH:mm")}
-                      </p>
-                      <p>{item.description}</p>
+<div className="pt-8">
+  <h3 className="text-xl font-bold text-blue-700 mb-4 text-center">
+    Timeline
+  </h3>
+  <div className="flex flex-wrap justify-center items-center gap-6 text-sm text-center text-gray-700 relative">
+{list.length === 0 ? (
+      <div className="text-gray-500 text-center">
+        No timeline available
+      </div>
+    ) : (
+      list
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .map((item, index) => {
+          const bgColors = [
+            "bg-blue-100",
+            "bg-green-100",
+            "bg-yellow-100",
+            "bg-purple-100",
+            "bg-pink-100",
+            "bg-orange-100",
+            "bg-red-100",
+            "bg-teal-100",
+          ];
+          const textColors = [
+            "text-blue-800",
+            "text-green-800",
+            "text-yellow-800",
+            "text-purple-800",
+            "text-pink-800",
+            "text-orange-800",
+            "text-red-800",
+            "text-teal-800",
+          ];
+          const bgColor = bgColors[index % bgColors.length];
+          const textColor = textColors[index % textColors.length];
+          return (
+            <div
+              key={item.timeLineId}
+              className="relative flex items-center"
+            >
+              {index > 0 && (
+                <div className="w-6 h-1 bg-gray-300 mx-2 rounded"></div>
+              )}
+              <div className={`${bgColor} rounded-xl p-4 shadow w-40 relative`}>
+                <p className={`font-bold ${textColor}`}>
+                  {dayjs(item.date).format("MMM D, HH:mm")}
+                </p>
+                <p>{item.description}</p>
+
+                {/* --- Eye Icon for View Schedule --- */}
+                <button
+                  className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
+                  title="View Schedule"
+                  onClick={() => handleViewSchedules(item)}
+                >
+                  <Eye size={18} />
+                </button>
                     </div>
                   </div>
                 );

@@ -54,11 +54,11 @@ export default function UserInfo({ user }) {
 
   // Phân trang cho danh sách conferences
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 3;
+  const pageSize = 5;
 
   // Phân trang cho modal reviews
   const [modalCurrentPage, setModalCurrentPage] = useState(1);
-  const modalPageSize = 1;
+  const modalPageSize = 3;
 
   // Tìm kiếm và filter
   const [searchText, setSearchText] = useState("");
