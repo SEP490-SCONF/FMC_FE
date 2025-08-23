@@ -371,7 +371,7 @@ const Forum = () => {
       <div className="max-w-4xl mx-auto p-6">
         {/* Forum Header */}
         <div className="mb-8 pb-4 border-b border-gray-200">
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">
+          <h2 className="text-base font-medium text-gray-800 mb-1">
             {forumData ? forumData.title : 'Loading...'}
           </h2>
           <p className="text-gray-600">
@@ -437,13 +437,13 @@ const Forum = () => {
                 >
                   {/* Question Header */}
                   <div className="mb-4">
-                    <h2 className="text-xl font-semibold text-gray-800 mb-2 hover:text-blue-600">
-                      {question.title}
-                    </h2>
-                    <p className="text-gray-600 mb-3">{question.description}</p>
-                    <div className="text-sm text-gray-500 mb-3">
+                    <h2 style={{ fontSize: "30px", fontWeight: "500" }} className="text-gray-800">
+                     {question.title}
+                      </h2> 
+                      <p className="text-sm text-gray-600 mb-3">{question.description}</p>
+                      <div className="text-xs text-gray-500 mb-3">
                       Author: {question.askerName} • Created: {formatDate(question.createdAt)}
-                    </div>
+                      </div>
                     <div className="flex gap-6 text-sm text-gray-600">
                       <span>{question.totalAnswers} answers</span>
                       <button 
