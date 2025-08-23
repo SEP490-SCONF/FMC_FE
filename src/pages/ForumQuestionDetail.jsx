@@ -49,6 +49,8 @@ const ForumQuestionDetail = () => {
     const [canUserModerate, setCanUserModerate] = useState(false); // Track if user can moderate (delete any answers)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(null); // Track which answer is being confirmed for deletion
     const [sortBy, setSortBy] = useState('newest'); // Track sorting option: 'newest', 'oldest', 'likes'
+    const [expandedAnswers, setExpandedAnswers] = useState(new Set()); // Track which answers have expanded replies
+    const [openMenus, setOpenMenus] = useState(new Set()); // Track which answer menus are open
     const pageSize = 10;
 
     useEffect(() => {
@@ -72,6 +74,20 @@ const ForumQuestionDetail = () => {
 
         return () => clearTimeout(timer);
     }, [currentPage, searchTerm, userInfo, sortBy]); // Add sortBy to dependencies
+
+    // Close menus when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (!event.target.closest('.relative')) {
+                setOpenMenus(new Set());
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
 
     const loadUserInformation = async () => {
         try {
@@ -183,7 +199,7 @@ const ForumQuestionDetail = () => {
             try {
                 setLoading(true);
                 await createMainAnswer(parseInt(questionId), userInfo.userId, newAnswer);
-                setNewAnswer('');
+                setNewAnswer(''); 
                 await loadAnswers();
                 await loadQuestionDetail(); // Refresh to update totalAnswers count
             } catch (error) {
@@ -399,6 +415,236 @@ const ForumQuestionDetail = () => {
         }
     };
 
+    const buildAnswerTree = (answers) => {
+        const answerMap = new Map();
+        const rootAnswers = [];
+        
+        // Create a map of all answers
+        answers.forEach(answer => {
+            answerMap.set(answer.answerId, { ...answer, children: [] });
+        });
+        
+        // Build the tree
+        answers.forEach(answer => {
+            if (answer.parentAnswerId) {
+                // This is a reply, add to parent's children
+                const parent = answerMap.get(answer.parentAnswerId);
+                if (parent) {
+                    parent.children.push(answerMap.get(answer.answerId));
+                }
+            } else {
+                // This is a root answer
+                rootAnswers.push(answerMap.get(answer.answerId));
+            }
+        });
+        
+        return rootAnswers;
+    };
+
+    // Function to toggle expanded state of an answer
+    const toggleAnswerExpanded = (answerId) => {
+        setExpandedAnswers(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(answerId)) {
+                newSet.delete(answerId);
+            } else {
+                newSet.add(answerId);
+            }
+            return newSet;
+        });
+    };
+
+    // Function to toggle menu visibility
+    const toggleMenu = (answerId) => {
+        setOpenMenus(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(answerId)) {
+                newSet.delete(answerId);
+            } else {
+                // Close all other menus and open this one
+                newSet.clear();
+                newSet.add(answerId);
+            }
+            return newSet;
+        });
+    };
+
+    // Recursive component to render answers with nesting
+    const renderAnswer = (answer, level = 0) => {
+        const maxLevel = 5; // Limit nesting depth
+        const currentLevel = Math.min(level, maxLevel);
+        const marginLeft = currentLevel * 24; // 24px per level
+        const isExpanded = expandedAnswers.has(answer.answerId);
+        const hasReplies = answer.children && answer.children.length > 0;
+        const isMenuOpen = openMenus.has(answer.answerId);
+        const canEdit = canUserEditAnswer(answer.answerBy);
+        const canDelete = canUserDeleteAnswer(answer.answerBy);
+        
+        return (
+            <div key={answer.answerId} style={{ marginLeft: `${marginLeft}px` }}>
+                <div className="bg-gray-50 p-4 rounded-lg mb-3 border-l-2 border-gray-300">
+                    <div className="flex justify-between items-start mb-2">
+                        <span className="font-medium text-gray-800">{answer.answererName}</span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-sm text-gray-500">{formatDate(answer.createdAt)}</span>
+                            {(canEdit || canDelete) && (
+                                <div className="relative">
+                                    <button
+                                        onClick={() => toggleMenu(answer.answerId)}
+                                        className="text-gray-500 hover:text-gray-700 px-2 py-1"
+                                        title="Options"
+                                    >
+                                        ⋯
+                                    </button>
+                                    {isMenuOpen && (
+                                        <div className="absolute right-0 top-8 bg-white border border-gray-300 rounded-lg shadow-lg z-10 min-w-[100px]">
+                                            {canEdit && (
+                                                <button
+                                                    onClick={() => {
+                                                        handleEditAnswer(answer);
+                                                        setOpenMenus(new Set()); // Close menu
+                                                    }}
+                                                    className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                                >
+                                                    Edit
+                                                </button>
+                                            )}
+                                            {canDelete && (
+                                                <button
+                                                    onClick={() => {
+                                                        handleDeleteAnswer(answer.answerId);
+                                                        setOpenMenus(new Set()); // Close menu
+                                                    }}
+                                                    className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                                                >
+                                                    Delete
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                    
+                    {/* Answer content - show edit form if editing */}
+                    {editingAnswer === answer.answerId ? (
+                        <div className="mb-3">
+                            <textarea
+                                value={editContent}
+                                onChange={(e) => setEditContent(e.target.value)}
+                                className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:border-blue-500"
+                                rows="3"
+                            />
+                            <div className="flex gap-2 mt-2">
+                                <button
+                                    onClick={() => handleSaveEdit(answer.answerId)}
+                                    disabled={!editContent.trim() || loading}
+                                    style={{ backgroundColor: '#1447e6' }}
+                                    className="text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors disabled:bg-gray-400"
+                                >
+                                    {loading ? 'Saving...' : 'Save'}
+                                </button>
+                                <button
+                                    onClick={handleCancelEdit}
+                                    className="border border-gray-300 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-50 transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    ) : (
+                        <p className="text-gray-700 mb-3">{answer.answer}</p>
+                    )}
+                    
+                    <div className="flex gap-4 items-center">
+                        <button 
+                            onClick={() => handleLikeAnswer(answer.answerId)}
+                            disabled={!userInfo || likingAnswers.has(answer.answerId)}
+                            className={`text-sm transition-colors ${
+                                likedAnswers.has(answer.answerId) 
+                                    ? 'text-blue-600 hover:text-blue-800' 
+                                    : 'text-gray-500 hover:text-blue-600'
+                            } ${!userInfo ? 'cursor-not-allowed opacity-50' : ''}`}
+                            title={userInfo ? (likedAnswers.has(answer.answerId) ? 'Unlike' : 'Like') : 'Login to like'}
+                        >
+                            {likingAnswers.has(answer.answerId) ? (
+                                <span>⏳ {answer.totalLikes} likes</span>
+                            ) : (
+                                <span>
+                                    {likedAnswers.has(answer.answerId) ? '❤️' : '🤍'} {answer.totalLikes} likes
+                                </span>
+                            )}
+                        </button>
+                        
+                        {/* Show replies count and toggle button */}
+                        {hasReplies && (
+                            <button
+                                onClick={() => toggleAnswerExpanded(answer.answerId)}
+                                className="text-sm text-gray-600 hover:text-blue-600 transition-colors"
+                            >
+                                {isExpanded ? (
+                                    <span> Hide {answer.children.length} replies</span>
+                                ) : (
+                                    <span> Show {answer.children.length} replies</span>
+                                )}
+                            </button>
+                        )}
+                        
+                        <button
+                            onClick={() => setReplyingTo(replyingTo === answer.answerId ? null : answer.answerId)}
+                            className="text-sm text-blue-600 hover:text-blue-800"
+                            disabled={!userInfo}
+                        >
+                            Reply
+                        </button>
+                    </div>
+                    
+                    {/* Reply Form */}
+                    {replyingTo === answer.answerId && userInfo && (
+                        <div className="mt-3 border-l-2 border-gray-200 pl-4">
+                            <div className="flex gap-2">
+                                <textarea
+                                    value={replyContent}
+                                    onChange={(e) => setReplyContent(e.target.value)}
+                                    placeholder="Enter your reply..."
+                                    className="flex-1 p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:border-blue-500"
+                                    rows="3"
+                                />
+                                <div className="flex flex-col gap-2">
+                                    <button
+                                        onClick={() => handleSubmitReply(answer.answerId)}
+                                        disabled={!replyContent.trim() || loading}
+                                        style={{ backgroundColor: '#1447e6' }}
+                                        className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
+                                    >
+                                        {loading ? 'Sending...' : 'Send'}
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setReplyingTo(null);
+                                            setReplyContent('');
+                                        }}
+                                        className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+                
+                {/* Render children recursively - only if expanded */}
+                {hasReplies && isExpanded && (
+                    <div className="ml-4">
+                        {answer.children.map(child => renderAnswer(child, level + 1))}
+                    </div>
+                )}
+            </div>
+        );
+    };
+
 
     // Show error state
     if (error) {
@@ -452,26 +698,27 @@ const ForumQuestionDetail = () => {
                     <button 
                         onClick={handleBackToForum}
                         className="text-gray-600 hover:text-gray-800 mb-4"
+                        style={{fontSize : '20px'}}
                     >
                         ← Back to forum
                     </button>
                     
                     {questionDetail ? (
                         <>
-                            <h1 className="text-2xl font-bold text-gray-800 mb-2">
+                            <h3 className="text-2xl font-bold text-gray-800 mb-2">
                                 {questionDetail.title}
-                            </h1>
-                            <div className="text-sm text-gray-500 mb-4">
+                            </h3>
+                            <div className="text-gray-500 mb-4"   style={{fontSize : '14px'}}>
                                 Author: {questionDetail.askerName} • Created: {formatDate(questionDetail.createdAt)}
                             </div>
                             <div className="bg-gray-50 p-4 rounded-lg mb-4">
-                                <h3 className="font-semibold text-gray-800 mb-2">Description:</h3>
-                                <p className="text-gray-700 mb-2">{questionDetail.description}</p>
-                                <h3 className="font-semibold text-gray-800 mb-2">Question details:</h3>
-                                <p className="text-gray-700">{questionDetail.question}</p>
+                                <h6 className="font-semibold text-gray-800 mb-2">Description:</h6>
+                                <p className="text-gray-700 mb-2" style={{fontSize : '14px'}}>{questionDetail.description}</p>
+                                <h6 className="font-semibold text-gray-800 mb-2">Question details:</h6>
+                                <p className="text-gray-700" style={{fontSize : '14px'}}>{questionDetail.question}</p>
                             </div>
                             <div className="flex gap-6 text-sm text-gray-600 mb-6">
-                                <span>{questionDetail.totalAnswers} answers</span>
+                                <span style={{fontSize : '14px'}}>{questionDetail.totalAnswers} answers</span>
                                 <button 
                                     onClick={handleLikeQuestion}
                                     disabled={!userInfo || likingQuestion}
@@ -539,10 +786,10 @@ const ForumQuestionDetail = () => {
 
                 {/* All Answers */}
                 <div className="space-y-4 mb-6">
-                    <h2 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">
+                    <h4 className="text-sm font-semibold text-gray-800 border-b border-gray-200 pb-2">
                         All answers ({answersData.totalCount})
-                    </h2>
-                    
+                    </h4>
+
                     {loading && (
                         <div className="text-center py-8">
                             <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -551,143 +798,9 @@ const ForumQuestionDetail = () => {
                     )}
 
                     {!loading && answersData.answers && answersData.answers.length > 0 ? (
-                        answersData.answers.map((answer) => (
-                            <div key={answer.answerId} className="bg-gray-50 p-4 rounded-lg">
-                                <div className="flex justify-between items-start mb-2">
-                                    <span className="font-medium text-gray-800">{answer.answererName}</span>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-sm text-gray-500">{formatDate(answer.createdAt)}</span>
-                                        <div className="flex gap-1">
-                                            {canUserEditAnswer(answer.answerBy) && (
-                                                <button
-                                                    onClick={() => handleEditAnswer(answer)}
-                                                    className="text-xs text-blue-600 hover:text-blue-800 px-2 py-1"
-                                                    title="Edit"
-                                                >
-                                                    ✏️
-                                                </button>
-                                            )}
-                                            {canUserDeleteAnswer(answer.answerBy) && (
-                                                <button
-                                                    onClick={() => handleDeleteAnswer(answer.answerId)}
-                                                    className="text-xs text-red-600 hover:text-red-800 px-2 py-1"
-                                                    title="Delete"
-                                                >
-                                                    🗑️
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                {/* Answer content - show edit form if editing */}
-                                {editingAnswer === answer.answerId ? (
-                                    <div className="mb-3">
-                                        <textarea
-                                            value={editContent}
-                                            onChange={(e) => setEditContent(e.target.value)}
-                                            className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:border-blue-500"
-                                            rows="3"
-                                        />
-                                        <div className="flex gap-2 mt-2">
-                                            <button
-                                                onClick={() => handleSaveEdit(answer.answerId)}
-                                                disabled={!editContent.trim() || loading}
-                                                style={{ backgroundColor: '#1447e6' }}
-                                                className="text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors disabled:bg-gray-400"
-                                            >
-                                                {loading ? 'Saving...' : 'Save'}
-                                            </button>
-                                            <button
-                                                onClick={handleCancelEdit}
-                                                className="border border-gray-300 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-50 transition-colors"
-                                            >
-                                                Cancel
-                                            </button>
-                                        </div>
-                                    </div>
-                                ) : (
-                                    <p className="text-gray-700 mb-3">{answer.answer}</p>
-                                )}
-                                
-                                {/* Show parent answer if this is a reply */}
-                                {answer.parentAnswerId && answer.parentAnswerText && (
-                                    <div className="mb-3 p-3 bg-gray-100 rounded border-l-4 border-blue-300">
-                                        <p className="text-sm text-gray-600 mb-1">
-                                            Reply to <span className="font-medium">{answer.parentAnswererName}</span>:
-                                        </p>
-                                        <p className="text-sm text-gray-700 italic">"{answer.parentAnswerText}"</p>
-                                    </div>
-                                )}
-                                
-                                <div className="flex gap-4 items-center">
-                                    <button 
-                                        onClick={() => handleLikeAnswer(answer.answerId)}
-                                        disabled={!userInfo || likingAnswers.has(answer.answerId)}
-                                        className={`text-sm transition-colors ${
-                                            likedAnswers.has(answer.answerId) 
-                                                ? 'text-blue-600 hover:text-blue-800' 
-                                                : 'text-gray-500 hover:text-blue-600'
-                                        } ${!userInfo ? 'cursor-not-allowed opacity-50' : ''}`}
-                                        title={userInfo ? (likedAnswers.has(answer.answerId) ? 'Unlike' : 'Like') : 'Login to like'}
-                                    >
-                                        {likingAnswers.has(answer.answerId) ? (
-                                            <span>⏳ {answer.totalLikes} likes</span>
-                                        ) : (
-                                            <span>
-                                                {likedAnswers.has(answer.answerId) ? '❤️' : '🤍'} {answer.totalLikes} likes
-                                            </span>
-                                        )}
-                                    </button>
-                                    {answer.hasReplies && (
-                                        <span className="text-sm text-gray-500">
-                                            {answer.totalReplies} replies
-                                        </span>
-                                    )}
-                                    <button
-                                        onClick={() => setReplyingTo(replyingTo === answer.answerId ? null : answer.answerId)}
-                                        className="text-sm text-blue-600 hover:text-blue-800"
-                                        disabled={!userInfo}
-                                    >
-                                        Reply
-                                    </button>
-                                </div>
-                                
-                                {/* Reply Form */}
-                                {replyingTo === answer.answerId && userInfo && (
-                                    <div className="mt-3 ml-6 border-l-2 border-gray-200 pl-4">
-                                        <div className="flex gap-2">
-                                            <textarea
-                                                value={replyContent}
-                                                onChange={(e) => setReplyContent(e.target.value)}
-                                                placeholder="Enter your reply..."
-                                                className="flex-1 p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:border-blue-500"
-                                                rows="3"
-                                            />
-                                            <div className="flex flex-col gap-2">
-                                                <button
-                                                    onClick={() => handleSubmitReply(answer.answerId)}
-                                                    disabled={!replyContent.trim() || loading}
-                                                    style={{ backgroundColor: '#1447e6' }}
-                                                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed whitespace-nowrap"
-                                                >
-                                                    {loading ? 'Sending...' : 'Send'}
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        setReplyingTo(null);
-                                                        setReplyContent('');
-                                                    }}
-                                                    className="border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors whitespace-nowrap"
-                                                >
-                                                    Cancel
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        ))
+                        <div className="space-y-2">
+                            {buildAnswerTree(answersData.answers).map(answer => renderAnswer(answer, 0))}
+                        </div>
                     ) : !loading && (
                         <p className="text-gray-500 text-center py-4">
                             {answersData.searchTerm ? 'No matching answers found.' : 'No answers yet.'}
@@ -723,7 +836,7 @@ const ForumQuestionDetail = () => {
                 {/* Answer Form */}
                 {userInfo ? (
                     <div className="bg-gray-50 p-4 rounded-lg">
-                        <h3 className="font-semibold text-gray-800 mb-3">Answer question</h3>
+                        <h4 className="font-semibold text-gray-800 mb-3">Answer question</h4>
                         <div className="flex gap-2">
                             <textarea
                                 value={newAnswer}
