@@ -93,7 +93,14 @@ export default function AppRoutes() {
                 path="/conference/:id/paper-submition"
                 element={<PaperSubmition />}
               />
-
+              <Route
+                path="/conference/:id/forum"
+                element={<Forum />}
+              />
+              <Route
+                path="/conference/:id/forum/question/:questionId"
+                element={<ForumQuestionDetail />}
+              />
 
               <Route path="/author/payment/:id" element={<PaperPay />} />
               <Route path="/payment-success" element={<PaymentSuccess />} />
