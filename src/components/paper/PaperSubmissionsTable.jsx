@@ -51,10 +51,9 @@ const Submited = ({ submissions = [], userId, conferenceId }) => {
 
     return filtered.sort((a, b) => {
       const getTime = (record) => {
-        const lastRevision = record.paperRevisions?.[record.paperRevisions.length - 1];
-        return lastRevision
-          ? new Date(lastRevision.submittedAt).getTime()
-          : 0;
+        const lastRevision =
+          record.paperRevisions?.[record.paperRevisions.length - 1];
+        return lastRevision ? new Date(lastRevision.submittedAt).getTime() : 0;
       };
       if (sortBy === "latest") return getTime(b) - getTime(a);
       if (sortBy === "oldest") return getTime(a) - getTime(b);
@@ -66,7 +65,9 @@ const Submited = ({ submissions = [], userId, conferenceId }) => {
     });
   }, [submissions, searchText, searchBy, statusFilter, sortBy]);
 
-  const totalPages = Math.ceil(filteredAndSortedSubmissions.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(
+    filteredAndSortedSubmissions.length / ITEMS_PER_PAGE
+  );
   const pagedSubmissions = filteredAndSortedSubmissions.slice(
     (page - 1) * ITEMS_PER_PAGE,
     page * ITEMS_PER_PAGE
@@ -78,7 +79,9 @@ const Submited = ({ submissions = [], userId, conferenceId }) => {
       setPendingPaperId(paperId);
       document.getElementById("upload-input").click();
     } else {
-      message.warning("You cannot resubmit this paper unless it needs revision.");
+      message.warning(
+        "You cannot resubmit this paper unless it needs revision."
+      );
     }
   };
 
@@ -140,15 +143,16 @@ const Submited = ({ submissions = [], userId, conferenceId }) => {
       title: "Last Submitted",
       key: "lastSubmitted",
       render: (_, record) => {
-        const lastRevision = record.paperRevisions?.[record.paperRevisions.length - 1];
+        const lastRevision =
+          record.paperRevisions?.[record.paperRevisions.length - 1];
         return lastRevision
           ? new Date(lastRevision.submittedAt).toLocaleString("en-GB", {
-            day: "2-digit",
-            month: "2-digit",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-          })
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
           : "";
       },
     },
@@ -167,7 +171,10 @@ const Submited = ({ submissions = [], userId, conferenceId }) => {
           <Button
             icon={<RedoOutlined />}
             type="link"
-            disabled={record.status !== "Need Revision" || uploadingIdx === record.paperId}
+            disabled={
+              record.status !== "Need Revision" ||
+              uploadingIdx === record.paperId
+            }
             onClick={() => handleResubmit(record.status, record.paperId)}
           >
             {uploadingIdx === record.paperId ? "Uploading..." : "Resubmit"}
@@ -177,7 +184,9 @@ const Submited = ({ submissions = [], userId, conferenceId }) => {
               <Button
                 icon={<FileSearchOutlined />}
                 type="link"
-                onClick={() => navigate(`/author/view-certificates/${record.paperId}`)}
+                onClick={() =>
+                  navigate(`/author/view-certificates/${record.paperId}`)
+                }
               >
                 Certificate
               </Button>
@@ -245,11 +254,7 @@ const Submited = ({ submissions = [], userId, conferenceId }) => {
           </Select>
         </Col>
         <Col xs={24} sm={4}>
-          <Select
-            value={sortBy}
-            onChange={setSortBy}
-            style={{ width: "100%" }}
-          >
+          <Select value={sortBy} onChange={setSortBy} style={{ width: "100%" }}>
             <Option value="latest">Latest Submission</Option>
             <Option value="oldest">Oldest Submission</Option>
             <Option value="titleAsc">Title A-Z</Option>
@@ -288,37 +293,52 @@ const Submited = ({ submissions = [], userId, conferenceId }) => {
         {openIdx !== null && (
           <Table
             dataSource={
-              submissions.find((s) => s.paperId === openIdx)?.paperRevisions || []
+              submissions.find((s) => s.paperId === openIdx)?.paperRevisions ||
+              []
             }
             columns={[
               { title: "#", render: (_, __, i) => i + 1 },
-              { title: "Status", dataIndex: "status", render: (status) => <Tag>{status}</Tag> },
+              {
+                title: "Status",
+                dataIndex: "status",
+                render: (status) => <Tag>{status}</Tag>,
+              },
               {
                 title: "Submitted At",
                 dataIndex: "submittedAt",
                 render: (date) =>
                   date
                     ? new Date(date).toLocaleString("en-GB", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })
+                        day: "2-digit",
+                        month: "2-digit",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })
                     : "",
               },
               {
                 title: "Actions",
-                render: (_, record) => (
-                  <Button
-                    icon={<EyeOutlined />}
-                    onClick={() =>
-                      navigate(`/author/view-paper-review/${record.revisionId}`)
-                    }
-                  >
-                    View Review
-                  </Button>
-                ),
+                render: (_, record) => {
+                  const isDisabled =
+                    record.status === "Under Review" ||
+                    record.status === "Submitted";
+
+                  return (
+                    <Button
+                      icon={<EyeOutlined />}
+                      disabled={isDisabled} // Disable nếu chưa có review
+                      onClick={() =>
+                        !isDisabled &&
+                        navigate(
+                          `/author/view-paper-review/${record.revisionId}`
+                        )
+                      }
+                    >
+                      {isDisabled ? "Not Available" : "View Review"}
+                    </Button>
+                  );
+                },
               },
             ]}
             rowKey="revisionId"

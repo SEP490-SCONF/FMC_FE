@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Buttonsubmit from "../ui/button/Button";
 import { useConference } from "../../context/ConferenceContext";
 import { getConferenceTopicsByConferenceId } from "../../services/ConferenceTopicService";
@@ -32,7 +32,7 @@ const SubmitPapers = () => {
   const [coAuthorEmails, setCoAuthorEmails] = useState([""]);
   const [highlightedUrl, setHighlightedUrl] = useState(""); // thêm state highlight
   const [isChecking, setIsChecking] = useState(false);       // state đang check
-
+  const fileInputRef = useRef(null);
   const authors = user ? [{ id: user.userId, name: user.name }] : [];
 
   useEffect(() => {
@@ -86,6 +86,15 @@ const SubmitPapers = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("Debug values:", {
+    file,
+    title,
+    abstract,
+    keywords,
+    topic,
+    conferenceId: selectedConference?.conferenceId,
+    authorIdsLength: authorIds.length,
+  });
     if (
       !file ||
       !title ||
@@ -129,6 +138,9 @@ const SubmitPapers = () => {
       setTopic("");
       setCoAuthorEmails([""]);
       setHighlightedUrl(""); // reset highlight sau submit
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""; // Reset input file trong DOM
+      }
     } catch (error) {
       console.error("Error during submission:", error);
       toast.error("Error resolving co-authors or submitting paper.");
@@ -269,6 +281,7 @@ const SubmitPapers = () => {
                   accept=".pdf"
                   className="w-full border border-gray-300 rounded px-3 py-2"
                   onChange={handleFileChange}
+                  ref={fileInputRef}
                   required
                 />
                 {file && (

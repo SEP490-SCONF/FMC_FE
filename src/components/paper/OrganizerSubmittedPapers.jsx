@@ -11,145 +11,28 @@ import {
 } from "../../services/ReviewerAssignmentService";
 import { useUser } from "../../context/UserContext";
 import { useParams } from "react-router-dom";
-import { Popconfirm } from "antd";
+import { Table, Input, Button, Popconfirm, Pagination } from "antd";
+
+const { Search } = Input;
 
 const SubmittedOrga = () => {
   const { id: conferenceId } = useParams();
   const { user } = useUser();
-  const [deleteConfirm, setDeleteConfirm] = useState({
-    open: false,
-    assignmentId: null,
-  });
   const [paperList, setPaperList] = useState([]);
-  const [assignIdx, setAssignIdx] = useState(null);
-  const [search, setSearch] = useState("");
+  const [assignPaperId, setAssignPaperId] = useState(null);
+  const [searchText, setSearchText] = useState("");
   const [selectedReviewers, setSelectedReviewers] = useState([]);
   const [reviewers, setReviewers] = useState([]);
   const [reviewerPage, setReviewerPage] = useState(1);
-  const reviewersPerPage = 2;
-  const [filterTopic, setFilterTopic] = useState("");
-  const [filterAssigned, setFilterAssigned] = useState("");
-  const [filterDate, setFilterDate] = useState("");
-  const [searchText, setSearchText] = useState("");
-  const [page, setPage] = useState(1);
-  const [sortDate, setSortDate] = useState("none"); // New state for sort order
-  const pageSize = 5;
-  const [successPopup, setSuccessPopup] = useState(false); // Thêm state cho popup
-
-
-  function buildQuery() {
-    const filters = [];
-
-    if (filterTopic) filters.push(`TopicName eq '${filterTopic}'`);
-    if (filterAssigned) filters.push(`IsAssigned eq ${filterAssigned}`);
-    if (filterDate) filters.push(`SubmitDate eq ${filterDate}`);
-
-    if (searchText) {
-      const search = searchText.toLowerCase();
-      filters.push(
-        `(contains(tolower(Title),'${search}') or contains(tolower(Abstract),'${search}') or contains(tolower(Keywords),'${search}'))`
-      );
-    }
-
-    const skip = (page - 1) * pageSize;
-    const queryParams = [];
-
-    if (filters.length > 0)
-      queryParams.push(`$filter=${filters.join(" and ")}`);
-    queryParams.push(`$top=${pageSize}`, `$skip=${skip}`);
-
-    // Add sorting by SubmitDate
-    if (sortDate !== "none") {
-      queryParams.push(`$orderby=SubmitDate ${sortDate}`);
-    }
-
-    return "?" + queryParams.join("&");
-  }
+  const reviewersPerPage = 5;
 
   // Fetch paper list
-  useEffect(() => {
-    if (conferenceId) {
-      const query = buildQuery();
-      getSubmittedPapersByConferenceId(conferenceId, query)
-        .then((res) => {
-          const mapped = (res || []).map((p) => ({
-            id: p.paperId,
-            title: p.title,
-            abstract: p.abstract,
-            keywords: p.keywords,
-            topic: p.topicName,
-            filePath: p.filePath,
-            status: p.status,
-            submitDate: p.submitDate,
-            author: p.name,
-            assignedReviewerName: p.assignedReviewerName,
-            isAssigned: p.isAssigned,
-            assigned: p.assignedReviewers || [],
-            assignmentId: p.assignmentId,
-            updated: false,
-            resubmits: "",
-          }));
-          setPaperList(mapped);
-        })
-        .catch(() => setPaperList([]));
-    }
-  }, [conferenceId, filterTopic, filterDate, filterAssigned, searchText, page, sortDate]);
-
-  // Fetch reviewers
-  useEffect(() => {
-    if (conferenceId) {
-      getConferenceReviewers(conferenceId)
-        .then(async (res) => {
-          const reviewersArr = Array.isArray(res.value)
-            ? res.value
-            : Array.isArray(res)
-              ? res
-              : [];
-
-          const reviewersWithCount = await Promise.all(
-            reviewersArr.map(async (r) => {
-              try {
-                const countRes = await getReviewerAssignedPaperCount(conferenceId, r.userId);
-                return { ...r, assignedPaperCount: countRes.assignedPaperCount };
-              } catch {
-                return { ...r, assignedPaperCount: 0 };
-              }
-            })
-          );
-
-          setReviewers(reviewersWithCount);
-        })
-        .catch(() => setReviewers([]));
-    }
-  }, [conferenceId]);
-
-  const openAssign = (idx) => {
-    setAssignIdx(idx);
-    setSelectedReviewers(paperList[idx].assigned);
-    setSearch("");
-  };
-
-  const closeModal = () => {
-    setAssignIdx(null);
-    setSelectedReviewers([]);
-    setSearch("");
-  };
-
-  const toggleReviewer = (id) => {
-    setSelectedReviewers([id]);
-  };
-
-  const handleAssign = async () => {
-    const paper = paperList[assignIdx];
-    const reviewerId = selectedReviewers[0];
-    if (paper.isAssigned && paper.assignmentId) {
-      await updateReviewerAssignment(paper.assignmentId, paper.id, reviewerId);
-    } else {
-      await assignReviewerToPaper(paper.id, reviewerId);
-    }
-    const query = buildQuery();
-    getSubmittedPapersByConferenceId(conferenceId, query).then((res) => {
-      const mapped = (res || []).map((p) => ({
+  const fetchPapers = async () => {
+    try {
+      const res = await getSubmittedPapersByConferenceId(conferenceId);
+      const mapped = (res || []).map((p, index) => ({
+        key: p.paperId,
+        index: index + 1,
         id: p.paperId,
         title: p.title,
         abstract: p.abstract,
@@ -167,335 +50,348 @@ const SubmittedOrga = () => {
         resubmits: "",
       }));
       setPaperList(mapped);
-    });
-    closeModal();
-    toast.success("Assign reviewer successfully!");
+    } catch {
+      setPaperList([]);
+      toast.error("Failed to fetch papers.");
+    }
   };
 
   useEffect(() => {
-    setReviewerPage(1);
-  }, [search, assignIdx]);
+    if (conferenceId) fetchPapers();
+    else toast.error("Invalid conference ID.");
+  }, [conferenceId]);
 
-  const filteredReviewers = reviewers.filter(
-    (r) =>
-      (r.name || "").toLowerCase().includes(search.toLowerCase()) ||
-      (r.email || "").toLowerCase().includes(search.toLowerCase())
-  );
+  // Fetch reviewers
+  const fetchReviewers = async () => {
+    try {
+      const res = await getConferenceReviewers(conferenceId);
+      const reviewersArr = Array.isArray(res.value)
+        ? res.value
+        : Array.isArray(res)
+        ? res
+        : [];
 
-  const totalReviewerPages = Math.ceil(
-    filteredReviewers.length / reviewersPerPage
-  );
-  const paginatedReviewers = filteredReviewers.slice(
-    (reviewerPage - 1) * reviewersPerPage,
-    reviewerPage * reviewersPerPage
-  );
-
-  const getReviewerIcons = (assigned) => {
-    return assigned.map((rid, idx) => {
-      const reviewer = reviewers.find((r) => r.userId === rid);
-      return (
-        <span key={idx} className="text-xl mr-1" title={reviewer?.name || ""}>
-          👤
-        </span>
+      const reviewersWithCount = await Promise.all(
+        reviewersArr.map(async (r) => {
+          try {
+            const countRes = await getReviewerAssignedPaperCount(conferenceId, r.userId);
+            return { ...r, assignedPaperCount: countRes.assignedPaperCount };
+          } catch {
+            return { ...r, assignedPaperCount: 0 };
+          }
+        })
       );
-    });
+
+      setReviewers(reviewersWithCount);
+    } catch {
+      setReviewers([]);
+      toast.error("Failed to fetch reviewers.");
+    }
+  };
+
+  useEffect(() => {
+    if (conferenceId) fetchReviewers();
+    else toast.error("Invalid conference ID.");
+  }, [conferenceId]);
+
+  const openAssign = (paperId) => {
+    const paper = paperList.find((p) => p.id === paperId);
+    setAssignPaperId(paperId);
+    setSelectedReviewers(paper.assigned);
+    setSearchText("");
+    setReviewerPage(1);
+  };
+
+  const closeModal = () => {
+    setAssignPaperId(null);
+    setSelectedReviewers([]);
+    setSearchText("");
+  };
+
+  const toggleReviewer = (id) => {
+    setSelectedReviewers([id]);
+  };
+
+  const handleAssign = async () => {
+    const paper = paperList.find((p) => p.id === assignPaperId);
+    const reviewerId = selectedReviewers[0];
+
+    try {
+      if (paper.isAssigned && paper.assignmentId) {
+        await updateReviewerAssignment(paper.assignmentId, paper.id, reviewerId);
+      } else {
+        await assignReviewerToPaper(paper.id, reviewerId);
+      }
+      await Promise.all([fetchPapers(), fetchReviewers()]); // Fetch cả papers và reviewers
+      closeModal();
+      toast.success("Assign reviewer successfully!");
+    } catch {
+      toast.error("Failed to assign reviewer.");
+    }
   };
 
   const handleSendCertificate = async (paperId) => {
     try {
       await generateCertificatesForPaper(paperId);
-      alert("🎉 Certificate sent successfully!");
+      toast.success("🎉 Certificate sent successfully!");
     } catch (error) {
       console.error("❌ Failed to send certificate", error);
-      alert("❌ Failed to send certificate.");
+      toast.error("❌ Failed to send certificate.");
     }
   };
 
-  return (
-    <>
-      <div className="bg-white min-h-screen pb-10 flex flex-col">
-        <div className="border-b border-gray-200 py-6 px-8">
-          <h2 className="font-bold text-3xl text-left">Paper Submissions</h2>
-        </div>
-        <div className="flex flex-1 items-start justify-start px-8 py-6">
-          <div className="w-full max-w-6xl bg-white rounded-lg shadow-md p-6">
-            <div className="mb-6">
-              <h5 className="font-semibold text-lg text-gray-700 mb-4">
-                Submitted Papers List
-              </h5>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <input
-                  className="border border-gray-300 rounded px-3 py-2 text-sm"
-                  type="text"
-                  placeholder="🔍 Search by title, abstract, or keywords"
-                  value={searchText}
-                  onChange={(e) => setSearchText(e.target.value)}
-                />
+  // Filter reviewers based on search
+  const filteredReviewers = reviewers.filter(
+    (r) =>
+      (r.name || "").toLowerCase().includes(searchText.toLowerCase()) ||
+      (r.email || "").toLowerCase().includes(searchText.toLowerCase())
+  );
 
-                <select
-                  className="border border-gray-300 rounded px-3 py-2 text-sm"
-                  value={filterTopic}
-                  onChange={(e) => setFilterTopic(e.target.value)}
-                >
-                  <option value="">All Topics</option>
-                  {[...new Set(paperList.map((p) => p.topic))]
-                    .filter(Boolean)
-                    .map((topic, i) => (
-                      <option key={i} value={topic}>
-                        {topic}
-                      </option>
-                    ))}
-                </select>
-
-                <select
-                  className="border border-gray-300 rounded px-3 py-2 text-sm"
-                  value={filterAssigned}
-                  onChange={(e) => setFilterAssigned(e.target.value)}
-                >
-                  <option value="">All</option>
-                  <option value="true">Assigned</option>
-                  <option value="false">Unassigned</option>
-                </select>
-
-                <select
-                  className="border border-gray-300 rounded px-3 py-2 text-sm"
-                  value={sortDate}
-                  onChange={(e) => {
-                    setSortDate(e.target.value);
-                    setPage(1); // Reset to first page when sort changes
-                  }}
-                >
-                  <option value="none">Sort by Date</option>
-                  <option value="desc">Newest First</option>
-                  <option value="asc">Oldest First</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-base bg-white">
-                <thead>
-                  <tr>
-                    <th className={thClass}>#</th>
-                    <th className={thClass}>Author</th>
-                    <th className={thClass}>Title</th>
-                    <th className={thClass}>Paper</th>
-                    <th className={thClass}>Assigned To</th>
-                    <th className={thClass}>Assign</th>
-                    <th className={thClass}>Status</th>
-                    <th className={thClass}>Topic</th>
-                    <th className={thClass}>Last Submitted</th>
-                    <th className={thClass}>Certificate</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {paperList.map((p, idx) => (
-                    <tr key={p.id} className="hover:bg-gray-50">
-                      <td className={tdClass}>{idx + 1}</td>
-                      <td className={tdClass}>{p.author}</td>
-                      <td className={tdClass}>{p.title}</td>
-                      <td className={tdClass}>
-                        {p.filePath ? (
-                          <a
-                            href={p.filePath}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 underline"
-                          >
-                            View PDF
-                          </a>
-                        ) : (
-                          "No file"
-                        )}
-                      </td>
-                      <td className={tdClass}>
-                        {p.isAssigned ? (
-                          <span
-                            className="text-sm text-green-600 font-medium"
-                            title={p.assignedReviewerName}
-                          >
-                            👤 {p.assignedReviewerName || "Assigned"}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400 italic">
-                            Unassigned
-                          </span>
-                        )}
-                      </td>
-                      <td className={tdClass}>
-                        {p.isAssigned ? (
-                          <>
-                            <Popconfirm
-                              title="Remove this reviewer?"
-                              onConfirm={async () => {
-                                await deleteReviewerAssignment(p.assignmentId);
-                                const query = buildQuery();
-                                getSubmittedPapersByConferenceId(
-                                  conferenceId,
-                                  query
-                                ).then((res) => {
-                                  const mapped = (res || []).map((p) => ({
-                                    id: p.paperId,
-                                    title: p.title,
-                                    abstract: p.abstract,
-                                    keywords: p.keywords,
-                                    topic: p.topicName,
-                                    filePath: p.filePath,
-                                    status: p.status,
-                                    submitDate: p.submitDate,
-                                    author: p.name,
-                                    assignedReviewerName:
-                                      p.assignedReviewerName,
-                                    isAssigned: p.isAssigned,
-                                    assigned: p.assignedReviewers || [],
-                                    assignmentId: p.assignmentId,
-                                    updated: false,
-                                    resubmits: "",
-                                  }));
-                                  setPaperList(mapped);
-                                });
-                                setDeleteConfirm({
-                                  open: false,
-                                  assignmentId: null,
-                                });
-                              }}
-                              okText="Yes"
-                              cancelText="No"
-                            >
-                              <button
-                                className="ml-2 text-2xl border border-red-400 text-red-600 rounded px-2"
-                                title="Remove assignment"
-                                onClick={() =>
-                                  setDeleteConfirm({
-                                    open: true,
-                                    assignmentId: p.assignmentId,
-                                  })
-                                }
-                              >
-                                🗑
-                              </button>
-                            </Popconfirm>
-                          </>
-                        ) : p.status === "Accepted" ? (
-                          <span
-                            className="text-green-600 text-xl"
-                            title="Accepted"
-                          >
-                            ✔️
-                          </span>
-                        ) : p.status === "Rejected" ? (
-                          <span
-                            className="text-red-500 text-xl"
-                            title="Rejected"
-                          >
-                            ❌
-                          </span>
-                        ) : (
-                          <button
-                            className="text-2xl border border-gray-400 rounded px-2"
-                            title="Assign reviewer"
-                            onClick={() => openAssign(idx)}
-                          >
-                            +
-                          </button>
-                        )}
-                      </td>
-                      <td className={tdClass}>{p.status}</td>
-                      <td className={tdClass}>{p.topic}</td>
-                      <td className={tdClass}>
-                        {p.submitDate
-                          ? new Date(p.submitDate).toLocaleString("en-GB", {
-                            day: "2-digit",
-                            month: "2-digit",
-                            year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })
-                          : ""}
-                      </td>
-
-                      <td className={tdClass}>
-                        {p.status === "Accepted" ? (
-                          <button
-                            className="px-2 py-1 bg-green-100 border border-green-500 text-green-700 rounded hover:bg-green-200 text-xs"
-                            onClick={() => handleSendCertificate(p.id)}
-                          >
-                            Send Certificate
-                          </button>
-                        ) : (
-                          <span className="text-gray-400 italic text-xs">
-                            N/A
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
-              <button
-                onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-                disabled={page === 1}
-                className="px-3 py-1 rounded border border-gray-400 bg-white hover:bg-gray-100 disabled:opacity-50"
-              >
-                Previous
-              </button>
-              <span>Page {page}</span>
-              <button
-                onClick={() => setPage((prev) => prev + 1)}
-                className="px-3 py-1 rounded border border-gray-400 bg-white hover:bg-gray-100"
-              >
-                Next
-              </button>
-            </div>
+  // Ant Design Table Columns
+  const columns = [
+    {
+      title: "#",
+      dataIndex: "index",
+      key: "index",
+      width: 50,
+    },
+    {
+      title: "Author",
+      dataIndex: "author",
+      key: "author",
+      sorter: (a, b) => a.author.localeCompare(b.author),
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+        <div style={{ padding: 8 }}>
+          <Input
+            placeholder="Search author"
+            value={selectedKeys[0]}
+            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => confirm()}
+            style={{ marginBottom: 8, display: "block" }}
+          />
+          <div>
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              size="small"
+              style={{ width: 90, marginRight: 8 }}
+            >
+              Search
+            </Button>
+            <Button onClick={() => clearFilters()} size="small" style={{ width: 90 }}>
+              Reset
+            </Button>
           </div>
+        </div>
+      ),
+      onFilter: (value, record) => record.author.toLowerCase().includes(value.toLowerCase()),
+    },
+    {
+      title: "Title",
+      dataIndex: "title",
+      key: "title",
+      sorter: (a, b) => a.title.localeCompare(b.title),
+      filterDropdown: ({ setSelectedKeys, selectedKeys, confirm, clearFilters }) => (
+        <div style={{ padding: 8 }}>
+          <Input
+            placeholder="Search title"
+            value={selectedKeys[0]}
+            onChange={(e) => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+            onPressEnter={() => confirm()}
+            style={{ marginBottom: 8, display: "block" }}
+          />
+          <div>
+            <Button
+              type="primary"
+              onClick={() => confirm()}
+              size="small"
+              style={{ width: 90, marginRight: 8 }}
+            >
+              Search
+            </Button>
+            <Button onClick={() => clearFilters()} size="small" style={{ width: 90 }}>
+              Reset
+            </Button>
+          </div>
+        </div>
+      ),
+      onFilter: (value, record) => record.title.toLowerCase().includes(value.toLowerCase()),
+    },
+    {
+      title: "Paper",
+      dataIndex: "filePath",
+      key: "filePath",
+      render: (filePath) =>
+        filePath ? (
+          <a href={filePath} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">
+            View PDF
+          </a>
+        ) : (
+          "No file"
+        ),
+    },
+    {
+      title: "Assigned To",
+      dataIndex: "assignedReviewerName",
+      key: "assignedReviewerName",
+      render: (text, record) =>
+        record.isAssigned ? (
+          <span className="text-sm text-green-600 font-medium" title={record.assignedReviewerName}>
+            👤 {record.assignedReviewerName || "Assigned"}
+          </span>
+        ) : (
+          <span className="text-gray-400 italic">Unassigned</span>
+        ),
+    },
+    {
+      title: "Assign",
+      key: "assign",
+      render: (text, record) =>
+        !record.isAssigned ? (
+          <Button
+            type="primary"
+            shape="circle"
+            icon={<span>+</span>}
+            onClick={() => openAssign(record.id)}
+            title="Assign reviewer"
+          />
+        ) : (
+          <Popconfirm
+            title="Remove this reviewer?"
+            onConfirm={async () => {
+              try {
+                await deleteReviewerAssignment(record.assignmentId);
+                await Promise.all([fetchPapers(), fetchReviewers()]); // Fetch cả papers và reviewers
+                toast.success("Reviewer removed successfully!");
+              } catch {
+                toast.error("Failed to remove reviewer.");
+              }
+            }}
+            okText="Yes"
+            cancelText="No"
+          >
+            <Button
+              type="danger"
+              shape="circle"
+              icon={<span>🗑</span>}
+              title="Remove assignment"
+            />
+          </Popconfirm>
+        ),
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      filters: [
+        { text: "Accepted", value: "Accepted" },
+        { text: "Rejected", value: "Rejected" },
+        { text: "Submitted", value: "Submitted" },
+        { text: "Under Review", value: "Under Review" },
+      ],
+      onFilter: (value, record) => record.status === value,
+    },
+    {
+      title: "Topic",
+      dataIndex: "topic",
+      key: "topic",
+      filters: [...new Set(paperList.map((p) => p.topic))].map((topic) => ({
+        text: topic,
+        value: topic,
+      })),
+      onFilter: (value, record) => record.topic === value,
+    },
+    {
+      title: "Last Submitted",
+      dataIndex: "submitDate",
+      key: "submitDate",
+      sorter: (a, b) => new Date(a.submitDate) - new Date(b.submitDate),
+      render: (submitDate) =>
+        submitDate
+          ? new Date(submitDate).toLocaleString("en-GB", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })
+          : "",
+    },
+    {
+      title: "Certificate",
+      key: "certificate",
+      render: (text, record) =>
+        record.status === "Accepted" ? (
+          <Button
+            type="primary"
+            size="small"
+            onClick={() => handleSendCertificate(record.id)}
+            className="bg-green-500 hover:bg-green-600 border-none"
+          >
+            Send Certificate
+          </Button>
+        ) : (
+          <span className="text-gray-400 italic text-xs">N/A</span>
+        ),
+    },
+  ];
+
+  return (
+    <div className="bg-white min-h-screen pb-10 flex flex-col">
+      <div className="border-b border-gray-200 py-6 px-8">
+        <h2 className="font-bold text-3xl text-left">Paper Submissions</h2>
+      </div>
+      <div className="flex flex-1 items-start justify-start px-8 py-6">
+        <div className="w-full max-w-6xl bg-white rounded-lg shadow-md p-6">
+          <Search
+            placeholder="Search papers by title or author"
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ marginBottom: 16, width: 300 }}
+            allowClear
+          />
+          <Table
+            columns={columns}
+            dataSource={paperList.filter(
+              (paper) =>
+                paper.title.toLowerCase().includes(searchText.toLowerCase()) ||
+                paper.author.toLowerCase().includes(searchText.toLowerCase())
+            )}
+            pagination={{ pageSize: 5 }}
+            scroll={{ x: true }}
+          />
         </div>
       </div>
 
-      {assignIdx !== null && (
+      {assignPaperId !== null && (
         <Modal onClose={closeModal}>
-          <button
-            className="absolute top-2 right-3 text-xl font-bold text-gray-500 hover:text-gray-700"
+          <Button
+            className="absolute top-2 right-3"
+            type="text"
             onClick={closeModal}
-          >
-            ×
-          </button>
-          <div className="flex items-center mb-4">
-            <input
-              className="border border-gray-400 rounded px-3 py-1 flex-1"
-              placeholder="🔍 Search reviewer"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-            <button
-              className="ml-3 px-4 py-1 bg-gray-200 border border-gray-400 rounded"
-              onClick={handleAssign}
-              disabled={selectedReviewers.length === 0}
-            >
-              Assign
-            </button>
-          </div>
-          <div className="overflow-x-auto max-h-[300px]">
+            icon={<span className="text-xl font-bold text-gray-500 hover:text-gray-700">×</span>}
+          />
+          <Search
+            placeholder="🔍 Search reviewer"
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            style={{ marginBottom: 16 }}
+            allowClear
+          />
+          <div className="overflow-x-auto max-h-[300px] mb-4">
             <table className="w-full border-collapse text-xs">
               <thead>
                 <tr>
-                  <th className="border px-2 py-1 font-semibold text-center">
-                    Select
-                  </th>
-                  <th className="border px-2 py-1 font-semibold text-left">
-                    Avatar
-                  </th>
-                  <th className="border px-2 py-1 font-semibold text-left">
-                    Name
-                  </th>
-                  <th className="border px-2 py-1 font-semibold">Email</th>
-                  <th className="border px-2 py-1 font-semibold text-center">Assigned Papers</th>
+                  <th className="border px-2 py-1 text-center">Select</th>
+                  <th className="border px-2 py-1 text-left">Avatar</th>
+                  <th className="border px-2 py-1 text-left">Name</th>
+                  <th className="border px-2 py-1">Email</th>
+                  <th className="border px-2 py-1 text-center">Assigned Papers</th>
                 </tr>
               </thead>
               <tbody>
-                {paginatedReviewers.length > 0 ? (
-                  paginatedReviewers.map((r) => (
+                {filteredReviewers
+                  .slice((reviewerPage - 1) * reviewersPerPage, reviewerPage * reviewersPerPage)
+                  .map((r) => (
                     <tr key={r.userId} className="hover:bg-gray-100">
                       <td className="border px-2 py-1 text-center">
                         <input
@@ -508,11 +404,7 @@ const SubmittedOrga = () => {
                       </td>
                       <td className="border px-2 py-1 text-center">
                         {r.avatarUrl ? (
-                          <img
-                            src={r.avatarUrl}
-                            alt={r.username}
-                            className="w-8 h-8 rounded-full mx-auto"
-                          />
+                          <img src={r.avatarUrl} alt={r.username} className="w-8 h-8 rounded-full mx-auto" />
                         ) : (
                           <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center mx-auto text-gray-600">
                             {r.username?.charAt(0) || "?"}
@@ -523,54 +415,29 @@ const SubmittedOrga = () => {
                       <td className="border px-2 py-1">{r.userEmail}</td>
                       <td className="border px-2 py-1 text-center">{r.assignedPaperCount ?? 0}</td>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={4} className="text-center py-2 text-gray-400">
-                      No reviewer found
-                    </td>
-                  </tr>
-                )}
+                  ))}
               </tbody>
             </table>
           </div>
-          <div className="flex justify-between items-center mt-4">
-            <button
-              onClick={() => setReviewerPage((prev) => Math.max(prev - 1, 1))}
-              disabled={reviewerPage === 1}
-              className="px-4 py-2 bg-gray-200 border border-gray-400 rounded disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <span className="text-sm text-gray-500">
-              Page {reviewerPage} of {totalReviewerPages}
-            </span>
-            <button
-              onClick={() =>
-                setReviewerPage((prev) =>
-                  Math.min(prev + 1, totalReviewerPages)
-                )
-              }
-              disabled={reviewerPage === totalReviewerPages}
-              className="px-4 py-2 bg-gray-200 border border-gray-400 rounded disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
+          <Pagination
+            current={reviewerPage}
+            pageSize={reviewersPerPage}
+            total={filteredReviewers.length}
+            onChange={(page) => setReviewerPage(page)}
+            size="small"
+          />
+          <Button
+            type="primary"
+            className="mt-4 w-full"
+            onClick={handleAssign}
+            disabled={selectedReviewers.length === 0}
+          >
+            Assign
+          </Button>
         </Modal>
       )}
-
-      {successPopup && (
-        <div className="fixed bottom-4 right-4 bg-green-100 text-green-700 py-2 px-4 rounded-lg shadow-lg text-center max-w-xs z-50">
-          Assign reviewer successfully!
-        </div>
-      )}
-    </>
+    </div>
   );
 };
-
-const thClass =
-  "border border-gray-200 px-3 py-2 font-semibold bg-gray-50 text-xs";
-const tdClass = "border border-gray-100 px-3 py-2 text-center bg-white text-xs";
 
 export default SubmittedOrga;

@@ -12,7 +12,6 @@ import { getPdfUrlByReviewId } from "../../../services/PaperRevisionService";
 import { translatePaperPdf } from "../../../services/PaperSerice";
 import { translateHighlightedText } from "../../../services/TranslateService";
 
-
 import {
   addReviewWithHighlightAndComment,
   getReviewWithHighlightAndComment,
@@ -27,7 +26,7 @@ import AnalyzeAiService from "../../../services/AnalyzeAiService";
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 
-const ReviewContent = ({ review, onChunksGenerated }) => {
+const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
   const { user } = useUser();
 
   const [fileUrl, setFileUrl] = useState("");
@@ -46,7 +45,10 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
 
   // Hàm đếm số từ trong text
   const countWords = (text) => {
-    return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+    return text
+      .trim()
+      .split(/\s+/)
+      .filter((word) => word.length > 0).length;
   };
 
   // Hàm chia nhỏ text dựa trên số từ (proxy cho token)
@@ -54,8 +56,15 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
     const chunks = [];
     if (!text) return chunks;
 
-    const words = text.trim().split(/\s+/).filter(word => word.length > 0);
-    for (let start = 0; start < words.length; start += (maxWords - overlapWords)) {
+    const words = text
+      .trim()
+      .split(/\s+/)
+      .filter((word) => word.length > 0);
+    for (
+      let start = 0;
+      start < words.length;
+      start += maxWords - overlapWords
+    ) {
       const remainingWords = words.length - start;
       const length = Math.min(maxWords, remainingWords);
       if (length <= 0) break;
@@ -76,7 +85,6 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
   const [translating, setTranslating] = useState(false);
   const [translatedText, setTranslatedText] = useState("");
   const [highlightLang, setHighlightLang] = useState(targetLang);
-
 
   // --- Modal xem bản dịch ---
   const [showTranslatedModal, setShowTranslatedModal] = useState(false);
@@ -108,24 +116,33 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
     // Gửi mảng chunk về BE thông qua prop onChunksGenerated
     if (onChunksGenerated) {
       onChunksGenerated(chunks); // Gửi mảng các chunk
-      console.log('Generated chunks:', chunks.map(c => ({ wordCount: countWords(c.RawText), content: c.RawText.substring(0, 50) + '...' })));
+      console.log(
+        "Generated chunks:",
+        chunks.map((c) => ({
+          wordCount: countWords(c.RawText),
+          content: c.RawText.substring(0, 50) + "...",
+        }))
+      );
     }
 
     // (Tùy chọn) Gọi API phân tích AI với fullText nguyên bản
     try {
       if (review?.reviewId) {
-        const response = await AnalyzeAiService.analyzeDocument(review.reviewId, fullText);
+        const response = await AnalyzeAiService.analyzeDocument(
+          review.reviewId,
+          fullText
+        );
         setAiAnalysisResult(response);
       }
     } catch (error) {
-      console.error('AI analysis failed:', error);
+      console.error("AI analysis failed:", error);
       toast.error("Failed to analyze AI content!");
     }
   };
 
   const prepareTextForApi = (text) => {
     // Chuẩn hóa mọi CRLF và CR thành LF
-    return text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    return text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   };
   // Chia text thành các dòng dựa trên text gốc
   const formatTranslatedTextByOriginal = (translated, original) => {
@@ -135,7 +152,7 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
     let words = translated.split(/\s+/); // tách tất cả từ
     let pointer = 0;
 
-    const resultLines = originalLines.map(line => {
+    const resultLines = originalLines.map((line) => {
       const wordCount = line.trim().split(/\s+/).length; // số từ dòng gốc
       const portion = words.slice(pointer, pointer + wordCount).join(" ");
       pointer += wordCount;
@@ -145,12 +162,10 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
     return resultLines.join("\n"); // nối lại theo dòng gốc
   };
 
-
   const unescapeNewlines = (text) => {
     if (!text) return "";
-    return text.replace(/\\n/g, '\n');
+    return text.replace(/\\n/g, "\n");
   };
-
 
   const addLineBreaksBySentence = (text) => {
     if (!text) return "";
@@ -160,12 +175,8 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
 
     if (!sentences) return text;
 
-    return sentences.map(s => s.trim()).join('\n');
+    return sentences.map((s) => s.trim()).join("\n");
   };
-
-
-
-
 
   // Dịch toàn bộ notes
   const handleTranslateNotes = async () => {
@@ -176,21 +187,19 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
       let res = await translatePaperPdf(review.paperId, targetLang);
       let translated = res?.data?.translatedText || "";
       translated = unescapeNewlines(translated)
-        .replace(/\r\n/g, '\n')
-        .replace(/\r/g, '\n');
+        .replace(/\r\n/g, "\n")
+        .replace(/\r/g, "\n");
       setTranslatedText(translated);
-
-
     } catch (err) {
-      setPopup({ open: true, text: "Failed to translate notes.", type: "error" });
+      setPopup({
+        open: true,
+        text: "Failed to translate notes.",
+        type: "error",
+      });
     }
 
     setTranslating(false);
   };
-
-
-
-
 
   const renderHighlightTarget = (props) => (
     <div
@@ -207,7 +216,11 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
       {/* Nút Note */}
       <Tooltip
         position={Position.TopCenter}
-        target={<Button onClick={props.toggle}><MessageIcon /></Button>}
+        target={
+          <Button onClick={props.toggle}>
+            <MessageIcon />
+          </Button>
+        }
         content={() => <div style={{ width: "100px" }}>Add a note</div>}
         offset={{ left: 0, top: -8 }}
       />
@@ -215,7 +228,11 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
       <select
         value={highlightLang}
         onChange={(e) => setHighlightLang(e.target.value)}
-        style={{ padding: "2px 4px", borderRadius: 4, border: "1px solid #ccc" }}
+        style={{
+          padding: "2px 4px",
+          borderRadius: 4,
+          border: "1px solid #ccc",
+        }}
       >
         <option value="en-US">English</option>
         <option value="vi">Vietnamese</option>
@@ -238,17 +255,22 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
 
                 // Chuẩn hóa xuống dòng và giữ line break như PDF gốc
                 const preparedText = props.selectedText
-                  .replace(/\r\n/g, '\n') // Windows -> LF
-                  .replace(/\r/g, '\n')   // Mac -> LF
-                  .split('\n')             // tách thành các dòng
-                  .map(line => line.trim()) // loại khoảng trắng dư
-                  .join('\n');             // nối lại bằng LF
-                console.log("=== Prepared text for API (newlines normalized) ===");
+                  .replace(/\r\n/g, "\n") // Windows -> LF
+                  .replace(/\r/g, "\n") // Mac -> LF
+                  .split("\n") // tách thành các dòng
+                  .map((line) => line.trim()) // loại khoảng trắng dư
+                  .join("\n"); // nối lại bằng LF
+                console.log(
+                  "=== Prepared text for API (newlines normalized) ==="
+                );
                 console.log(preparedText);
                 console.log("String with explicit \\n:");
                 console.log(JSON.stringify(preparedText)); // hiển thị rõ \n trong chuỗi
 
-                const res = await translateHighlightedText(preparedText, highlightLang);
+                const res = await translateHighlightedText(
+                  preparedText,
+                  highlightLang
+                );
 
                 console.log("=== API response ===");
                 console.log(res);
@@ -267,9 +289,12 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
 
                 setTranslatedText(unescapedTranslated);
                 setShowTranslatedModal(true);
-
               } catch (err) {
-                setPopup({ open: true, text: "Failed to translate selected text", type: "error" });
+                setPopup({
+                  open: true,
+                  text: "Failed to translate selected text",
+                  type: "error",
+                });
               }
               setTranslating(false);
             }}
@@ -297,7 +322,10 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
           formData.append("Status", "Draft");
 
           props.highlightAreas.forEach((area, idx) => {
-            formData.append(`HighlightAreas[${idx}][PageIndex]`, area.pageIndex);
+            formData.append(
+              `HighlightAreas[${idx}][PageIndex]`,
+              area.pageIndex
+            );
             formData.append(`HighlightAreas[${idx}][Left]`, area.left || 0);
             formData.append(`HighlightAreas[${idx}][Top]`, area.top || 0);
             formData.append(`HighlightAreas[${idx}][Width]`, area.width || 0);
@@ -361,13 +389,15 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
     );
   };
 
-  const [activateTab, setActivateTab] = useState(() => () => { });
+  const [activateTab, setActivateTab] = useState(() => () => {});
 
   const jumpToNote = (note) => {
     activateTab(3);
     const notesContainer = notesContainerRef.current;
     if (noteEles.current.has(note.id) && notesContainer) {
-      notesContainer.scrollTop = noteEles.current.get(note.id).getBoundingClientRect().top;
+      notesContainer.scrollTop = noteEles.current
+        .get(note.id)
+        .getBoundingClientRect().top;
     }
   };
 
@@ -392,7 +422,11 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
                 }}
                 onClick={(e) => {
                   e.stopPropagation();
-                  setSelectedHighlight({ note, area, pageIndex: props.pageIndex });
+                  setSelectedHighlight({
+                    note,
+                    area,
+                    pageIndex: props.pageIndex,
+                  });
                   setHighlightEditContent(note.content);
                 }}
               />
@@ -403,8 +437,8 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
   );
 
   const highlightPluginInstance = highlightPlugin({
-    renderHighlightTarget,
-    renderHighlightContent,
+    renderHighlightTarget: readOnly ? undefined : renderHighlightTarget,
+    renderHighlightContent: readOnly ? undefined : renderHighlightContent,
     renderHighlights,
   });
 
@@ -515,26 +549,28 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
           ) : (
             <>
               <div className="text-base text-gray-800 mb-2">{note.content}</div>
-              <div className="flex flex-row gap-3 justify-end">
-                <button
-                  className="bg-white-100 text-yellow-700 rounded-lg px-4 py-1 font-semibold shadow hover:bg-yellow-200 transition"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEditNote(note.id);
-                  }}
-                >
-                  Edit
-                </button>
-                <button
-                  className="bg-white-100 text-red-600 rounded-lg px-4 py-1 font-semibold shadow hover:bg-red-200 transition"
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    await handleDeleteNote(note.id);
-                  }}
-                >
-                  Delete
-                </button>
-              </div>
+              {!readOnly && (
+                <div className="flex flex-row gap-3 justify-end">
+                  <button
+                    className="bg-white-100 text-yellow-700 rounded-lg px-4 py-1 font-semibold shadow hover:bg-yellow-200 transition"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditNote(note.id);
+                    }}
+                  >
+                    Edit
+                  </button>
+                  <button
+                    className="bg-white-100 text-red-600 rounded-lg px-4 py-1 font-semibold shadow hover:bg-red-200 transition"
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      await handleDeleteNote(note.id);
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>
@@ -587,16 +623,17 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
                 onClick={handleTranslateNotes}
                 disabled={translating}
                 onMouseEnter={(e) => {
-                  if (!translating) e.currentTarget.style.backgroundColor = "#4d7c0f";
+                  if (!translating)
+                    e.currentTarget.style.backgroundColor = "#4d7c0f";
                 }}
                 onMouseLeave={(e) => {
-                  if (!translating) e.currentTarget.style.backgroundColor = "#22c55e";
+                  if (!translating)
+                    e.currentTarget.style.backgroundColor = "#22c55e";
                 }}
               >
                 {translating ? "Translating..." : "Translate Notes"}
               </button>
             </div>
-
 
             {/* Nội dung notes */}
             <div className="overflow-auto w-full flex-grow">{sidebarNotes}</div>
@@ -654,7 +691,10 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
 
   useEffect(() => {
     if (popup.open) {
-      const timer = setTimeout(() => setPopup((p) => ({ ...p, open: false })), 3000);
+      const timer = setTimeout(
+        () => setPopup((p) => ({ ...p, open: false })),
+        3000
+      );
       return () => clearTimeout(timer);
     }
   }, [popup.open]);
@@ -672,41 +712,51 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
               rows={4}
             />
             <div className="flex flex-row gap-4 justify-end">
-              <button
-                className="bg-white-100 text-green-600 rounded-lg px-6 py-2 font-semibold shadow hover:bg-red-200 transition"
-                onClick={async () => {
-                  setNotes((notes) =>
-                    notes.map((n) =>
-                      n.id === selectedHighlight.note.id
-                        ? { ...n, content: highlightEditContent }
-                        : n
-                    )
-                  );
-                  await handleUpdateNote(selectedHighlight.note, highlightEditContent);
-                  setSelectedHighlight(null);
-                }}
-              >
-                Save
-              </button>
-              <button
-                className="bg-white-100 text-red-600 rounded-lg px-6 py-2 font-semibold shadow hover:bg-red-200 transition"
-                onClick={async () => {
-                  try {
-                    await deleteReviewWithHighlightAndComment(
-                      selectedHighlight.note.id
-                    );
-                    setNotes((notes) =>
-                      notes.filter((n) => n.id !== selectedHighlight.note.id)
-                    );
-                    setSelectedHighlight(null);
-                    toast.success("Note deleted successfully!");
-                  } catch (err) {
-                    toast.error("Failed to delete note!");
-                  }
-                }}
-              >
-                Delete
-              </button>
+              {!readOnly && (
+                <div className="flex flex-row gap-4 justify-end">
+                  <button
+                    className="bg-white-100 text-green-600 rounded-lg px-6 py-2 font-semibold shadow hover:bg-red-200 transition"
+                    onClick={async () => {
+                      setNotes((notes) =>
+                        notes.map((n) =>
+                          n.id === selectedHighlight.note.id
+                            ? { ...n, content: highlightEditContent }
+                            : n
+                        )
+                      );
+                      await handleUpdateNote(
+                        selectedHighlight.note,
+                        highlightEditContent
+                      );
+                      setSelectedHighlight(null);
+                    }}
+                  >
+                    Save
+                  </button>
+                  <button
+                    className="bg-white-100 text-red-600 rounded-lg px-6 py-2 font-semibold shadow hover:bg-red-200 transition"
+                    onClick={async () => {
+                      try {
+                        await deleteReviewWithHighlightAndComment(
+                          selectedHighlight.note.id
+                        );
+                        setNotes((notes) =>
+                          notes.filter(
+                            (n) => n.id !== selectedHighlight.note.id
+                          )
+                        );
+                        setSelectedHighlight(null);
+                        toast.success("Note deleted successfully!");
+                      } catch (err) {
+                        toast.error("Failed to delete note!");
+                      }
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+
               <button
                 className="bg-white-100 text-gray-700 rounded-lg px-6 py-2 font-semibold shadow hover:bg-gray-200 transition"
                 onClick={() => setSelectedHighlight(null)}
@@ -720,8 +770,9 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
 
       {popup.open && (
         <div
-          className={`fixed bottom-6 right-6 px-4 py-3 rounded-md font-semibold shadow-md text-white ${popup.type === "success" ? "bg-green-500" : "bg-red-500"
-            }`}
+          className={`fixed bottom-6 right-6 px-4 py-3 rounded-md font-semibold shadow-md text-white ${
+            popup.type === "success" ? "bg-green-500" : "bg-red-500"
+          }`}
           role="alert"
           style={{
             zIndex: 9999,
@@ -743,10 +794,13 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
             fileUrl={fileUrl}
             plugins={[defaultLayoutPluginInstance, highlightPluginInstance]}
             onDocumentLoad={handleDocumentLoad}
-            ini tialPage={0}
+            ini
+            tialPage={0}
           />
         ) : (
-          <p className="text-center py-20 text-gray-500">No PDF file available</p>
+          <p className="text-center py-20 text-gray-500">
+            No PDF file available
+          </p>
         )}
       </Worker>
 
@@ -768,10 +822,12 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
           onClick={() => setShowTranslatedModal(true)}
           disabled={!translatedText}
           onMouseEnter={(e) => {
-            if (translatedText) e.currentTarget.style.backgroundColor = "#b91c1c";
+            if (translatedText)
+              e.currentTarget.style.backgroundColor = "#b91c1c";
           }}
           onMouseLeave={(e) => {
-            if (translatedText) e.currentTarget.style.backgroundColor = "#dc2626";
+            if (translatedText)
+              e.currentTarget.style.backgroundColor = "#dc2626";
           }}
         >
           View Translated Paper
@@ -779,7 +835,7 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
       </div>
 
       {/* Hiển thị nội dung dịch dưới cùng (không tiêu đề) */}
-      <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+      <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
         {translatedText}
       </div>
 
@@ -795,12 +851,9 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
           >
             <h2 className="text-xl font-bold mb-4">Translated Paper</h2>
             <div style={{ fontSize: 14, lineHeight: 1.6 }}>
-              {translatedText.split('\n').map((line, idx) => (
+              {translatedText.split("\n").map((line, idx) => (
                 <div key={idx}>{line}</div>
-
-
               ))}
-
             </div>
 
             <button
