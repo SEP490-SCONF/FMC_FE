@@ -31,7 +31,7 @@ const viewport = page.getViewport({ scale: 1.5 }); // tăng scale cho rõ chữ
           if (!firstViewport) {
             setPageSize({
               width: Math.min(Math.round(viewport.width), 800), // giới hạn max
-              height: Math.min(Math.round(viewport.height), 770),
+              height: Math.min(Math.round(viewport.height), 650),
             });
             firstViewport = viewport;
           }
