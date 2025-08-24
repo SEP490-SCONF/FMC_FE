@@ -111,10 +111,10 @@ const ReviewContent = ({ review, onChunksGenerated }) => {
       console.log('Generated chunks:', chunks.map(c => ({ wordCount: countWords(c.RawText), content: c.RawText.substring(0, 50) + '...' })));
     }
 
-    // (Tùy chọn) Gọi API phân tích AI với fullText nguyên bản
+    // Gọi API phân tích AI với mảng chunks
     try {
       if (review?.reviewId) {
-        const response = await AnalyzeAiService.analyzeDocument(review.reviewId, fullText);
+        const response = await AnalyzeAiService.analyzeDocument(review.reviewId, chunks); // Gửi mảng chunks
         setAiAnalysisResult(response);
       }
     } catch (error) {

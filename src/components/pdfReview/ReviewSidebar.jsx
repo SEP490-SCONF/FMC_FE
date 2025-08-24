@@ -7,7 +7,7 @@ import "react-toastify/dist/ReactToastify.css";
 // Thêm `readOnly` vào danh sách props
 const ReviewSidebar = ({
   review,
-  chunks,
+  chunks, // Sử dụng mảng chunks thay vì rawText
   onChange,
   onSave,
   onSendFeedback,
@@ -29,7 +29,6 @@ const ReviewSidebar = ({
   }
 
   const handleChange = (field, value) => {
-    // Chỉ cho phép thay đổi khi KHÔNG phải chế độ readOnly
     if (!readOnly && onChange) {
       if (field === "paperStatus" && !value) {
         value = "Need Revision";
@@ -39,7 +38,6 @@ const ReviewSidebar = ({
   };
 
   const handleSave = async () => {
-    // Không chạy hàm nếu ở chế độ readOnly
     if (readOnly) return;
     const formData = new FormData();
     formData.append("Comments", review.comments ?? "");
@@ -55,7 +53,6 @@ const ReviewSidebar = ({
   };
 
   const handleSendFeedback = async () => {
-    // Không chạy hàm nếu ở chế độ readOnly
     if (readOnly) return;
     const formData = new FormData();
     formData.append("Comments", review.comments ?? "");
@@ -81,13 +78,10 @@ const ReviewSidebar = ({
 
     try {
       console.log("Chunks being sent", chunks);
-      const rawText = chunks[0].RawText; // Trích xuất RawText từ mảng chunks
-      const data = await AnalyzeAiService.analyzeDocument(review.reviewId, rawText);
-      // Kiểm tra và gán giá trị mặc định nếu thiếu
-      const percentAi = data?.percentAi !== undefined ? data.percentAi : 0;
+      const response = await AnalyzeAiService.analyzeDocument(review.reviewId, chunks); // Gửi mảng chunks
+      const percentAi = response?.PercentAi !== undefined ? response.PercentAi : 0;
       setAiPercentage(percentAi);
       toast.info(`AI check completed! Percentage: ${percentAi}%`);
-      // Cập nhật review nếu có onChange
       if (onChange) {
         onChange({ ...review, percentAi });
       }
@@ -110,7 +104,6 @@ const ReviewSidebar = ({
           value={review.score ?? ""}
           onChange={(e) => handleChange("score", e.target.value)}
           className="w-full border rounded px-3 py-2 bg-gray-100"
-          // Vô hiệu hóa input khi ở chế độ readOnly
           disabled={readOnly}
         />
       </div>
@@ -121,7 +114,6 @@ const ReviewSidebar = ({
           onChange={(e) => handleChange("comments", e.target.value)}
           className="w-full border rounded px-3 py-2 bg-gray-100"
           rows={3}
-          // Vô hiệu hóa textarea khi ở chế độ readOnly
           disabled={readOnly}
         />
       </div>
@@ -131,7 +123,6 @@ const ReviewSidebar = ({
           value={safePaperStatus}
           onChange={(e) => handleChange("paperStatus", e.target.value)}
           className="w-full border rounded px-3 py-2 bg-gray-100"
-          // Vô hiệu hóa select khi ở chế độ readOnly
           disabled={readOnly}
         >
           <option value="Need Revision">Need Revision</option>
@@ -148,7 +139,6 @@ const ReviewSidebar = ({
             className="w-full border rounded px-3 py-2 bg-gray-100"
             disabled
           />
-          {/* Ẩn nút "Check Again" khi ở chế độ readOnly */}
           {!readOnly && (
             <button
               className="px-4 py-2 bg-blue-100 text-blue-700 border border-blue-600 rounded font-semibold hover:bg-blue-600 hover:text-white transition"
@@ -159,7 +149,6 @@ const ReviewSidebar = ({
           )}
         </div>
       </div>
-      {/* Ẩn toàn bộ nút "Save" và "Send Feedback" khi ở chế độ readOnly */}
       {!readOnly && (
         <div className="flex gap-4 mt-auto">
           <button

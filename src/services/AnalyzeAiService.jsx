@@ -2,11 +2,11 @@
 import { apiService } from './ApiService';
 
 const AnalyzeAiService = {
-    analyzeDocument: async (reviewId, rawText) => {
+    analyzeDocument: async (reviewId, chunks) => {
         try {
             const response = await apiService.post('/AnalyzeAi', {
                 ReviewId: reviewId,
-                RawText: rawText,
+                Chunks: chunks,
             });
             return response;
         } catch (error) {
@@ -18,6 +18,11 @@ const AnalyzeAiService = {
             throw error;
         }
     },
+};
+
+// Hàm countWords (copy từ ReviewContent.jsx để tái sử dụng)
+const countWords = (text) => {
+    return text.trim().split(/\s+/).filter(word => word.length > 0).length;
 };
 
 export default AnalyzeAiService;

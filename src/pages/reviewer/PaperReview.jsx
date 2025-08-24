@@ -9,7 +9,7 @@ const PaperReview = () => {
     const navigate = useNavigate();
     const { assignmentId } = useParams();
     const [review, setReview] = useState(null);
-    const [rawText, setRawText] = useState('');
+    const [chunks, setChunks] = useState([]); // Thêm state để lưu mảng chunks
     const [aiPercentage, setAiPercentage] = useState(0);
     const [comment, setComment] = useState('');
     const [message, setMessage] = useState('');
@@ -21,13 +21,11 @@ const PaperReview = () => {
                 try {
                     const res = await getReviewByAssignmentId(assignmentId);
                     if (!res) {
-                        // Nếu cần điều hướng khi không tìm thấy review
                         navigate("/not-found");
                         return;
                     }
                     setReview(res);
                 } catch (error) {
-
                     setReview(null);
                     navigate("/not-found");
                 }
@@ -37,16 +35,15 @@ const PaperReview = () => {
         }
     }, [assignmentId, navigate]);
 
-    // Hàm trích xuất raw text và gọi API
+    // Hàm xử lý khi chunks được tạo từ ReviewContent
+    // Trong handleChunksGenerated
     const handleChunksGenerated = async (data) => {
-        const rawText = data[0]?.RawText; // Lấy RawText từ mảng
-        if (!rawText) {
-            setMessage("No raw text provided in data.");
+        if (!data || !Array.isArray(data) || !data[0]?.RawText) {
+            setMessage("No valid chunks provided.");
             setMessageType('error');
             return;
         }
-        setRawText(rawText); // Lưu raw text vào state
-        console.log('Time:', new Date().toLocaleString(), 'Sending to:', '/api/AnalyzeAi', { ReviewId: review?.reviewId, RawText: rawText });
+        setChunks(data); // Lưu mảng chunks vào state
 
         if (!review?.reviewId) {
             setMessage("Review ID not available.");
@@ -54,17 +51,29 @@ const PaperReview = () => {
             return;
         }
 
+        // Chuyển đổi dữ liệu chunk thành định dạng ChunkPayloadDTO
+        const formattedChunks = data.map((chunk, index) => ({
+            ChunkId: index + 1,
+            Text: chunk.RawText, // Sử dụng full RawText thay vì chỉ 50 ký tự
+            TokenCount: countWords(chunk.RawText), // Sử dụng wordCount làm TokenCount
+            Hash: null // Có thể thêm logic hash nếu cần
+        }));
+
         try {
-            const data = await AnalyzeAiService.analyzeDocument(review.reviewId, rawText);
-            console.log('Response at:', new Date().toLocaleString(), data);
-            setAiPercentage(data.PercentAi || 0); // Cập nhật với PercentAi (chữ cái đầu in hoa theo convention)
-            // setMessage(`AI Percentage: ${data.PercentAi}%, Total Tokens: ${data.TotalTokens}`);
+            console.log('Sending to API:', { ReviewId: review.reviewId, Chunks: formattedChunks });
+            const response = await AnalyzeAiService.analyzeDocument(review.reviewId, formattedChunks); // Gửi mảng chunks đã định dạng
+            console.log('Response at:', new Date().toLocaleString(), response);
+            setAiPercentage(response.PercentAi || 0); // Cập nhật với PercentAi
             setMessageType('success');
         } catch (err) {
             console.error('Time:', new Date().toLocaleString(), 'Error:', err.message, err.response?.data);
-            // setMessage(`Failed to analyze AI content! (${err.message}${err.response?.data?.errors ? ': ' + JSON.stringify(err.response.data.errors) : ''})`);
             setMessageType('error');
         }
+    };
+
+    // Hàm countWords (copy từ ReviewContent.jsx để tái sử dụng)
+    const countWords = (text) => {
+        return text.trim().split(/\s+/).filter(word => word.length > 0).length;
     };
 
     return (
@@ -74,7 +83,7 @@ const PaperReview = () => {
                     <div className="w-1/4">
                         <ReviewSidebar
                             review={review}
-                            chunks={rawText ? [{ RawText: rawText }] : []} // Truyền rawText dưới dạng mảng cho tương thích
+                            chunks={chunks} // Truyền mảng chunks thay vì rawText
                             aiPercentage={aiPercentage}
                             onChange={setReview}
                             onSave={() => { }}

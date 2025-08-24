@@ -181,17 +181,34 @@ const Submited = ({ submissions = [], userId, conferenceId }) => {
               >
                 Certificate
               </Button>
-              <Button
-                icon={<DollarOutlined />}
-                type="link"
-                onClick={() =>
-                  navigate(`/author/payment/${record.paperId}`, {
-                    state: { userId, conferenceId, paperId: record.paperId },
-                  })
-                }
-              >
-                Payment
-              </Button>
+
+              {record.isPublished ? (
+                <Button
+                  icon={<DollarOutlined />}
+                  type="link"
+                  onClick={() =>
+                    navigate(`/author/payment/${record.paperId}`, {
+                      state: { userId, conferenceId, paperId: record.paperId },
+                    })
+                  }
+                  disabled
+                >
+                  Payment Completed
+                </Button>
+              ) : (
+                <Button
+                  icon={<DollarOutlined />}
+                  type="link"
+                  onClick={() =>
+                    navigate(`/author/payment/${record.paperId}`, {
+                      state: { userId, conferenceId, paperId: record.paperId },
+                    })
+                  }
+                >
+                  Payment
+                </Button>
+              )}
+
             </>
           )}
         </>
