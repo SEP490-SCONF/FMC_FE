@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import { ExclamationCircleOutlined } from "@ant-design/icons";
+
 import {
   List,
   Avatar,
@@ -11,7 +13,7 @@ import {
   Checkbox,
   Input,
   Pagination,
-  Popconfirm,
+  Modal,
 } from "antd";
 import {
   getConferenceReviewers,
@@ -93,6 +95,28 @@ const ReviewerListPage = () => {
       message.error("Failed to load members.");
     }
   };
+
+  const showDeleteConfirm = (id) => {
+  Modal.confirm({
+    title: (
+      <Text strong type="danger" style={{ fontSize: 18 }}>
+        ⚠️ Confirm Removal
+      </Text>
+    ),
+    icon: <ExclamationCircleOutlined style={{ color: "#faad14" }} />,
+    content: (
+      <div>
+        <p>This action <Text strong>cannot be undone</Text>.</p>
+        <p>Are you sure you want to remove this reviewer?</p>
+      </div>
+    ),
+    okText: "Yes, remove",
+    cancelText: "Cancel",
+    okType: "danger",
+    centered: true,
+    onOk: () => handleRemoveReviewer(id),
+  });
+};
 
   useEffect(() => {
     if (conferenceId) {
@@ -279,20 +303,14 @@ const ReviewerListPage = () => {
           title={
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <span>{user.userName}</span>
-              <Popconfirm
-                title="Remove this reviewer?"
-                onConfirm={() => handleRemoveReviewer(user.id)}
-                okText="Yes"
-                cancelText="No"
-              >
-                <Button
-                  type="text"
-                  danger
-                  size="small"
-icon={<DeleteOutlined style={{ fontSize: 25, color: "red" }} />}
+              <Button
+  type="text"
+  danger
+  size="small"
+  icon={<DeleteOutlined style={{ fontSize: 25, color: "red" }} />}
+  onClick={() => showDeleteConfirm(user.id)}
+/>
 
-                />
-              </Popconfirm>
             </div>
           }
           description={

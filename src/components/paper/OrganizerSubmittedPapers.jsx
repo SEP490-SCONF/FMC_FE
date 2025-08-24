@@ -202,14 +202,15 @@ const SubmittedOrga = () => {
   };
 
   const handleSendCertificate = async (paperId) => {
-    try {
-      await generateCertificatesForPaper(paperId);
-      alert("🎉 Certificate sent successfully!");
-    } catch (error) {
-      console.error("❌ Failed to send certificate", error);
-      alert("❌ Failed to send certificate.");
-    }
-  };
+  try {
+    await generateCertificatesForPaper(paperId);
+    toast.success("🎉 Certificate sent successfully!");
+  } catch (error) {
+    console.error("❌ Failed to send certificate", error);
+    toast.error("❌ Failed to send certificate.");
+  }
+};
+
 
   return (
     <>
