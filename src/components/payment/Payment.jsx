@@ -24,7 +24,7 @@ const PaymentPage = ({ userId, conferenceId, paperId }) => {
     const [fee, setFee] = useState(FEE_OPTIONS[0].value);
 
     const handleGiftCodeApply = () => {
-        console.log('Applying gift code:', giftCode);
+        // console.log('Applying gift code:', giftCode);
     };
 
     const formatVnd = (n) => {

@@ -11,9 +11,9 @@ const OrganizerTrack = () => {
     useEffect(() => {
         const fetchPayments = async () => {
             try {
-                console.log("Fetching payments for conferenceId:", conferenceId);
+                // console.log("Fetching payments for conferenceId:", conferenceId);
                 const data = await PayService.getPaymentsByConference(conferenceId);
-                console.log("Fetched data:", data);
+                // console.log("Fetched data:", data);
                 setPayments(data);
             } catch (error) {
                 console.error("Failed to fetch payments:", error);
@@ -25,7 +25,7 @@ const OrganizerTrack = () => {
         if (conferenceId) {
             fetchPayments();
         } else {
-            console.log("No conferenceId available");
+            // console.log("No conferenceId available");
             setLoading(false);
         }
     }, [conferenceId]);

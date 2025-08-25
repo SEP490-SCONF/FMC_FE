@@ -13,7 +13,7 @@ const Forum = () => {
     question: '',
     askBy: null // Will be set from userInfo
   });
-  
+
   // API state
   const [forumData, setForumData] = useState(null);
   const [questionsData, setQuestionsData] = useState({
@@ -66,7 +66,7 @@ const Forum = () => {
       setLoading(true);
       setError(null);
       const response = await getForumsByConferenceId(id);
-      console.log('Forum data loaded:', response); 
+      // console.log('Forum data loaded:', response); 
       setForumData(response);
     } catch (error) {
       console.error('Error loading forum data:', error);
@@ -114,20 +114,20 @@ const Forum = () => {
       return;
     }
     setCurrentView('create');
-    setNewQuestion({ 
-      title: '', 
-      description: '', 
-      question: '', 
+    setNewQuestion({
+      title: '',
+      description: '',
+      question: '',
       askBy: userInfo.userId
     });
   };
 
   const handleBackFromCreate = () => {
     setCurrentView('list');
-    setNewQuestion({ 
-      title: '', 
-      description: '', 
-      question: '', 
+    setNewQuestion({
+      title: '',
+      description: '',
+      question: '',
       askBy: userInfo ? userInfo.userId : null
     });
   };
@@ -137,7 +137,7 @@ const Forum = () => {
       navigate('/');
       return;
     }
-    
+
     if (newQuestion.title.trim() && newQuestion.description.trim() && newQuestion.question.trim()) {
       try {
         setLoading(true);
@@ -148,17 +148,17 @@ const Forum = () => {
           description: newQuestion.description,
           question: newQuestion.question
         };
-        
+
         await createForumQuestion(questionData);
-        
+
         // Reload questions after creating new one
         await loadQuestions();
-        
+
         setCurrentView('list');
-        setNewQuestion({ 
-          title: '', 
-          description: '', 
-          question: '', 
+        setNewQuestion({
+          title: '',
+          description: '',
+          question: '',
           askBy: userInfo.userId
         });
       } catch (error) {
@@ -172,26 +172,26 @@ const Forum = () => {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('vi-VN') + ' ' + date.toLocaleTimeString('vi-VN', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
+    return date.toLocaleDateString('vi-VN') + ' ' + date.toLocaleTimeString('vi-VN', {
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
   const handleLikeQuestion = async (e, questionId) => {
     e.stopPropagation(); // Prevent navigating to question detail
-    
+
     if (!userInfo) {
       navigate('/');
       return;
     }
-    
+
     // Prevent multiple simultaneous like requests for the same question
     if (likingQuestions.has(questionId)) return;
-    
+
     try {
       setLikingQuestions(prev => new Set(prev.add(questionId)));
-      
+
       // Optimistically update UI
       setQuestionsData(prevData => ({
         ...prevData,
@@ -207,13 +207,13 @@ const Forum = () => {
           return question;
         })
       }));
-      
+
       // Make API call
       await toggleQuestionLike(questionId, userInfo.userId);
-      
+
     } catch (error) {
       console.error('Error toggling question like:', error);
-      
+
       // Revert optimistic update on error
       setQuestionsData(prevData => ({
         ...prevData,
@@ -229,7 +229,7 @@ const Forum = () => {
           return question;
         })
       }));
-      
+
       alert('An error occurred while liking/unliking the question. Please try again.');
     } finally {
       setLikingQuestions(prev => {
@@ -289,7 +289,7 @@ const Forum = () => {
         <div className="max-w-4xl mx-auto p-6">
           {/* Header */}
           <div className="mb-6">
-            <button 
+            <button
               onClick={handleBackFromCreate}
               className="text-gray-600 hover:text-gray-800 mb-4"
             >
@@ -315,7 +315,7 @@ const Forum = () => {
                   placeholder="Enter your question title"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Short description
@@ -328,7 +328,7 @@ const Forum = () => {
                   placeholder="Brief description of your question"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Detailed question content
@@ -341,11 +341,11 @@ const Forum = () => {
                   rows="6"
                 />
               </div>
-              
+
               <div className="flex gap-3">
                 <button
                   onClick={handleSubmitQuestion}
-                                style={{ backgroundColor: '#1447e6' }}
+                  style={{ backgroundColor: '#1447e6' }}
                   disabled={!newQuestion.title.trim() || !newQuestion.description.trim() || !newQuestion.question.trim() || loading}
                   className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
@@ -397,7 +397,7 @@ const Forum = () => {
               Search
             </button>
           </form>
-          
+
           {userInfo ? (
             <button
               onClick={handleCreateQuestion}
@@ -430,30 +430,29 @@ const Forum = () => {
           <div className="space-y-6">
             {questionsData.questions && questionsData.questions.length > 0 ? (
               questionsData.questions.map((question) => (
-                <div 
-                  key={question.fqId} 
+                <div
+                  key={question.fqId}
                   className="border border-gray-200 rounded-lg p-6 hover:bg-gray-50 cursor-pointer transition-colors"
                   onClick={() => handleQuestionClick(question)}
                 >
                   {/* Question Header */}
                   <div className="mb-4">
                     <h2 style={{ fontSize: "30px", fontWeight: "500" }} className="text-gray-800">
-                     {question.title}
-                      </h2> 
-                      <p className="text-sm text-gray-600 mb-3">{question.description}</p>
-                      <div className="text-xs text-gray-500 mb-3">
+                      {question.title}
+                    </h2>
+                    <p className="text-sm text-gray-600 mb-3">{question.description}</p>
+                    <div className="text-xs text-gray-500 mb-3">
                       Author: {question.askerName} • Created: {formatDate(question.createdAt)}
-                      </div>
+                    </div>
                     <div className="flex gap-6 text-sm text-gray-600">
                       <span>{question.totalAnswers} answers</span>
-                      <button 
+                      <button
                         onClick={(e) => handleLikeQuestion(e, question.fqId)}
                         disabled={!userInfo || likingQuestions.has(question.fqId)}
-                        className={`transition-colors ${
-                          question.isLikedByCurrentUser 
-                            ? 'text-blue-600 hover:text-blue-800' 
+                        className={`transition-colors ${question.isLikedByCurrentUser
+                            ? 'text-blue-600 hover:text-blue-800'
                             : 'text-gray-600 hover:text-blue-600'
-                        } ${!userInfo ? 'cursor-not-allowed opacity-50' : ''}`}
+                          } ${!userInfo ? 'cursor-not-allowed opacity-50' : ''}`}
                         title={userInfo ? (question.isLikedByCurrentUser ? 'Unlike question' : 'Like question') : 'Login to like'}
                       >
                         {likingQuestions.has(question.fqId) ? (
@@ -504,11 +503,11 @@ const Forum = () => {
             >
               Previous
             </button>
-            
+
             <span className="px-4 py-2 text-sm text-gray-600">
               Page {questionsData.currentPage} / {questionsData.totalPages}
             </span>
-            
+
             <button
               onClick={() => handlePageChange(currentPage + 1)}
               disabled={!questionsData.hasNextPage}

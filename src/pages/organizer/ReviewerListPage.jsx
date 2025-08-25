@@ -57,7 +57,7 @@ const ReviewerListPage = () => {
       });
       const data = res.data || res;
       const reviewersList = data.value || data;
-      
+
 
       setReviewers(reviewersList);
       const total =
@@ -97,26 +97,26 @@ const ReviewerListPage = () => {
   };
 
   const showDeleteConfirm = (id) => {
-  Modal.confirm({
-    title: (
-      <Text strong type="danger" style={{ fontSize: 18 }}>
-        ⚠️ Confirm Removal
-      </Text>
-    ),
-    icon: <ExclamationCircleOutlined style={{ color: "#faad14" }} />,
-    content: (
-      <div>
-        <p>This action <Text strong>cannot be undone</Text>.</p>
-        <p>Are you sure you want to remove this reviewer?</p>
-      </div>
-    ),
-    okText: "Yes, remove",
-    cancelText: "Cancel",
-    okType: "danger",
-    centered: true,
-    onOk: () => handleRemoveReviewer(id),
-  });
-};
+    Modal.confirm({
+      title: (
+        <Text strong type="danger" style={{ fontSize: 18 }}>
+          ⚠️ Confirm Removal
+        </Text>
+      ),
+      icon: <ExclamationCircleOutlined style={{ color: "#faad14" }} />,
+      content: (
+        <div>
+          <p>This action <Text strong>cannot be undone</Text>.</p>
+          <p>Are you sure you want to remove this reviewer?</p>
+        </div>
+      ),
+      okText: "Yes, remove",
+      cancelText: "Cancel",
+      okType: "danger",
+      centered: true,
+      onOk: () => handleRemoveReviewer(id),
+    });
+  };
 
   useEffect(() => {
     if (conferenceId) {
@@ -171,20 +171,20 @@ const ReviewerListPage = () => {
   };
 
   const handleRemoveReviewer = async (id) => {
-      console.log("🔧 Start removing reviewer:", id);
+    // console.log("🔧 Start removing reviewer:", id);
 
-  try {
-    await deleteUserConferenceRole(id);
-        console.log("✅ Successfully removed reviewer:", id);
+    try {
+      await deleteUserConferenceRole(id);
+      // console.log("✅ Successfully removed reviewer:", id);
 
-    message.success("Reviewer removed successfully.");
-    fetchReviewers(currentPage, debouncedSearchTerm);
-    loadMembers();
-  } catch (err) {
-    console.error("❌ Failed to remove reviewer:", err);
-    message.error("Failed to remove reviewer.");
-  }
-};
+      message.success("Reviewer removed successfully.");
+      fetchReviewers(currentPage, debouncedSearchTerm);
+      loadMembers();
+    } catch (err) {
+      console.error("❌ Failed to remove reviewer:", err);
+      message.error("Failed to remove reviewer.");
+    }
+  };
 
   const handleMemberSearch = (value) => {
     setMemberSearch(value);
@@ -293,53 +293,53 @@ const ReviewerListPage = () => {
       />
 
       <List
-  grid={{ gutter: 16, column: 2 }}
-  dataSource={reviewers}
-  locale={{ emptyText: "No reviewers found." }}
-  renderItem={(user) => {
-  return (
-    <List.Item>
-      <Card hoverable>
-        <Card.Meta
-          avatar={
-            user.avatarUrl ? (
-              <Avatar src={user.avatarUrl} />
-            ) : (
-              <Avatar>{user.userName?.[0]}</Avatar>
-            )
-          }
-          title={
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span>{user.userName}</span>
-              <Button
-  type="text"
-  danger
-  size="small"
-  icon={<DeleteOutlined style={{ fontSize: 25, color: "red" }} />}
-  onClick={() => showDeleteConfirm(user.id)}
-/>
+        grid={{ gutter: 16, column: 2 }}
+        dataSource={reviewers}
+        locale={{ emptyText: "No reviewers found." }}
+        renderItem={(user) => {
+          return (
+            <List.Item>
+              <Card hoverable>
+                <Card.Meta
+                  avatar={
+                    user.avatarUrl ? (
+                      <Avatar src={user.avatarUrl} />
+                    ) : (
+                      <Avatar>{user.userName?.[0]}</Avatar>
+                    )
+                  }
+                  title={
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span>{user.userName}</span>
+                      <Button
+                        type="text"
+                        danger
+                        size="small"
+                        icon={<DeleteOutlined style={{ fontSize: 25, color: "red" }} />}
+                        onClick={() => showDeleteConfirm(user.id)}
+                      />
 
-            </div>
-          }
-          description={
-            <>
-              <Text>Email: {user.userEmail}</Text> <br />
-              <Text>Role: {user.roleName}</Text> <br />
-              <Text>
-                Assigned At:{" "}
-                {user.assignedAt
-                  ? new Date(user.assignedAt).toLocaleString()
-                  : "N/A"}
-              </Text>
-            </>
-          }
-        />
-      </Card>
-    </List.Item>
-  );
-}}
+                    </div>
+                  }
+                  description={
+                    <>
+                      <Text>Email: {user.userEmail}</Text> <br />
+                      <Text>Role: {user.roleName}</Text> <br />
+                      <Text>
+                        Assigned At:{" "}
+                        {user.assignedAt
+                          ? new Date(user.assignedAt).toLocaleString()
+                          : "N/A"}
+                      </Text>
+                    </>
+                  }
+                />
+              </Card>
+            </List.Item>
+          );
+        }}
 
-/>
+      />
 
       <Pagination
         current={currentPage}

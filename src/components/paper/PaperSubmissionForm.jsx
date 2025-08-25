@@ -5,8 +5,12 @@ import { getConferenceTopicsByConferenceId } from "../../services/ConferenceTopi
 import { resolveAuthors } from "../../services/UserConferenceRoleService";
 import { useParams } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
-import { uploadPaperPdf, uploadAndSpellCheck } from "../../services/PaperSerice"; // thêm import
+import {
+  uploadPaperPdf,
+  uploadAndSpellCheck,
+} from "../../services/PaperSerice"; // thêm import
 import { toast } from "react-toastify";
+import { getTimelinesByConferenceId } from "../../services/TimelineService"; // import hàm này
 
 const rules = [
   "Papers must be original and not under consideration elsewhere.",
@@ -31,10 +35,12 @@ const SubmitPapers = () => {
   const [authorIds, setAuthorIds] = useState(user ? [user.userId] : []);
   const [coAuthorEmails, setCoAuthorEmails] = useState([""]);
   const [highlightedUrl, setHighlightedUrl] = useState(""); // thêm state highlight
-  const [isChecking, setIsChecking] = useState(false);       // state đang check
+  const [isChecking, setIsChecking] = useState(false); // state đang check
+  const [submissionDeadline, setSubmissionDeadline] = useState(null);
+  const [isDeadlinePassed, setIsDeadlinePassed] = useState(false);
   const fileInputRef = useRef(null);
   const authors = user ? [{ id: user.userId, name: user.name }] : [];
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
   useEffect(() => {
     if (!selectedConference || selectedConference.conferenceId !== Number(id)) {
       fetchConferenceDetail(id);
@@ -46,6 +52,33 @@ const SubmitPapers = () => {
       getConferenceTopicsByConferenceId(selectedConference.conferenceId)
         .then((res) => setTopics(res))
         .catch(() => setTopics([]));
+    }
+  }, [selectedConference]);
+
+  useEffect(() => {
+    if (selectedConference?.conferenceId) {
+      // Lấy timeline để lấy ngày Submission Deadline
+      getTimelinesByConferenceId(selectedConference.conferenceId)
+        .then((timelines) => {
+          // Tìm dòng Submission Deadline
+          const deadlineObj = (timelines.value || timelines).find(
+            (t) =>
+              t.description &&
+              t.description.toLowerCase().includes("submission deadline") &&
+              t.date
+          );
+          if (deadlineObj && deadlineObj.date) {
+            setSubmissionDeadline(deadlineObj.date);
+            // So sánh với ngày hiện tại
+            const now = new Date();
+            const deadlineDate = new Date(deadlineObj.date);
+            setIsDeadlinePassed(now > deadlineDate);
+          }
+        })
+        .catch(() => {
+          setSubmissionDeadline(null);
+          setIsDeadlinePassed(false);
+        });
     }
   }, [selectedConference]);
 
@@ -77,7 +110,6 @@ const SubmitPapers = () => {
         toast.error("No highlighted PDF returned from server.");
       }
     } catch (error) {
-      console.error("Spell check error:", error);
       toast.error("Spell check failed.");
     } finally {
       setIsChecking(false);
@@ -86,15 +118,20 @@ const SubmitPapers = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Debug values:", {
-    file,
-    title,
-    abstract,
-    keywords,
-    topic,
-    conferenceId: selectedConference?.conferenceId,
-    authorIdsLength: authorIds.length,
-  });
+    if (isDeadlinePassed) {
+      toast.error("Submission deadline has passed. You cannot submit a paper.");
+      return;
+    }
+    setIsSubmitting(true);
+    //   console.log("Debug values:", {
+    //   file,
+    //   title,
+    //   abstract,
+    //   keywords,
+    //   topic,
+    //   conferenceId: selectedConference?.conferenceId,
+    //   authorIdsLength: authorIds.length,
+    // });
     if (
       !file ||
       !title ||
@@ -105,6 +142,7 @@ const SubmitPapers = () => {
       authorIds.length === 0
     ) {
       toast.error("Please fill in all required fields and select a file.");
+      setIsSubmitting(false);
       return;
     }
 
@@ -144,6 +182,8 @@ const SubmitPapers = () => {
     } catch (error) {
       console.error("Error during submission:", error);
       toast.error("Error resolving co-authors or submitting paper.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -254,7 +294,9 @@ const SubmitPapers = () => {
                       type="button"
                       className="px-3 py-1 bg-red-100 border border-red-400 text-red-600 rounded"
                       onClick={() => {
-                        const newEmails = coAuthorEmails.filter((_, i) => i !== index);
+                        const newEmails = coAuthorEmails.filter(
+                          (_, i) => i !== index
+                        );
                         setCoAuthorEmails(newEmails);
                       }}
                     >
@@ -292,7 +334,21 @@ const SubmitPapers = () => {
               </div>
               {/* Buttons: Submit + Spell Check */}
               <div className="flex gap-4 mt-4">
-                <Buttonsubmit />
+                <button
+                  type="submit"
+                  disabled={isSubmitting || isDeadlinePassed}
+                  className={`px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 ${
+                    isSubmitting || isDeadlinePassed
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
+                  }`}
+                >
+                  {isDeadlinePassed
+                    ? "Submission Closed"
+                    : isSubmitting
+                    ? "Submitting..."
+                    : "Submit Paper"}
+                </button>
                 <button
                   type="button"
                   onClick={handleSpellCheck}
@@ -303,6 +359,11 @@ const SubmitPapers = () => {
                   {isChecking ? "Checking..." : "Check Spelling"}
                 </button>
               </div>
+              {isDeadlinePassed && (
+                <div className="text-red-600 font-semibold mt-2">
+                  Submission deadline has passed. You cannot submit a paper.
+                </div>
+              )}
               {/* Link download PDF highlight */}
               {highlightedUrl && (
                 <div className="mt-2">

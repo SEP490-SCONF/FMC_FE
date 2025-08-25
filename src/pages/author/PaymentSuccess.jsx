@@ -13,7 +13,7 @@ const PaymentSuccess = () => {
     const [error, setError] = useState("");
 
     useEffect(() => {
-        console.log("orderCode:", orderCode, "paperId:", paperId); // Thêm dòng này để debug
+        // console.log("orderCode:", orderCode, "paperId:", paperId); // Thêm dòng này để debug
         const confirmPayment = async () => {
 
             if (!orderCode) {

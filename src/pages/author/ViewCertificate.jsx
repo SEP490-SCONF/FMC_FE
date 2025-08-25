@@ -10,11 +10,11 @@ const ViewCertificate = () => {
     const fetchCertificate = async () => {
       try {
         const response = await getCertificatesByPaperId(paperId);
-        console.log("📦 Raw response:", response);
+        // console.log("📦 Raw response:", response);
 
         if (Array.isArray(response) && response.length > 0) {
           const cert = response[0];
-          console.log("📦 Extracted certificate:", cert);
+          // console.log("📦 Extracted certificate:", cert);
 
           if (cert?.certificateUrl) {
             setCertificateUrl(cert.certificateUrl);
@@ -31,14 +31,14 @@ const ViewCertificate = () => {
   }, [paperId]);
 
   return (
-    <div style={{ 
-      padding: 24, 
-      display: "flex", 
-      flexDirection: "column", 
-      alignItems: "center", 
-      justifyContent: "center", 
-      minHeight: "100vh", 
-      textAlign: "center" 
+    <div style={{
+      padding: 24,
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
+      minHeight: "100vh",
+      textAlign: "center"
     }}>
       {certificateUrl ? (
         <div>

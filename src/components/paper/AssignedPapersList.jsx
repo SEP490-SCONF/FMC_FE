@@ -19,17 +19,21 @@ const PaperAssign = () => {
         if (user && user.userId) {
             getReviewerAssignments(user.userId)
                 .then(res => {
-                    const mapped = (res.data || res).map(item => ({
-                        key: item.assignmentId,
-                        assignmentId: item.assignmentId,
-                        name: item.title,
-                        pdfUrl: item.revisions?.[0]?.filePath || "",
-                        topic: item.topicName,
-                        assignedDate: item.assignedAt ? new Date(item.assignedAt).toLocaleDateString("en-GB") : "",
-                        revisionId: item.revisions?.[0]?.revisionId || "",
-                        paperId: item.paperId,
-                        reviewerId: item.reviewerId,
-                    }));
+                    // Map lại: mỗi revision là một dòng
+                    const mapped = (res.data || res).flatMap(item =>
+                        (item.revisions || []).map(rev => ({
+                            key: `${item.assignmentId}_${rev.revisionId}`,
+                            assignmentId: item.assignmentId,
+                            name: item.title,
+                            pdfUrl: rev.filePath || "",
+                            topic: item.topicName,
+                            assignedDate: item.assignedAt ? new Date(item.assignedAt).toLocaleDateString("en-GB") : "",
+                            revisionId: rev.revisionId,
+                            paperId: item.paperId,
+                            reviewerId: item.reviewerId,
+                            revisionStatus: rev.status,
+                        }))
+                    );
                     setPapers(mapped);
                     setFilteredData(mapped);
                 })
@@ -61,8 +65,7 @@ const PaperAssign = () => {
         formData.append("Comments", "");
 
         addReview(formData)
-            .then((response) => {
-               
+            .then(() => {
                 navigate(`/review/paper/${record.assignmentId}`);
             })
             .catch((error) => {
@@ -116,6 +119,20 @@ const PaperAssign = () => {
             render: (text) => <span className="text-gray-500">{text}</span>,
         },
         {
+            title: "Revision Status",
+            dataIndex: "revisionStatus",
+            key: "revisionStatus",
+            render: (status) => (
+                <span className={
+                    status === "Under Review"
+                        ? "text-blue-600 font-semibold"
+                        : "text-gray-500"
+                }>
+                    {status}
+                </span>
+            ),
+        },
+        {
             title: "Review",
             key: "review",
             render: (_, record) => (
@@ -123,6 +140,7 @@ const PaperAssign = () => {
                     type="primary"
                     icon={<FiEdit />}
                     onClick={() => handleReview(record)}
+                    disabled={record.revisionStatus !== "Under Review"}
                 >
                     Review
                 </Button>

@@ -23,6 +23,7 @@
     "antd": "^5.26.2",
     "axios": "^1.10.0",
     "bootstrap": "^5.3.6",
+    "crypto-js": "^4.2.0",
     "file-saver": "^2.0.5",
     "framer-motion": "^12.23.12",
     "jquery-ui-dist": "^1.13.3",

@@ -2,32 +2,32 @@ import React, { useEffect } from "react";
 import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import bgImage from "../../assets/images/tru-so-fpt20250415141843.jpg";
 import { loginWithGoogle } from "../../services/AuthenService";
-import { useAuth } from "../../context/AuthContext"; 
+import { useAuth } from "../../context/AuthContext";
 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 const Login = () => {
-  const { login } = useAuth(); 
-  
-   useEffect(() => {
+  const { login } = useAuth();
+
+  useEffect(() => {
     const accessToken = localStorage.getItem("accessToken");
     if (accessToken) {
-      login(accessToken);   
+      login(accessToken);
     }
   }, [login]);
   const handleSuccess = async (credentialResponse) => {
     const credential = credentialResponse.credential;
 
     try {
-    const data = await loginWithGoogle(credential);
-    login(data.accessToken, data.expiresAt);
-     
+      const data = await loginWithGoogle(credential);
+      login(data.accessToken, data.expiresAt);
+
     } catch (err) {
       console.error("Error:", err);
     }
   };
 
   const handleError = () => {
-    console.log("Google login failed");
+    // console.log("Google login failed");
   };
 
   return (
