@@ -47,6 +47,12 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
   const noteEles = useRef(new Map());
   const [currentDoc, setCurrentDoc] = useState(null);
   const [aiAnalysisResult, setAiAnalysisResult] = useState(null);
+  const [highlightTranslation, setHighlightTranslation] = useState(null);
+  const [popupPosition, setPopupPosition] = useState(null);
+  const [highlightTranslations, setHighlightTranslations] = useState(new Map());
+
+
+  
 
   // Hàm đếm số từ trong text
   const countWords = (text) => {
@@ -55,6 +61,36 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
       .split(/\s+/)
       .filter((word) => word.length > 0).length;
   };
+
+  const handleHighlight = async () => {
+  const selection = window.getSelection();
+  if (!selection || selection.toString().trim() === "") return;
+
+  const range = selection.getRangeAt(0);
+  const rect = range.getBoundingClientRect();
+  const containerRect = document
+    .querySelector(".rpv-core__viewer") // container Viewer
+    .getBoundingClientRect();
+
+  const translated = await translateHighlightedText(selection.toString(), "en");
+  setHighlightTranslation(translated);
+
+  setPopupPosition({
+    show: true,
+    top: rect.bottom - containerRect.top, // vị trí relative so với container
+    left: rect.left - containerRect.left,
+  });
+};
+
+const handleTranslateHighlight = async (selectedText, highlightId) => {
+  try {
+    const res = await translateHighlightedText(selectedText, highlightLang);
+    setHighlightTranslations((prev) => new Map(prev).set(highlightId, res || ""));
+    setPopupPosition({ top: rect.bottom + 5, left: rect.left });
+  } catch (err) {
+    setPopup({ open: true, text: "Failed to translate selected text", type: "error" });
+  }
+};
 
   // Hàm chia nhỏ text dựa trên số từ (proxy cho token)
   const splitTextWithOverlap = (text, maxWords, overlapWords) => {
@@ -267,112 +303,125 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
     setTranslating(false);
   };
 
-  const renderHighlightTarget = (props) => (
+  const renderHighlightTarget = (props) => {
+  return (
     <div
       style={{
         display: "flex",
+        alignItems: "center",
         position: "absolute",
         left: `${props.selectionRegion.left}%`,
         top: `${props.selectionRegion.top + props.selectionRegion.height}%`,
         transform: "translate(0, 8px)",
         zIndex: 10,
         gap: "8px",
+        background: "white",
+        border: "1px solid #ddd",
+        borderRadius: "8px",
+        padding: "6px 10px",
+        boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
       }}
     >
-      {/* Nút Note */}
+      {/* Nút Add a Note */}
       <Tooltip
         position={Position.TopCenter}
-        target={
-          <Button onClick={props.toggle}>
-            <MessageIcon />
-          </Button>
-        }
-        content={() => <div style={{ width: "100px" }}>Add a note</div>}
+        target={<Button onClick={props.toggle}><MessageIcon /></Button>}
+        content={() => (
+          <div
+            style={{
+              backgroundColor: "rgba(0,0,0,0.85)",
+              color: "white",
+              padding: "6px 10px",
+              borderRadius: "6px",
+              fontSize: "13px",
+              fontWeight: 500,
+              zIndex: 9999,
+              whiteSpace: "nowrap",
+              pointerEvents: "none",
+            }}
+          >
+            Add a Note
+          </div>
+        )}
         offset={{ left: 0, top: -8 }}
       />
+
       {/* Dropdown chọn ngôn ngữ */}
       <select
         value={highlightLang}
         onChange={(e) => setHighlightLang(e.target.value)}
         style={{
-          padding: "2px 4px",
-          borderRadius: 4,
+          padding: "4px 6px",
+          borderRadius: 6,
           border: "1px solid #ccc",
+          fontSize: "13px",
+          background: "#f9f9f9",
         }}
       >
-        <option value="en-US">English</option>
-        <option value="vi">Vietnamese</option>
-        <option value="fr">French</option>
-        <option value="ja">Japanese</option>
-        <option value="zh">Chinese</option>
+        <option value="en-US">Eng</option>
+        <option value="vi">VN</option>
+        <option value="fr">Fre</option>
+        <option value="ja">Jpn</option>
+        <option value="zh">CN</option>
       </select>
 
-      {/* Nút Translate */}
-      <Tooltip
-        position={Position.TopCenter}
-        target={
-          <Button
-            onClick={async () => {
-              if (!props.selectedText) return;
-              setTranslating(true);
-              try {
-                // console.log("=== Selected text from PDF ===");
-                // console.log(props.selectedText);
+      {/* Nút Translate + Popup dịch ngay dưới nút */}
+      <div style={{ position: "relative", display: "inline-block" }}>
+        <Button
+          onClick={async () => {
+            if (!props.selectedText) return;
+            try {
+              const res = await translateHighlightedText(props.selectedText, highlightLang);
+              setHighlightTranslation(res || "");
+              setPopupPosition({ show: true }); // Hiển thị popup
+            } catch (err) {
+              setPopup({ open: true, text: "Failed to translate selected text", type: "error" });
+            }
+          }}
+        >
+          T
+        </Button>
 
-                // Chuẩn hóa xuống dòng và giữ line break như PDF gốc
-                const preparedText = props.selectedText
-                  .replace(/\r\n/g, "\n") // Windows -> LF
-                  .replace(/\r/g, "\n") // Mac -> LF
-                  .split("\n") // tách thành các dòng
-                  .map((line) => line.trim()) // loại khoảng trắng dư
-                  .join("\n"); // nối lại bằng LF
-                // console.log(
-                //   "=== Prepared text for API (newlines normalized) ==="
-                // );
-                // console.log(preparedText);
-                // console.log("String with explicit \\n:");
-                // console.log(JSON.stringify(preparedText)); // hiển thị rõ \n trong chuỗi
-
-                const res = await translateHighlightedText(
-                  preparedText,
-                  highlightLang
-                );
-
-                // console.log("=== API response ===");
-                // console.log(res);
-
-                const translated = res || "";
-                // console.log("=== Translated text ===");
-                // console.log(translated);
-                // console.log("String with explicit \\n:");
-                // console.log(JSON.stringify(translated));
-
-                const unescapedTranslated = unescapeNewlines(translated);
-                // console.log("=== Unescaped translated ===");
-                // console.log(unescapedTranslated);
-                // console.log("=== JSON after unescape ===");
-                // console.log(JSON.stringify(unescapedTranslated));
-
-                setTranslatedText(unescapedTranslated);
-                setShowTranslatedModal(true);
-              } catch (err) {
-                setPopup({
-                  open: true,
-                  text: "Failed to translate selected text",
-                  type: "error",
-                });
-              }
-              setTranslating(false);
-            }}
-          >
-            T
-          </Button>
-        }
-        content={() => <div style={{ width: "100px" }}>Translate text</div>}
-        offset={{ left: 0, top: -8 }}
-      />
+        {popupPosition?.show && highlightTranslation && (
+  <div
+    style={{
+      position: "absolute", // sửa từ fixed → absolute
+      top: popupPosition.top || 0,
+      left: popupPosition.left || 0,
+      transform: "translateY(8px)", // 1 chút khoảng cách dưới highlight
+      background: "white",
+      border: "1px solid #ddd",
+      borderRadius: 8,
+      padding: "6px 10px",
+      boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+      zIndex: 9999,
+      maxWidth: 1000,
+      minWidth: 400,
+      padding: "12px 16px", // padding lớn hơn
+fontSize: 16,     // chữ lớn hơn
+      wordBreak: "break-word",
+      overflowWrap: "break-word",
+    }}
+  >
+    {highlightTranslation}
+    <button
+      style={{
+        marginLeft: 8,
+        cursor: "pointer",
+        border: "none",
+        background: "transparent",
+      }}
+      onClick={() => setPopupPosition(null)}
+    >
+      ✕
+    </button>
+  </div>
+)}
+      </div>
     </div>
   );
+};
+
 
   const renderHighlightContent = (props) => {
     const addNote = async () => {
@@ -773,7 +822,7 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
   }, [popup.open]);
 
   return (
-    <div style={{ height: "100%" }}>
+    <div style={{ height: "100%", position: "relative" }}>
       {/* Popup Edit/Delete khi chọn highlight */}
       {selectedHighlight && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30">
@@ -908,26 +957,38 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
       </div>
 
       {/* Hiển thị nội dung dịch dưới cùng (không tiêu đề) */}
-      <div style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
-        {translatedText}
-      </div>
+      <div
+  style={{
+    whiteSpace: "pre-wrap",
+    lineHeight: 1.6,
+    fontFamily: "Times New Roman", // ← thêm font
+    fontSize: 14, // có thể chỉnh kích thước
+  }}
+>
+  {translatedText}
+</div>
+
+
+      
+
 
       {/* Modal hiện bản dịch */}
       {showTranslatedModal && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50"
+                <div
+          className="fixed inset-0 flex justify-center items-center z-50"
           onClick={() => setShowTranslatedModal(false)}
         >
           <div
             className="bg-white rounded-lg shadow-lg max-w-3xl max-h-[80vh] overflow-auto p-6 relative"
             onClick={(e) => e.stopPropagation()}
           >
-            <h2 className="text-xl font-bold mb-4">Translated Paper</h2>
-            <div style={{ fontSize: 14, lineHeight: 1.6 }}>
+            <h2 className="text-xl font-bold mb-4"></h2>
+            <div style={{ fontSize: 14, lineHeight: 1.6, fontFamily: "Times New Roman" }}>
               {translatedText.split("\n").map((line, idx) => (
                 <div key={idx}>{line}</div>
               ))}
             </div>
+
 
             <button
               className="absolute top-4 right-4 text-gray-500 hover:text-gray-900 font-bold"
