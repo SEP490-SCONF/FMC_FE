@@ -220,57 +220,65 @@ const ReviewerListPage = () => {
       </Button>
 
       {showAddReviewer && (
-        <Card
-          title="Select Members to Assign"
-          style={{ maxWidth: 400, marginBottom: 24 }}
-        >
-          <Search
-            placeholder="Search members..."
-            onChange={(e) => handleMemberSearch(e.target.value)}
-            allowClear
-            value={memberSearch}
-            style={{ marginBottom: 12 }}
-          />
-          <div style={{ maxHeight: 250, overflowY: "auto", paddingRight: 8 }}>
-            <List
-              dataSource={paginatedMembers}
-              size="small"
-              locale={{ emptyText: "No members available." }}
-              renderItem={(user) => (
-                <List.Item style={{ padding: "4px 0" }}>
-                  <Checkbox
-                    checked={selectedUserIds.includes(user.userId)}
-                    onChange={(e) =>
-                      handleCheckboxChange(user.userId, e.target.checked)
-                    }
-                    style={{ marginRight: 8 }}
-                  />
-                  <Text>
-                    {user.name} ({user.email})
-                  </Text>
-                </List.Item>
-              )}
-            />
-          </div>
-          <Pagination
-            current={memberPage}
-            pageSize={memberPageSize}
-            total={filteredMembers.length}
-            onChange={(page) => setMemberPage(page)}
-            size="small"
-            style={{ marginTop: 12, textAlign: "center" }}
-          />
-          <Button
-            type="primary"
-            style={{ marginTop: 12 }}
-            disabled={selectedUserIds.length === 0}
-            onClick={handleAddReviewers}
-            block
-          >
-            Assign Selected as Reviewers
-          </Button>
-        </Card>
-      )}
+  <Card
+    title="Select Members to Assign"
+    style={{ maxWidth: 600, marginBottom: 24 }} // 👈 tăng khung rộng (400 → 700)
+  >
+    <Search
+      placeholder="Search members..."
+      onChange={(e) => handleMemberSearch(e.target.value)}
+      allowClear
+      value={memberSearch}
+      style={{ marginBottom: 12 }}
+    />
+    <div style={{ maxHeight: 250, overflowY: "auto", paddingRight: 8 }}>
+      <List
+  dataSource={paginatedMembers}
+  size="small"
+  locale={{ emptyText: "No members available." }}
+  renderItem={(user) => (
+    <List.Item style={{ padding: "4px 0", display: "flex", alignItems: "center" }}>
+      <Checkbox
+        checked={selectedUserIds.includes(user.userId)}
+        onChange={(e) => handleCheckboxChange(user.userId, e.target.checked)}
+        style={{ marginRight: 8 }}
+      />
+      <Text
+        style={{
+          whiteSpace: "nowrap",      // tránh xuống dòng
+          overflow: "hidden",        // ẩn phần dư
+          textOverflow: "ellipsis",  // hiển thị "..."
+          flex: 1,                   // cho text co giãn chiếm phần còn lại
+        }}
+        title={`${user.name} (${user.email})`} // hover hiện đủ
+      >
+        {user.name} ({user.email})
+      </Text>
+    </List.Item>
+  )}
+/>
+
+    </div>
+    <Pagination
+      current={memberPage}
+      pageSize={memberPageSize}
+      total={filteredMembers.length}
+      onChange={(page) => setMemberPage(page)}
+      size="small"
+      style={{ marginTop: 12, textAlign: "center" }}
+    />
+    <Button
+      type="primary"
+      style={{ marginTop: 12 }}
+      disabled={selectedUserIds.length === 0}
+      onClick={handleAddReviewers}
+      block
+    >
+      Assign Selected as Reviewers
+    </Button>
+  </Card>
+)}
+
 
       <Divider orientation="left" style={{ marginTop: 32 }}>
         Current Reviewers

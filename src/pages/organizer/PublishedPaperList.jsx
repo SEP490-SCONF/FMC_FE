@@ -323,8 +323,16 @@ const paginatedPapers = filteredPapers.slice(
             }}
           >
             <Title level={5} style={{ marginBottom: 4 }}>
-              {paper.title}
+              <a 
+                href={paper.filePath} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{ color: "black" }}
+              >
+                {paper.title}
+              </a>
             </Title>
+
             <Text style={{ fontSize: 14, color: "#555" }}>
               Authors: {paper.name || "N/A"}
             </Text>

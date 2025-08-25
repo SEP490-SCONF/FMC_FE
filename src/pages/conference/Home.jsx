@@ -28,6 +28,8 @@ const Home = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [viewMode, setViewMode] = useState("pdf");
   const [coverImage, setCoverImage] = useState(null);
+  const [publishedVisible, setPublishedVisible] = useState(false);
+
 
   // Load conference
   useEffect(() => {
@@ -170,6 +172,23 @@ const Home = () => {
         </Card>
       )}
 
+      {/* Nút View Published Papers nằm ngoài Proceeding */}
+{papers.length > 0 && (
+  <div style={{ marginBottom: 24 }}>
+    <Button
+      type="primary"
+      style={{
+        backgroundColor: "#42a5f5",
+        borderColor: "#42a5f5",
+      }}
+      onClick={() => setPublishedVisible(true)}
+    >
+      📑 View Published Papers ({papers.length})
+    </Button>
+  </div>
+)}
+
+
       {/* Proceeding Modal */}
       {proceeding && (
         <Modal
@@ -222,6 +241,46 @@ const Home = () => {
           )}
         </Modal>
       )}
+
+      {/* Modal Published Papers */}
+<Modal
+  title="Published Papers"
+  open={publishedVisible}
+  onCancel={() => setPublishedVisible(false)}
+  footer={null}
+  width={800}
+>
+  {papers && papers.length > 0 ? (
+    <List
+      dataSource={papers}
+      renderItem={(paper) => (
+        <List.Item>
+          <a
+            href={paper.filePath}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <Title level={5} style={{ marginBottom: 4 }}>
+              <a 
+                href={paper.filePath} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                style={{ color: "black" }}
+              >
+                {paper.title}
+              </a>
+            </Title>
+            <Text style={{ fontSize: 14, color: "#555" }}>
+              Authors: {paper.name || "N/A"}
+            </Text>
+          </a>
+        </List.Item>
+      )}
+    />
+  ) : (
+    <Text type="secondary">No published papers found.</Text>
+  )}
+</Modal>
 
       {/* Schedule */}
       <Schedule conference={selectedConference} />

@@ -15,6 +15,12 @@ import {
 import { getPresentedPapersByConferenceId } from "../../services/PaperSerice";
 import { Select } from "antd";
 import { Eye } from "lucide-react";
+import { CloseOutlined } from "@ant-design/icons";
+import { timelineDateValidator } from "../../utils/validators";
+import { getConferenceById } from "../../services/ConferenceService";
+
+
+
 
 
 import {
@@ -39,6 +45,7 @@ import { useParams } from "react-router-dom";
 import dayjs from "dayjs";
 
 const { Text } = Typography;
+
 
 export default function ManageTimeline() {
   const { conferenceId } = useParams();
@@ -67,6 +74,8 @@ const [scheduleCounts, setScheduleCounts] = useState({});
   const pageSize = 5;
   const { RangePicker } = DatePicker;
   const [dateRange, setDateRange] = useState([null, null]);
+  const [conference, setConference] = useState(null);
+
 
   const showDeleteScheduleConfirm = (scheduleId) => {
   Modal.confirm({
@@ -257,12 +266,17 @@ setScheduleCounts(counts);
   }, [conferenceId]);
 
   useEffect(() => {
-      console.log("🔹 selectedPaperForSchedule updated:", selectedPaperForSchedule); // <- kiểm tra
+  // fetch conference info
+  getConferenceById(conferenceId)
+    .then((data) => setConference(data))
+    .catch((err) => console.error("Failed to fetch conference", err));
+}, [conferenceId]);
 
+  useEffect(() => {
   if (selectedPaperForSchedule) {
     scheduleForm.setFieldsValue({
-      paperId: selectedPaperForSchedule.paperId,
-      presenterId: selectedPaperForSchedule.paperAuthors?.[0]?.author?.authorId || null,
+      paperId: selectedPaperForSchedule.paperId || null,
+      presenterId: selectedPaperForSchedule.presenter?.authorId || null,
     });
   } else {
     scheduleForm.setFieldsValue({
@@ -271,11 +285,6 @@ setScheduleCounts(counts);
     });
   }
 }, [selectedPaperForSchedule, scheduleForm]);
-
-
-
-
-
 
   const handleSearch = (value) => {
     setSearchText(value);
@@ -289,8 +298,10 @@ setScheduleCounts(counts);
     const formData = new FormData();
     formData.append("conferenceId", conferenceId);
     formData.append("description", values.description);
-    formData.append("date", values.date.format("YYYY-MM-DDTHH:mm:ss"));
-
+formData.append(
+    "date",
+    values.date ? values.date.format("YYYY-MM-DDTHH:mm:ss") : ""
+  );
     setLoading(true);
 
     const action = editing
@@ -312,14 +323,19 @@ setScheduleCounts(counts);
       .finally(() => setLoading(false));
   };
 
+  const isOverlapping = (startA, endA, startB, endB) => {
+  return startA.isBefore(endB) && endA.isAfter(startB);
+};
+
   const handleEdit = (item) => {
-    setEditing(item);
-    form.setFieldsValue({
-      description: item.description,
-      date: dayjs(item.date),
-    });
-    setOpen(true);
-  };
+  setEditing(item);
+  form.setFieldsValue({
+    description: item.description,
+    date: item.date ? dayjs(item.date) : null,  // ✅ fix Invalid Date
+  });
+  setOpen(true);
+};
+
 
   const handleDelete = (id) => {
     deleteTimeline(id)
@@ -368,6 +384,8 @@ setScheduleCounts(counts);
       const presenterAuthor = paper.paperAuthors?.[0]?.author;
       return {
         ...paper,
+        paperScore: paper.paperScore ?? null,   // ✅ đảm bảo luôn có score
+
         presenter: presenterAuthor
           ? {
               userId: presenterAuthor.authorId,
@@ -382,21 +400,101 @@ setScheduleCounts(counts);
   });
 };
 
+// ⏰ Disable cho START
+const getDisabledStartTime = (schedules, editingId = null) => {
+  return () => {
+    const disabledMinutes = {};
+
+    schedules.forEach((sch) => {
+      if (editingId && sch.scheduleId === editingId) return;
+
+      const start = dayjs(sch.presentationStartTime);
+      const end = dayjs(sch.presentationEndTime);
+
+      let current = start.clone();
+      while (current.isBefore(end) || current.isSame(end)) {
+        const h = current.hour();
+        const m = current.minute();
+        if (!disabledMinutes[h]) disabledMinutes[h] = [];
+        disabledMinutes[h].push(m);
+        current = current.add(1, "minute");
+      }
+    });
+
+    return {
+      disabledHours: () => [],
+      disabledMinutes: (hour) => disabledMinutes[hour] || [],
+    };
+  };
+};
+
+// ⏰ Disable cho END
+const getDisabledEndTime = (schedules, startTime, editingId = null) => {
+  return () => {
+    const disabledMinutes = {};
+    if (!startTime) return { disabledHours: () => [], disabledMinutes: () => [] };
+
+    schedules.forEach((sch) => {
+      if (editingId && sch.scheduleId === editingId) return;
+
+      const start = dayjs(sch.presentationStartTime);
+      const end = dayjs(sch.presentationEndTime);
+
+      let current = start.clone();
+      while (current.isBefore(end) || current.isSame(end)) {
+        const h = current.hour();
+        const m = current.minute();
+        if (!disabledMinutes[h]) disabledMinutes[h] = [];
+        disabledMinutes[h].push(m);
+        current = current.add(1, "minute");
+      }
+    });
+
+    return {
+      disabledHours: () => [],
+      disabledMinutes: (hour) => {
+        const minutes = disabledMinutes[hour] || [];
+        // ❌ Quan trọng: cấm chọn end < start
+        if (hour === startTime.hour()) {
+          const invalid = [];
+          for (let m = 0; m <= startTime.minute(); m++) invalid.push(m);
+          return [...new Set([...minutes, ...invalid])];
+        }
+        return minutes;
+      },
+    };
+  };
+}
+
+
+
   // CRUD Schedule
   const handleScheduleSubmit = (values) => {
   const baseDate = dayjs(selectedTimeline.date).format("YYYY-MM-DD");
   const startTime = dayjs(`${baseDate} ${values.presentationStartTime.format("HH:mm")}`);
   const endTime = dayjs(`${baseDate} ${values.presentationEndTime.format("HH:mm")}`);
 
+  // 🚨 Kiểm tra overlap với các schedule khác
+  const hasConflict = schedules.some((sch) => {
+    if (editingSchedule && sch.scheduleId === editingSchedule.scheduleId) return false; // bỏ qua chính nó khi edit
+    const schStart = dayjs(sch.presentationStartTime);
+    const schEnd = dayjs(sch.presentationEndTime);
+    return isOverlapping(startTime, endTime, schStart, schEnd);
+  });
+
+  if (hasConflict) {
+    message.error("❌ Time range overlaps with an existing schedule!");
+    return; // ❌ Không cho tạo
+  }
+
   const data = {
     timeLineId: selectedTimeline?.timeLineId,
     sessionTitle: values.sessionTitle,
     location: values.location || "",
     paperId: values.paperId ?? null,
-  presenterId: values.presenterId ?? null, // sẽ có id từ step 2
-
-    presentationStartTime: startTime ? startTime.toISOString() : null,
-    presentationEndTime: endTime ? endTime.toISOString() : null,
+    presenterId: values.presenterId ?? null,
+    presentationStartTime: startTime.toISOString(),
+    presentationEndTime: endTime.toISOString(),
   };
 
   const action = editingSchedule
@@ -408,19 +506,12 @@ setScheduleCounts(counts);
       message.success(`Schedule ${editingSchedule ? "updated" : "created"} successfully`);
       scheduleForm.resetFields();
       setEditingSchedule(null);
-      setScheduleFormModalVisible(false); // tắt form
-
-      // 🔄 reload lại danh sách theo timeline hiện tại
-      getSchedulesByTimeline(selectedTimeline.timeLineId)
-        .then((res) => {
-          setSchedules(res || []);
-          setScheduleModalVisible(true); // đảm bảo modal danh sách mở
-        })
-        .catch((err) => {
-          console.error("❌ Failed to load schedules", err);
-          setSchedules([]);
-          setScheduleModalVisible(true); // vẫn mở modal danh sách
-        });
+      setScheduleFormModalVisible(false);
+      return getSchedulesByTimeline(selectedTimeline.timeLineId);
+    })
+    .then((res) => {
+      setSchedules(res || []);
+      setScheduleModalVisible(true);
     })
     .catch((err) => {
       console.error("❌ Schedule save failed", err);
@@ -641,25 +732,40 @@ setScheduleCounts(counts);
   key={item.scheduleId}
   actions={[
     <Button
-      size="small"
-      onClick={() => {
-        setEditingSchedule(item);
-        setSelectedPaperForSchedule(
-          item.paper || presentedPapers.find((p) => p.paperId === item.paperId) || null
-        );
-        scheduleForm.setFieldsValue({
-          sessionTitle: item.sessionTitle,
-          location: item.location,
-          paperId: item.paperId,
-          presenterId: item.presenterId,
-          presentationStartTime: dayjs(item.presentationStartTime),
-          presentationEndTime: dayjs(item.presentationEndTime),
-        });
-        setScheduleFormModalVisible(true);
-      }}
-    >
-      Edit
-    </Button>,
+  size="small"
+  onClick={() => {
+    setEditingSchedule(item);
+
+    // Sử dụng trực tiếp thông tin paper + score từ item
+    const paperToUse = {
+  paperId: item.paper?.paperId || item.paperId || undefined,
+  title: item.paper?.title || "N/A",
+  paperScore: item.paperScore ?? "N/A",
+  presenter: {
+    authorId: item.presenterId || item.presenter?.authorId,
+    name: item.presenterName || item.presenter?.name,
+  },
+};
+
+
+    setSelectedPaperForSchedule(paperToUse);
+
+    // Điền dữ liệu vào form
+    scheduleForm.setFieldsValue({
+      sessionTitle: item.sessionTitle,
+      location: item.location,
+      paperId: item.paperId,
+      presenterId: item.presenterId,
+      presentationStartTime: dayjs(item.presentationStartTime),
+      presentationEndTime: dayjs(item.presentationEndTime),
+    });
+
+    setScheduleFormModalVisible(true);
+  }}
+>
+  Edit
+</Button>
+,
     <Button
       size="small"
       danger
@@ -745,19 +851,49 @@ setScheduleCounts(counts);
       <Input />
     </Form.Item>
     <Form.Item
-      name="presentationStartTime"
-      label="Start Time"
-      rules={[{ required: true, message: "Please select start time" }]}
-    >
-      <DatePicker picker="time" format="HH:mm" style={{ width: "100%" }} />
-    </Form.Item>
-    <Form.Item
-      name="presentationEndTime"
-      label="End Time"
-      rules={[{ required: true, message: "Please select end time" }]}
-    >
-      <DatePicker picker="time" format="HH:mm" style={{ width: "100%" }} />
-    </Form.Item>
+  name="presentationStartTime"
+  label="Start Time"
+  rules={[{ required: true, message: "Please select start time" }]}
+>
+  <DatePicker
+    picker="time"
+    format="HH:mm"
+    style={{ width: "100%" }}
+    disabledTime={getDisabledStartTime(schedules, editingSchedule?.scheduleId)}
+  />
+</Form.Item>
+
+<Form.Item
+  name="presentationEndTime"
+  label="End Time"
+  dependencies={["presentationStartTime"]}
+  rules={[
+    { required: true, message: "Please select end time" },
+    ({ getFieldValue }) => ({
+      validator(_, value) {
+        const start = getFieldValue("presentationStartTime");
+        if (!start || !value) return Promise.resolve();
+        if (value.isAfter(start)) return Promise.resolve();
+        return Promise.reject(new Error("End time must be after start time"));
+      },
+    }),
+  ]}
+>
+  <DatePicker
+    picker="time"
+    format="HH:mm"
+    style={{ width: "100%" }}
+    disabledTime={() =>
+      getDisabledEndTime(
+        schedules,
+        scheduleForm.getFieldValue("presentationStartTime"),
+        editingSchedule?.scheduleId
+      )()
+    }
+  />
+</Form.Item>
+
+
 
     {/* ← Thêm nút Choose Paper ở đây */}
     <Form.Item label="Select Paper">
@@ -768,10 +904,26 @@ setScheduleCounts(counts);
         Choose Paper
       </Button>
       {selectedPaperForSchedule && (
-        <div className="mt-2">
-          📝 {selectedPaperForSchedule.title} | Score: {selectedPaperForSchedule.paperScore ?? "N/A"}
-        </div>
-      )}
+  <div className="mt-2 flex items-center">
+    <span>
+      📝 {selectedPaperForSchedule.title} | Score:{" "}
+      {selectedPaperForSchedule.paperScore ?? "N/A"}
+    </span>
+    <CloseOutlined
+  onClick={() => {
+    setSelectedPaperForSchedule(null);
+    scheduleForm.setFieldsValue({
+      paperId: undefined,
+      presenterId: undefined,
+    });
+  }}
+  style={{ color: "red", marginLeft: 8, cursor: "pointer" }}
+/>
+
+  </div>
+)}
+
+
     </Form.Item>
 
     {/* Hidden fields */}
@@ -846,17 +998,49 @@ setScheduleCounts(counts);
           >
             <Input.TextArea rows={3} />
           </Form.Item>
-          <Form.Item
-            name="date"
-            label="Timeline Date & Time"
-            rules={[{ required: true, message: "Please select date and time" }]}
-          >
-            <DatePicker
-              showTime
-              format="YYYY-MM-DD HH:mm"
-              style={{ width: "100%" }}
-            />
-          </Form.Item>
+         <Form.Item
+  name="date"
+  label="Timeline Date"
+  rules={[
+    {
+      required: true,
+      message: "Please select timeline date",
+    },
+    {
+      validator: async (_, value) => {
+        if (!value) return Promise.resolve();
+
+        const start = dayjs(conference?.startDate);
+        const end = dayjs(conference?.endDate);
+
+        if (!start || !end) return Promise.resolve(); // nếu chưa load conference
+
+        if (value.isBefore(start) || value.isAfter(end)) {
+          return Promise.reject(
+            new Error(
+              `Timeline must be within conference date range (${start.format(
+                "YYYY-MM-DD"
+              )} → ${end.format("YYYY-MM-DD")})`
+            )
+          );
+        }
+
+        return Promise.resolve();
+      },
+    },
+    {
+      validator: timelineDateValidator(list, editing?.timeLineId),
+    },
+  ]}
+>
+  <DatePicker
+    showTime={{ format: "HH:mm" }}
+    format="YYYY-MM-DD HH:mm"
+    style={{ width: "100%" }}
+  />
+</Form.Item>
+
+
         </Form>
       </Modal>
 

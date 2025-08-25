@@ -23,6 +23,8 @@ import {
 import dayjs from "dayjs";
 import { UploadOutlined } from "@ant-design/icons";
 import { getAllTopics } from "../../services/TopicService"; // thêm nếu cần lấy topic list
+import { rangePickerValidator } from "../../utils/validators";
+
 
 const { TextArea } = Input;
 const { RangePicker } = DatePicker;
@@ -97,12 +99,14 @@ const EditConferencePage = () => {
     }
 
     if (values.bannerImage?.file instanceof File) {
-      formData.append("BannerImage", values.bannerImage.file);
-    }
+    formData.append("BannerImage", values.bannerImage.file); // upload file mới
+  } else if (values.bannerImage === null) {
+    formData.append("BannerImage", ""); // gửi empty string → xóa banner cũ
+  }
 
     try {
       await updateConference(conferenceId, formData);
-      message.success("✅ Conference updated successfully");
+      message.success("Conference updated successfully");
       setEditing(false);
       fetchConference(); // Reload updated data
     } catch (error) {
@@ -184,12 +188,17 @@ const EditConferencePage = () => {
             <Input />
           </Form.Item>
           <Form.Item
-            label="Date Range"
-            name="dateRange"
-            rules={[{ required: true }]}
-          >
-            <RangePicker />
-          </Form.Item>
+  label="Date Range"
+  name="dateRange"
+  rules={[
+    { required: true, message: "Please select a date range" },
+    { validator: rangePickerValidator({ noPast: true }) },
+  ]}
+>
+  <RangePicker />
+</Form.Item>
+
+
           <Form.Item label="Status" name="status" valuePropName="checked">
             <Switch />
           </Form.Item>
@@ -206,7 +215,7 @@ const EditConferencePage = () => {
           <Form.Item label="Upload New Banner" name="bannerImage">
             <Upload
               listType="picture"
-              accept="image/*"
+              accept=".jpg,.jpeg,.png,.gif" 
               showUploadList={false}
               beforeUpload={(file) => {
                 const reader = new FileReader();
