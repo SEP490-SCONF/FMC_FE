@@ -72,31 +72,31 @@ const PaymentPage = ({ userId, conferenceId, paperId }) => {
     };
 
     return (
-        <div className="max-w-2xl mx-auto p-6 bg-white shadow-md rounded-xl">
-            <h2 className="text-2xl font-bold mb-4">FMC Payment</h2>
-            <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                    <span className="font-medium">Purpose</span>
-                    <div className="flex items-center space-x-3">
+        <div className="max-w-2xl mx-auto p-6 bg-white shadow-lg rounded-xl border border-gray-200">
+            <h2 className="text-2xl font-bold mb-6 text-gray-900">FMC Payment</h2>
+            <div className="space-y-8">
+                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                    <span className="font-medium text-gray-700">Purpose</span>
+                    <div className="flex items-center space-x-4">
                         <select
                             value={purpose}
                             onChange={e => setPurpose(e.target.value)}
-                            className="border rounded px-2 py-1"
+                            className="border border-gray-300 rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         >
                             {PURPOSE_OPTIONS.map(opt => (
                                 <option key={opt.value} value={opt.value}>{opt.label}</option>
                             ))}
                         </select>
-                        <span className="text-sm text-gray-600">User: <strong>{displayName}</strong></span>
+                        <span className="text-sm text-gray-600">User: <strong className="text-gray-900">{displayName}</strong></span>
                     </div>
                 </div>
 
-                <div className="flex justify-between items-center">
-                    <span className="font-medium">Total Fee</span>
+                <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+                    <span className="font-medium text-gray-700">Total Fee</span>
                     <select
                         value={fee}
                         onChange={e => setFee(Number(e.target.value))}
-                        className="border rounded px-2 py-1"
+                        className="border border-gray-300 rounded-md px-3 py-2 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                         {FEE_OPTIONS.map(opt => (
                             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -104,63 +104,63 @@ const PaymentPage = ({ userId, conferenceId, paperId }) => {
                     </select>
                 </div>
 
-                <div>
-                    <p className="font-medium mb-2">Payment Method</p>
-                    <div className="flex items-center space-x-2">
+                <div className="p-4 bg-gray-50 rounded-lg">
+                    <p className="font-medium mb-3 text-gray-700">Payment Method</p>
+                    <div className="flex items-center space-x-3">
                         <span className="text-gray-600">Pay via PayOS</span>
                     </div>
                 </div>
 
-                <div className="border p-4 rounded-md bg-gray-50">
-                    <h3 className="text-lg font-semibold mb-3">Summary</h3>
+                <div className="border border-gray-200 p-6 rounded-lg bg-gray-50">
+                    <h3 className="text-lg font-semibold mb-4 text-gray-900">Summary</h3>
 
-                    <div className="flex justify-between mb-2">
+                    <div className="flex justify-between mb-3 text-gray-700">
                         <span>Subtotal</span>
                         <span>{formatVnd(originalFee)}</span>
                     </div>
 
                     {hasFptDiscount && (
-                        <div className="flex justify-between mb-2">
+                        <div className="flex justify-between mb-3 text-gray-700">
                             <span>FPT discount (10%)</span>
-                            <span>-{formatVnd(discountAmount)}</span>
+                            <span className="text-green-600">-{formatVnd(discountAmount)}</span>
                         </div>
                     )}
 
-                    <div className="flex justify-between mb-2">
+                    <div className="flex justify-between mb-3 text-gray-700">
                         <span>Est. Taxes</span>
                         <span>0 VND</span>
                     </div>
 
-                    <div className="mb-2">
-                        <label className="block text-sm font-medium mb-1">Gift code</label>
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium mb-2 text-gray-700">Gift code</label>
                         <div className="flex">
                             <input
                                 type="text"
                                 value={giftCode}
                                 onChange={(e) => setGiftCode(e.target.value)}
-                                className="border rounded-l px-3 py-1 w-full"
+                                className="border border-gray-300 rounded-l-md px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                             <button
                                 onClick={handleGiftCodeApply}
-                                className="bg-blue-600 text-white px-4 py-1 rounded-r"
+                                className="bg-blue-600 text-white px-4 py-2 rounded-r hover:bg-blue-700 transition duration-200"
                             >
                                 Apply
                             </button>
                         </div>
                     </div>
 
-                    <div className="flex justify-between font-semibold mb-2">
+                    <div className="flex justify-between font-semibold mb-6 text-gray-900">
                         <span>Total</span>
                         <span>{formatVnd(payable)}</span>
                     </div>
 
-                    <div className="text-center mt-4">
-                        <div onClick={handleCompleteOrder} className="inline-block mr-2">
+                    <div className="flex justify-center gap-4 mt-6">
+                        <div onClick={handleCompleteOrder} className="inline-block">
                             <ButtonPay />
                         </div>
                         <button
                             onClick={handleCancel}
-                            className="bg-gray-500 text-white px-4 py-2 rounded"
+                            className="bg-gray-500 text-white px-6 py-2 rounded-md hover:bg-gray-600 transition duration-200"
                         >
                             Cancel
                         </button>
