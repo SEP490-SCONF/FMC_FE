@@ -58,7 +58,12 @@ export const uploadAndSpellCheck = async (file) => {
     console.log(key, value);
   }
 
+
   return apiService.post("/Papers/upload-and-spell-check", formData);
+};
+
+export const setPaperPresented = async (paperId, isPresented = true) => {
+  return apiService.put(`/Papers/set-presented/${paperId}`, { isPresented });
 };
 
 export const translatePaperPdf = async (paperId, targetLang) => {

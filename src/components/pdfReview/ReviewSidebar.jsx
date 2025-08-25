@@ -78,12 +78,12 @@ const ReviewSidebar = ({
     }
     try {
       const response = await AnalyzeAiService.analyzeDocument(review.reviewId, chunks);
-      console.log("AI API response:", response);
+      // console.log("AI API response:", response);
       const percent = response?.percentAi ?? response?.PercentAi ?? 0;
       if (onChange) onChange({ ...review, percentAi: percent });
     } catch (err) {
-      console.error("Check AI error:", err);
-      toast.error("Failed to re-check AI");
+      // console.error("Check AI error:", err);
+      // toast.error("Failed to re-check AI");
     }
   };
 

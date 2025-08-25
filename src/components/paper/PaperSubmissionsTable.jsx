@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo } from "react";
+import React, { useState, useRef, useMemo, useEffect } from "react";
 import {
   Table,
   Button,
@@ -20,6 +20,7 @@ import {
   SearchOutlined,
 } from "@ant-design/icons";
 import { uploadRevision } from "../../services/PaperRevisionService";
+import { setPaperPresented } from "../../services/PaperSerice";
 import { useNavigate } from "react-router-dom";
 
 const ITEMS_PER_PAGE = 5;
@@ -29,6 +30,7 @@ const Submited = ({ submissions = [], userId, conferenceId }) => {
   const [openIdx, setOpenIdx] = useState(null);
   const [uploadingIdx, setUploadingIdx] = useState(null);
   const [pendingPaperId, setPendingPaperId] = useState(null);
+  const [presentingIdx, setPresentingIdx] = useState(null); // để loading nút
   const navigate = useNavigate();
 
   const [page, setPage] = useState(1);
@@ -39,9 +41,15 @@ const Submited = ({ submissions = [], userId, conferenceId }) => {
   const [statusFilter, setStatusFilter] = useState("All");
   const [sortBy, setSortBy] = useState("latest");
 
+  const [submissionsState, setSubmissionsState] = useState(submissions);
+
+  useEffect(() => {
+    setSubmissionsState(submissions);
+  }, [submissions]);
+
   // Sort + Filter logic
   const filteredAndSortedSubmissions = useMemo(() => {
-    let filtered = submissions.filter((item) => {
+    let filtered = submissionsState.filter((item) => {
       const field = (item[searchBy] || "").toString().toLowerCase();
       const matchSearch = field.includes(searchText.toLowerCase());
       const matchStatus =
@@ -63,7 +71,7 @@ const Submited = ({ submissions = [], userId, conferenceId }) => {
         return b.title.localeCompare(a.title, "en", { sensitivity: "base" });
       return 0;
     });
-  }, [submissions, searchText, searchBy, statusFilter, sortBy]);
+  }, [submissionsState, searchText, searchBy, statusFilter, sortBy]);
 
   const totalPages = Math.ceil(
     filteredAndSortedSubmissions.length / ITEMS_PER_PAGE
@@ -147,12 +155,12 @@ const Submited = ({ submissions = [], userId, conferenceId }) => {
           record.paperRevisions?.[record.paperRevisions.length - 1];
         return lastRevision
           ? new Date(lastRevision.submittedAt).toLocaleString("en-GB", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-              hour: "2-digit",
-              minute: "2-digit",
-            })
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+          })
           : "";
       },
     },
@@ -190,20 +198,39 @@ const Submited = ({ submissions = [], userId, conferenceId }) => {
               >
                 Certificate
               </Button>
-
               {record.isPublished ? (
-                <Button
-                  icon={<DollarOutlined />}
-                  type="link"
-                  onClick={() =>
-                    navigate(`/author/payment/${record.paperId}`, {
-                      state: { userId, conferenceId, paperId: record.paperId },
-                    })
-                  }
-                  disabled
-                >
-                  Payment Completed
-                </Button>
+                record.isPresented === true ? (
+                  <Button icon={<EyeOutlined />} type="link" disabled>
+                    Presenting
+                  </Button>
+                ) : (
+                  <Button
+                    icon={<EyeOutlined />}
+                    type="link"
+                    loading={presentingIdx === record.paperId}
+                    disabled={presentingIdx === record.paperId}
+                    onClick={async () => {
+                      setPresentingIdx(record.paperId);
+                      try {
+                        await setPaperPresented(record.paperId, true);
+                        // message.success("Marked as Presenting!");
+                        setSubmissionsState((prev) =>
+                          prev.map((item) =>
+                            item.paperId === record.paperId
+                              ? { ...item, isPresented: true }
+                              : item
+                          )
+                        );
+                      } catch (err) {
+                        // message.error("Failed to mark as Presenting!");
+                      } finally {
+                        setPresentingIdx(null);
+                      }
+                    }}
+                  >
+                    Present
+                  </Button>
+                )
               ) : (
                 <Button
                   icon={<DollarOutlined />}
@@ -217,7 +244,6 @@ const Submited = ({ submissions = [], userId, conferenceId }) => {
                   Payment
                 </Button>
               )}
-
             </>
           )}
         </>
@@ -282,7 +308,9 @@ const Submited = ({ submissions = [], userId, conferenceId }) => {
 
       {/* Table */}
       <Table
-        dataSource={pagedSubmissions}
+        dataSource={pagedSubmissions.map((item) =>
+          submissionsState.find((s) => s.paperId === item.paperId) || item
+        )}
         columns={columns}
         rowKey="paperId"
         pagination={false}
@@ -326,12 +354,12 @@ const Submited = ({ submissions = [], userId, conferenceId }) => {
                 render: (date) =>
                   date
                     ? new Date(date).toLocaleString("en-GB", {
-                        day: "2-digit",
-                        month: "2-digit",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })
                     : "",
               },
               {
