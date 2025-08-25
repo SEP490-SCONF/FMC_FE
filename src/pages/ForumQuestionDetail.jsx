@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getForumQuestionsById, toggleQuestionLike, canModerate } from '../services/ForumService';
-import { 
-    getAnswerQuestionsPaginated, 
-    createMainAnswer, 
+import {
+    getAnswerQuestionsPaginated,
+    createMainAnswer,
     createReply,
     updateAnswerQuestion,
     deleteAnswerQuestion,
@@ -14,7 +14,7 @@ import { getUserInformation } from '../services/UserService';
 const ForumQuestionDetail = () => {
     const { id, questionId } = useParams(); // id = conferenceId, questionId = fqId
     const navigate = useNavigate();
-    
+
     const [questionDetail, setQuestionDetail] = useState(null);
     const [answersData, setAnswersData] = useState({
         answers: [],
@@ -28,7 +28,7 @@ const ForumQuestionDetail = () => {
         forumQuestionId: null,
         forumQuestionTitle: ""
     });
-    
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [newAnswer, setNewAnswer] = useState('');
@@ -92,9 +92,9 @@ const ForumQuestionDetail = () => {
     const loadUserInformation = async () => {
         try {
             const response = await getUserInformation();
-            console.log('User information loaded:', response);
+            // console.log('User information loaded:', response);
             setUserInfo(response);
-            
+
             // Check if user can moderate after getting user info
             if (response && id) {
                 await checkModerationPermission();
@@ -131,11 +131,11 @@ const ForumQuestionDetail = () => {
             setError(null);
             const response = await getForumQuestionsById(questionId);
             setQuestionDetail(response);
-            
+
             // Set question like status from response if available
             if (response.isLikedByCurrentUser !== undefined) {
-                console.log('response', response);
-                console.log(' response.isLikedByCurrentUser', response.isLikedByCurrentUser);
+                // console.log('response', response);
+                // console.log(' response.isLikedByCurrentUser', response.isLikedByCurrentUser);
                 setIsQuestionLiked(response.isLikedByCurrentUser);
             }
         } catch (error) {
@@ -151,7 +151,7 @@ const ForumQuestionDetail = () => {
             setLoading(true);
             setError(null);
             const response = await getAnswerQuestionsPaginated(questionId, searchTerm, currentPage, pageSize);
-            
+
             // Sort answers based on selected option
             let sortedAnswers = [...response.answers];
             switch (sortBy) {
@@ -168,12 +168,12 @@ const ForumQuestionDetail = () => {
                     // Keep original order
                     break;
             }
-            
+
             setAnswersData({
                 ...response,
                 answers: sortedAnswers
             });
-            
+
             // Set liked answers from response if available
             if (sortedAnswers && sortedAnswers.length > 0) {
                 const likedAnswerIds = new Set();
@@ -194,12 +194,12 @@ const ForumQuestionDetail = () => {
 
     const handleSubmitAnswer = async () => {
         if (!checkUserAuthentication()) return;
-        
+
         if (newAnswer.trim()) {
             try {
                 setLoading(true);
                 await createMainAnswer(parseInt(questionId), userInfo.userId, newAnswer);
-                setNewAnswer(''); 
+                setNewAnswer('');
                 await loadAnswers();
                 await loadQuestionDetail(); // Refresh to update totalAnswers count
             } catch (error) {
@@ -213,7 +213,7 @@ const ForumQuestionDetail = () => {
 
     const handleSubmitReply = async (parentAnswerId) => {
         if (!checkUserAuthentication()) return;
-        
+
         if (replyContent.trim()) {
             try {
                 setLoading(true);
@@ -241,9 +241,9 @@ const ForumQuestionDetail = () => {
 
     const formatDate = (dateString) => {
         const date = new Date(dateString);
-        return date.toLocaleDateString('en-US') + ' ' + date.toLocaleTimeString('en-US', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
+        return date.toLocaleDateString('en-US') + ' ' + date.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
         });
     };
 
@@ -311,13 +311,13 @@ const ForumQuestionDetail = () => {
 
     const handleLikeAnswer = async (answerId) => {
         if (!checkUserAuthentication()) return;
-        
+
         // Prevent multiple simultaneous like requests for the same answer
         if (likingAnswers.has(answerId)) return;
-        
+
         try {
             setLikingAnswers(prev => new Set(prev.add(answerId)));
-            
+
             // Optimistically update UI
             const wasLiked = likedAnswers.has(answerId);
             if (wasLiked) {
@@ -329,23 +329,23 @@ const ForumQuestionDetail = () => {
             } else {
                 setLikedAnswers(prev => new Set(prev.add(answerId)));
             }
-            
+
             // Update answer totalLikes count optimistically
             setAnswersData(prevData => ({
                 ...prevData,
-                answers: prevData.answers.map(answer => 
-                    answer.answerId === answerId 
+                answers: prevData.answers.map(answer =>
+                    answer.answerId === answerId
                         ? { ...answer, totalLikes: answer.totalLikes + (wasLiked ? -1 : 1) }
                         : answer
                 )
             }));
-            
+
             // Make API call
             await toggleAnswerLike(answerId, userInfo.userId);
-            
+
         } catch (error) {
             console.error('Error toggling like:', error);
-            
+
             // Revert optimistic update on error
             const wasLiked = !likedAnswers.has(answerId);
             if (wasLiked) {
@@ -357,16 +357,16 @@ const ForumQuestionDetail = () => {
             } else {
                 setLikedAnswers(prev => new Set(prev.add(answerId)));
             }
-            
+
             setAnswersData(prevData => ({
                 ...prevData,
-                answers: prevData.answers.map(answer => 
-                    answer.answerId === answerId 
+                answers: prevData.answers.map(answer =>
+                    answer.answerId === answerId
                         ? { ...answer, totalLikes: answer.totalLikes + (wasLiked ? -1 : 1) }
                         : answer
                 )
             }));
-            
+
             alert('An error occurred while liking/unliking the answer. Please try again.');
         } finally {
             setLikingAnswers(prev => {
@@ -379,36 +379,36 @@ const ForumQuestionDetail = () => {
 
     const handleLikeQuestion = async () => {
         if (!checkUserAuthentication()) return;
-        
+
         // Prevent multiple simultaneous like requests
         if (likingQuestion) return;
-        
+
         try {
             setLikingQuestion(true);
-            
+
             // Optimistically update UI
             const wasLiked = isQuestionLiked;
             setIsQuestionLiked(!wasLiked);
-            
+
             // Update question totalLikes count optimistically
             setQuestionDetail(prevDetail => ({
                 ...prevDetail,
                 totalLikes: prevDetail.totalLikes + (wasLiked ? -1 : 1)
             }));
-            
+
             // Make API call
             await toggleQuestionLike(questionId, userInfo.userId);
-            
+
         } catch (error) {
             console.error('Error toggling question like:', error);
-            
+
             // Revert optimistic update on error
             setIsQuestionLiked(isQuestionLiked);
             setQuestionDetail(prevDetail => ({
                 ...prevDetail,
                 totalLikes: prevDetail.totalLikes + (isQuestionLiked ? 1 : -1)
             }));
-            
+
             alert('An error occurred while liking/unliking the question. Please try again.');
         } finally {
             setLikingQuestion(false);
@@ -418,12 +418,12 @@ const ForumQuestionDetail = () => {
     const buildAnswerTree = (answers) => {
         const answerMap = new Map();
         const rootAnswers = [];
-        
+
         // Create a map of all answers
         answers.forEach(answer => {
             answerMap.set(answer.answerId, { ...answer, children: [] });
         });
-        
+
         // Build the tree
         answers.forEach(answer => {
             if (answer.parentAnswerId) {
@@ -437,7 +437,7 @@ const ForumQuestionDetail = () => {
                 rootAnswers.push(answerMap.get(answer.answerId));
             }
         });
-        
+
         return rootAnswers;
     };
 
@@ -479,7 +479,7 @@ const ForumQuestionDetail = () => {
         const isMenuOpen = openMenus.has(answer.answerId);
         const canEdit = canUserEditAnswer(answer.answerBy);
         const canDelete = canUserDeleteAnswer(answer.answerBy);
-        
+
         return (
             <div key={answer.answerId} style={{ marginLeft: `${marginLeft}px` }}>
                 <div className="bg-gray-50 p-4 rounded-lg mb-3 border-l-2 border-gray-300">
@@ -526,7 +526,7 @@ const ForumQuestionDetail = () => {
                             )}
                         </div>
                     </div>
-                    
+
                     {/* Answer content - show edit form if editing */}
                     {editingAnswer === answer.answerId ? (
                         <div className="mb-3">
@@ -556,16 +556,15 @@ const ForumQuestionDetail = () => {
                     ) : (
                         <p className="text-gray-700 mb-3">{answer.answer}</p>
                     )}
-                    
+
                     <div className="flex gap-4 items-center">
-                        <button 
+                        <button
                             onClick={() => handleLikeAnswer(answer.answerId)}
                             disabled={!userInfo || likingAnswers.has(answer.answerId)}
-                            className={`text-sm transition-colors ${
-                                likedAnswers.has(answer.answerId) 
-                                    ? 'text-blue-600 hover:text-blue-800' 
+                            className={`text-sm transition-colors ${likedAnswers.has(answer.answerId)
+                                    ? 'text-blue-600 hover:text-blue-800'
                                     : 'text-gray-500 hover:text-blue-600'
-                            } ${!userInfo ? 'cursor-not-allowed opacity-50' : ''}`}
+                                } ${!userInfo ? 'cursor-not-allowed opacity-50' : ''}`}
                             title={userInfo ? (likedAnswers.has(answer.answerId) ? 'Unlike' : 'Like') : 'Login to like'}
                         >
                             {likingAnswers.has(answer.answerId) ? (
@@ -576,7 +575,7 @@ const ForumQuestionDetail = () => {
                                 </span>
                             )}
                         </button>
-                        
+
                         {/* Show replies count and toggle button */}
                         {hasReplies && (
                             <button
@@ -590,7 +589,7 @@ const ForumQuestionDetail = () => {
                                 )}
                             </button>
                         )}
-                        
+
                         <button
                             onClick={() => setReplyingTo(replyingTo === answer.answerId ? null : answer.answerId)}
                             className="text-sm text-blue-600 hover:text-blue-800"
@@ -599,7 +598,7 @@ const ForumQuestionDetail = () => {
                             Reply
                         </button>
                     </div>
-                    
+
                     {/* Reply Form */}
                     {replyingTo === answer.answerId && userInfo && (
                         <div className="mt-3 border-l-2 border-gray-200 pl-4">
@@ -634,7 +633,7 @@ const ForumQuestionDetail = () => {
                         </div>
                     )}
                 </div>
-                
+
                 {/* Render children recursively - only if expanded */}
                 {hasReplies && isExpanded && (
                     <div className="ml-4">
@@ -695,38 +694,37 @@ const ForumQuestionDetail = () => {
             <div className="max-w-4xl mx-auto p-6">
                 {/* Header */}
                 <div className="mb-6">
-                    <button 
+                    <button
                         onClick={handleBackToForum}
                         className="text-gray-600 hover:text-gray-800 mb-4"
-                        style={{fontSize : '20px'}}
+                        style={{ fontSize: '20px' }}
                     >
                         ← Back to forum
                     </button>
-                    
+
                     {questionDetail ? (
                         <>
                             <h3 className="text-2xl font-bold text-gray-800 mb-2">
                                 {questionDetail.title}
                             </h3>
-                            <div className="text-gray-500 mb-4"   style={{fontSize : '14px'}}>
+                            <div className="text-gray-500 mb-4" style={{ fontSize: '14px' }}>
                                 Author: {questionDetail.askerName} • Created: {formatDate(questionDetail.createdAt)}
                             </div>
                             <div className="bg-gray-50 p-4 rounded-lg mb-4">
                                 <h6 className="font-semibold text-gray-800 mb-2">Description:</h6>
-                                <p className="text-gray-700 mb-2" style={{fontSize : '14px'}}>{questionDetail.description}</p>
+                                <p className="text-gray-700 mb-2" style={{ fontSize: '14px' }}>{questionDetail.description}</p>
                                 <h6 className="font-semibold text-gray-800 mb-2">Question details:</h6>
-                                <p className="text-gray-700" style={{fontSize : '14px'}}>{questionDetail.question}</p>
+                                <p className="text-gray-700" style={{ fontSize: '14px' }}>{questionDetail.question}</p>
                             </div>
                             <div className="flex gap-6 text-sm text-gray-600 mb-6">
-                                <span style={{fontSize : '14px'}}>{questionDetail.totalAnswers} answers</span>
-                                <button 
+                                <span style={{ fontSize: '14px' }}>{questionDetail.totalAnswers} answers</span>
+                                <button
                                     onClick={handleLikeQuestion}
                                     disabled={!userInfo || likingQuestion}
-                                    className={`transition-colors ${
-                                        isQuestionLiked 
-                                            ? 'text-blue-600 hover:text-blue-800' 
+                                    className={`transition-colors ${isQuestionLiked
+                                            ? 'text-blue-600 hover:text-blue-800'
                                             : 'text-gray-600 hover:text-blue-600'
-                                    } ${!userInfo ? 'cursor-not-allowed opacity-50' : ''}`}
+                                        } ${!userInfo ? 'cursor-not-allowed opacity-50' : ''}`}
                                     title={userInfo ? (isQuestionLiked ? 'Unlike question' : 'Like question') : 'Login to like'}
                                 >
                                     {likingQuestion ? (
@@ -767,7 +765,7 @@ const ForumQuestionDetail = () => {
                                 Search
                             </button>
                         </form>
-                        
+
                         {/* Sort Dropdown */}
                         <div className="flex items-center gap-2">
                             <label className="text-sm text-gray-600 whitespace-nowrap">Sort by:</label>
@@ -818,11 +816,11 @@ const ForumQuestionDetail = () => {
                         >
                             Previous
                         </button>
-                        
+
                         <span className="px-4 py-2 text-sm text-gray-600">
                             Page {answersData.currentPage} / {answersData.totalPages}
                         </span>
-                        
+
                         <button
                             onClick={() => handlePageChange(currentPage + 1)}
                             disabled={!answersData.hasNextPage}
@@ -867,7 +865,7 @@ const ForumQuestionDetail = () => {
                     </div>
                 )}
             </div>
-            
+
             {/* Delete Confirmation Modal */}
             {showDeleteConfirm && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">

@@ -86,15 +86,15 @@ const SubmitPapers = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Debug values:", {
-    file,
-    title,
-    abstract,
-    keywords,
-    topic,
-    conferenceId: selectedConference?.conferenceId,
-    authorIdsLength: authorIds.length,
-  });
+    //   console.log("Debug values:", {
+    //   file,
+    //   title,
+    //   abstract,
+    //   keywords,
+    //   topic,
+    //   conferenceId: selectedConference?.conferenceId,
+    //   authorIdsLength: authorIds.length,
+    // });
     if (
       !file ||
       !title ||

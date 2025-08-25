@@ -68,9 +68,9 @@ const ReviewSidebar = ({
   };
 
   const handleCheckAiAgain = async () => {
-    console.log("Check Again Clicked");
-    console.log("reviewId:", review?.reviewId);
-    console.log("chunks:", chunks);
+    // console.log("Check Again Clicked");
+    // console.log("reviewId:", review?.reviewId);
+    // console.log("chunks:", chunks);
 
     if (!review?.reviewId || !chunks?.length) {
       toast.error("No data available to check AI.");

@@ -41,23 +41,23 @@ const ConferenceOrganizer = ({ conference, loading, onUpdate }) => {
     const [topics, setTopics] = useState([]);
 
     useEffect(() => {
-  const fetchTopics = async () => {
-    try {
-      const res = await getAllTopics();
-      console.log("📦 All Topics:", res);
-      setTopics(res || []);
-    } catch (error) {
-      message.error("Failed to load topics.");
-    }
-  };
-  fetchTopics();
-}, []);
+        const fetchTopics = async () => {
+            try {
+                const res = await getAllTopics();
+                //   console.log("📦 All Topics:", res);
+                setTopics(res || []);
+            } catch (error) {
+                message.error("Failed to load topics.");
+            }
+        };
+        fetchTopics();
+    }, []);
 
 
 
     useEffect(() => {
         if (conference) {
-            
+
             const data = Object.entries(conference).reduce((acc, [key, value]) => {
                 const camelKey = key.charAt(0).toLowerCase() + key.slice(1);
                 acc[camelKey] = value;
@@ -67,14 +67,14 @@ const ConferenceOrganizer = ({ conference, loading, onUpdate }) => {
             data.endDate = data.endDate ? dayjs(data.endDate) : null;
             data.status = !!data.status;
             data.topicIds = data.topics?.map(t => t.topicId) || [];
-            console.log("🎯 Mapped topicIds:", data.topicIds);
-            console.log("🎯 Conference.Topics:", conference.topics);
+            // console.log("🎯 Mapped topicIds:", data.topicIds);
+            // console.log("🎯 Conference.Topics:", conference.topics);
 
 
-            console.log("🎯 Conference object nhận từ prop:", conference);
+            // console.log("🎯 Conference object nhận từ prop:", conference);
 
             form.setFieldsValue(data);
-            console.log("📋 Dữ liệu đã map để set vào form:", data);
+            // console.log("📋 Dữ liệu đã map để set vào form:", data);
 
             setPreviewImage(conference.BannerUrl || "");
         }
@@ -138,7 +138,7 @@ const ConferenceOrganizer = ({ conference, loading, onUpdate }) => {
                     />
                 </Form.Item>
 
-                
+
 
                 <Form.Item name="startDate" label="Start Date" rules={[{ required: true }]}>
                     <DatePicker showTime format="YYYY-MM-DD HH:mm:ss" style={{ width: "100%" }} />
@@ -156,52 +156,52 @@ const ConferenceOrganizer = ({ conference, loading, onUpdate }) => {
                         options={topics.map(topic => ({
                             label: topic.topicName,
                             value: topic.topicId,
-                            
+
                         }))}
-                            onChange={(value) => console.log("Selected topicIds:", value)}
+                        onChange={(value) => console.log("Selected topicIds:", value)}
 
                     />
                 </Form.Item>
 
                 <Form.Item label="Banner Image">
-  <Upload
-    name="bannerImage"
-    accept=".jpg,.jpeg,.png,.gif" 
-    showUploadList={false}
-    beforeUpload={(file) => {
-      const isImage =
-        file.type === "image/jpeg" ||
-        file.type === "image/png" ||
-        file.type === "image/gif" ||
-        file.type === "image/jpg";
+                    <Upload
+                        name="bannerImage"
+                        accept=".jpg,.jpeg,.png,.gif"
+                        showUploadList={false}
+                        beforeUpload={(file) => {
+                            const isImage =
+                                file.type === "image/jpeg" ||
+                                file.type === "image/png" ||
+                                file.type === "image/gif" ||
+                                file.type === "image/jpg";
 
-      if (!isImage) {
-        message.error("❌ File không hợp lệ. Chỉ chấp nhận .jpg, .jpeg, .png, .gif.");
-        return false; 
-      }
+                            if (!isImage) {
+                                message.error("❌ File không hợp lệ. Chỉ chấp nhận .jpg, .jpeg, .png, .gif.");
+                                return false;
+                            }
 
-      // ✅ Nếu hợp lệ, tiến hành preview và set state
-      form.setFieldsValue({ bannerImage: file });
-      setBannerFile(file);
+                            // ✅ Nếu hợp lệ, tiến hành preview và set state
+                            form.setFieldsValue({ bannerImage: file });
+                            setBannerFile(file);
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setPreviewImage(e.target.result);
-      };
-      reader.readAsDataURL(file);
+                            const reader = new FileReader();
+                            reader.onload = (e) => {
+                                setPreviewImage(e.target.result);
+                            };
+                            reader.readAsDataURL(file);
 
-      return false; 
-    }}
-  >
-    <Button icon={<UploadOutlined />}>Choose Image</Button>
-  </Upload>
+                            return false;
+                        }}
+                    >
+                        <Button icon={<UploadOutlined />}>Choose Image</Button>
+                    </Upload>
 
-  {previewImage && (
-    <div style={{ marginTop: 10 }}>
-      <Avatar shape="square" size={128} src={previewImage} alt="banner" />
-    </div>
-  )}
-</Form.Item>
+                    {previewImage && (
+                        <div style={{ marginTop: 10 }}>
+                            <Avatar shape="square" size={128} src={previewImage} alt="banner" />
+                        </div>
+                    )}
+                </Form.Item>
 
 
                 {previewImage && (

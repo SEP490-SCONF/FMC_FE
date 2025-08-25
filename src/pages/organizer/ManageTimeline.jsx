@@ -52,10 +52,10 @@ export default function ManageTimeline() {
   const [presentedPapers, setPresentedPapers] = useState([]);
   const [scheduleFormModalVisible, setScheduleFormModalVisible] = useState(false);
   const [paperSelectModalVisible, setPaperSelectModalVisible] = useState(false);
-const [selectedPaperForSchedule, setSelectedPaperForSchedule] = useState(null);
-const [expandedScheduleId, setExpandedScheduleId] = useState(null);
-const [isExpanded, setIsExpanded] = useState({});
-const [scheduleCounts, setScheduleCounts] = useState({});
+  const [selectedPaperForSchedule, setSelectedPaperForSchedule] = useState(null);
+  const [expandedScheduleId, setExpandedScheduleId] = useState(null);
+  const [isExpanded, setIsExpanded] = useState({});
+  const [scheduleCounts, setScheduleCounts] = useState({});
 
   // Schedule states
   const [scheduleModalVisible, setScheduleModalVisible] = useState(false);
@@ -69,28 +69,28 @@ const [scheduleCounts, setScheduleCounts] = useState({});
   const [dateRange, setDateRange] = useState([null, null]);
 
   const showDeleteScheduleConfirm = (scheduleId) => {
-  Modal.confirm({
-    title: (
-      <Text strong type="danger" style={{ fontSize: "18px" }}>
-        ⚠️ Confirm Deletion
-      </Text>
-    ),
-    icon: <ExclamationCircleOutlined style={{ color: "#faad14" }} />,
-    content: (
-      <div>
-        <p>
-          This action <Text strong>cannot be undone</Text>.
-        </p>
-        <p>Are you sure you want to delete this schedule?</p>
-      </div>
-    ),
-    okText: "Yes, delete it",
-    cancelText: "Cancel",
-    okType: "danger",
-    centered: true,
-    onOk: () => handleScheduleDelete(scheduleId),
-  });
-};
+    Modal.confirm({
+      title: (
+        <Text strong type="danger" style={{ fontSize: "18px" }}>
+          ⚠️ Confirm Deletion
+        </Text>
+      ),
+      icon: <ExclamationCircleOutlined style={{ color: "#faad14" }} />,
+      content: (
+        <div>
+          <p>
+            This action <Text strong>cannot be undone</Text>.
+          </p>
+          <p>Are you sure you want to delete this schedule?</p>
+        </div>
+      ),
+      okText: "Yes, delete it",
+      cancelText: "Cancel",
+      okType: "danger",
+      centered: true,
+      onOk: () => handleScheduleDelete(scheduleId),
+    });
+  };
 
   const showDeleteConfirm = (id, onDelete) => {
     Modal.confirm({
@@ -117,136 +117,136 @@ const [scheduleCounts, setScheduleCounts] = useState({});
   };
 
   <div className="mb-4 flex gap-2 items-center">
-  <Input
-  value={searchText}
-  onChange={(e) => setSearchText(e.target.value)}
-/>
+    <Input
+      value={searchText}
+      onChange={(e) => setSearchText(e.target.value)}
+    />
 
-<RangePicker
-  value={dateRange}
-  onChange={(dates) => setDateRange(dates)}
-/>
+    <RangePicker
+      value={dateRange}
+      onChange={(dates) => setDateRange(dates)}
+    />
 
 
 
-</div>
-const handleDateRangeFilter = (dates) => {
-  if (!dates || dates.length !== 2) {
-    setFilteredList(list); // reset filter nếu không chọn gì
-    return;
-  }
+  </div>
+  const handleDateRangeFilter = (dates) => {
+    if (!dates || dates.length !== 2) {
+      setFilteredList(list); // reset filter nếu không chọn gì
+      return;
+    }
 
-  const [start, end] = dates;
-
-  const filtered = list.filter((item) => {
-    const timelineDate = dayjs(item.date);
-    return timelineDate.isAfter(start.startOf("day").subtract(1, "second")) &&
-           timelineDate.isBefore(end.endOf("day").add(1, "second"));
-  });
-
-  setFilteredList(filtered);
-};
-
-// --- Filter Timelines (Search + Date + Schedule) ---
-const handleFilter = (searchValue, dates) => {
-  if (!list || list.length === 0) return setFilteredList([]);
-
-  let filtered = [...list];
-
-  // 1️⃣ Filter by description
-  if (searchValue && searchValue.trim() !== "") {
-    filtered = filtered.filter(item =>
-      item.description?.toLowerCase().includes(searchValue.toLowerCase())
-    );
-  }
-
-  // 2️⃣ Filter by date range
-  if (dates && dates.length === 2 && dates[0] && dates[1]) {
     const [start, end] = dates;
-    filtered = filtered.filter(item => {
-      if (!item.date) return false;
-      const timelineDate = dayjs(item.date);
-      return (
-        timelineDate.isSame(start, "day") ||
-        timelineDate.isSame(end, "day") ||
-        (timelineDate.isAfter(start.startOf("day")) &&
-          timelineDate.isBefore(end.endOf("day")))
-      );
-    });
-  }
 
-  setFilteredList(filtered);
-};
+    const filtered = list.filter((item) => {
+      const timelineDate = dayjs(item.date);
+      return timelineDate.isAfter(start.startOf("day").subtract(1, "second")) &&
+        timelineDate.isBefore(end.endOf("day").add(1, "second"));
+    });
+
+    setFilteredList(filtered);
+  };
+
+  // --- Filter Timelines (Search + Date + Schedule) ---
+  const handleFilter = (searchValue, dates) => {
+    if (!list || list.length === 0) return setFilteredList([]);
+
+    let filtered = [...list];
+
+    // 1️⃣ Filter by description
+    if (searchValue && searchValue.trim() !== "") {
+      filtered = filtered.filter(item =>
+        item.description?.toLowerCase().includes(searchValue.toLowerCase())
+      );
+    }
+
+    // 2️⃣ Filter by date range
+    if (dates && dates.length === 2 && dates[0] && dates[1]) {
+      const [start, end] = dates;
+      filtered = filtered.filter(item => {
+        if (!item.date) return false;
+        const timelineDate = dayjs(item.date);
+        return (
+          timelineDate.isSame(start, "day") ||
+          timelineDate.isSame(end, "day") ||
+          (timelineDate.isAfter(start.startOf("day")) &&
+            timelineDate.isBefore(end.endOf("day")))
+        );
+      });
+    }
+
+    setFilteredList(filtered);
+  };
 
 
 
 
   // 1️⃣ Sắp xếp schedules
-const sortedSchedules = schedules.sort(
-  (a, b) => new Date(a.presentationStartTime) - new Date(b.presentationStartTime)
-);
+  const sortedSchedules = schedules.sort(
+    (a, b) => new Date(a.presentationStartTime) - new Date(b.presentationStartTime)
+  );
 
-// 2️⃣ Tạo groupedSchedules (theo buổi) nếu cần hiển thị toàn bộ
-const groupedSchedules = {
-  morning: sortedSchedules.filter(s => dayjs(s.presentationStartTime).hour() < 12),
-  afternoon: sortedSchedules.filter(s => {
-    const h = dayjs(s.presentationStartTime).hour();
-    return h >= 12 && h < 18;
-  }),
-  evening: sortedSchedules.filter(s => dayjs(s.presentationStartTime).hour() >= 18),
-};
+  // 2️⃣ Tạo groupedSchedules (theo buổi) nếu cần hiển thị toàn bộ
+  const groupedSchedules = {
+    morning: sortedSchedules.filter(s => dayjs(s.presentationStartTime).hour() < 12),
+    afternoon: sortedSchedules.filter(s => {
+      const h = dayjs(s.presentationStartTime).hour();
+      return h >= 12 && h < 18;
+    }),
+    evening: sortedSchedules.filter(s => dayjs(s.presentationStartTime).hour() >= 18),
+  };
 
-const allSchedules = [...groupedSchedules.morning, ...groupedSchedules.afternoon, ...groupedSchedules.evening];
+  const allSchedules = [...groupedSchedules.morning, ...groupedSchedules.afternoon, ...groupedSchedules.evening];
 
-// 3️⃣ Slice theo page
-const pagedSchedules = allSchedules.slice((page - 1) * pageSize, page * pageSize);
+  // 3️⃣ Slice theo page
+  const pagedSchedules = allSchedules.slice((page - 1) * pageSize, page * pageSize);
 
-// 4️⃣ Sau đó mới group theo buổi
-const groupedPagedSchedules = {
-  morning: pagedSchedules.filter(s => dayjs(s.presentationStartTime).hour() < 12),
-  afternoon: pagedSchedules.filter(s => {
-    const h = dayjs(s.presentationStartTime).hour();
-    return h >= 12 && h < 18;
-  }),
-  evening: pagedSchedules.filter(s => dayjs(s.presentationStartTime).hour() >= 18),
-};
+  // 4️⃣ Sau đó mới group theo buổi
+  const groupedPagedSchedules = {
+    morning: pagedSchedules.filter(s => dayjs(s.presentationStartTime).hour() < 12),
+    afternoon: pagedSchedules.filter(s => {
+      const h = dayjs(s.presentationStartTime).hour();
+      return h >= 12 && h < 18;
+    }),
+    evening: pagedSchedules.filter(s => dayjs(s.presentationStartTime).hour() >= 18),
+  };
 
 
 
   const fetchData = () => {
-  if (!conferenceId) {
-    message.error("Missing conferenceId");
-    return;
-  }
-
-  getTimelinesByConferenceId(conferenceId)
-    .then(async (res) => {
-      const timelines = res || [];
-      setList(timelines);
-      setFilteredList(timelines);
-
-      // Lấy count cho từng timeline
-      const counts = {};
-      await Promise.all(
-  timelines.map(async (tl) => {
-    try {
-      const { data } = await countSchedulesByTimeline(tl.timeLineId);
-      counts[tl.timeLineId] = data?.scheduleCount ?? 0;
-    } catch (err) {
-      counts[tl.timeLineId] = 0;
+    if (!conferenceId) {
+      message.error("Missing conferenceId");
+      return;
     }
-  })
-);
-setScheduleCounts(counts);
 
-    })
-    .catch((err) => {
-      console.warn("No timelines found or failed to load:", err);
-      setList([]);
-      setFilteredList([]);
-      setScheduleCounts({});
-    });
-};
+    getTimelinesByConferenceId(conferenceId)
+      .then(async (res) => {
+        const timelines = res || [];
+        setList(timelines);
+        setFilteredList(timelines);
+
+        // Lấy count cho từng timeline
+        const counts = {};
+        await Promise.all(
+          timelines.map(async (tl) => {
+            try {
+              const { data } = await countSchedulesByTimeline(tl.timeLineId);
+              counts[tl.timeLineId] = data?.scheduleCount ?? 0;
+            } catch (err) {
+              counts[tl.timeLineId] = 0;
+            }
+          })
+        );
+        setScheduleCounts(counts);
+
+      })
+      .catch((err) => {
+        console.warn("No timelines found or failed to load:", err);
+        setList([]);
+        setFilteredList([]);
+        setScheduleCounts({});
+      });
+  };
 
 
 
@@ -257,20 +257,20 @@ setScheduleCounts(counts);
   }, [conferenceId]);
 
   useEffect(() => {
-      console.log("🔹 selectedPaperForSchedule updated:", selectedPaperForSchedule); // <- kiểm tra
+    // console.log("🔹 selectedPaperForSchedule updated:", selectedPaperForSchedule); // <- kiểm tra
 
-  if (selectedPaperForSchedule) {
-    scheduleForm.setFieldsValue({
-      paperId: selectedPaperForSchedule.paperId,
-      presenterId: selectedPaperForSchedule.paperAuthors?.[0]?.author?.authorId || null,
-    });
-  } else {
-    scheduleForm.setFieldsValue({
-      paperId: null,
-      presenterId: null,
-    });
-  }
-}, [selectedPaperForSchedule, scheduleForm]);
+    if (selectedPaperForSchedule) {
+      scheduleForm.setFieldsValue({
+        paperId: selectedPaperForSchedule.paperId,
+        presenterId: selectedPaperForSchedule.paperAuthors?.[0]?.author?.authorId || null,
+      });
+    } else {
+      scheduleForm.setFieldsValue({
+        paperId: null,
+        presenterId: null,
+      });
+    }
+  }, [selectedPaperForSchedule, scheduleForm]);
 
 
 
@@ -334,99 +334,99 @@ setScheduleCounts(counts);
   };
 
   const handleViewSchedules = async (timeline) => {
-  setSelectedTimeline(timeline);
-  setPage(1);
+    setSelectedTimeline(timeline);
+    setPage(1);
 
-  try {
-    // 1️⃣ Lấy danh sách schedules
-    const schedulesRes = await getSchedulesByTimeline(timeline.timeLineId);
-    setSchedules(schedulesRes || []);
+    try {
+      // 1️⃣ Lấy danh sách schedules
+      const schedulesRes = await getSchedulesByTimeline(timeline.timeLineId);
+      setSchedules(schedulesRes || []);
 
-    // 2️⃣ Lấy tổng số schedule từ API Count
-    const countRes = await countSchedulesByTimeline(timeline.timeLineId);
-    setScheduleCounts(prev => ({
-      ...prev,
-    [timeline.timeLineId]: countRes.scheduleCount || 0, // 
-    }));
-    handleFilter(searchText, dateRange); // filter lại ngay
+      // 2️⃣ Lấy tổng số schedule từ API Count
+      const countRes = await countSchedulesByTimeline(timeline.timeLineId);
+      setScheduleCounts(prev => ({
+        ...prev,
+        [timeline.timeLineId]: countRes.scheduleCount || 0, // 
+      }));
+      handleFilter(searchText, dateRange); // filter lại ngay
 
 
-    setScheduleModalVisible(true);
-  } catch (err) {
-    console.error("❌ Failed to load schedules or count", err);
-    setSchedules([]);
-    setScheduleCounts(prev => ({
-      ...prev,
-      [timeline.timeLineId]: 0,
-    }));
-    setScheduleModalVisible(true);
-  }
+      setScheduleModalVisible(true);
+    } catch (err) {
+      console.error("❌ Failed to load schedules or count", err);
+      setSchedules([]);
+      setScheduleCounts(prev => ({
+        ...prev,
+        [timeline.timeLineId]: 0,
+      }));
+      setScheduleModalVisible(true);
+    }
 
-  // 3️⃣ load presented papers
-  getPresentedPapersByConferenceId(conferenceId).then(res => {
-    const papersWithPresenter = res.map(paper => {
-      const presenterAuthor = paper.paperAuthors?.[0]?.author;
-      return {
-        ...paper,
-        presenter: presenterAuthor
-          ? {
+    // 3️⃣ load presented papers
+    getPresentedPapersByConferenceId(conferenceId).then(res => {
+      const papersWithPresenter = res.map(paper => {
+        const presenterAuthor = paper.paperAuthors?.[0]?.author;
+        return {
+          ...paper,
+          presenter: presenterAuthor
+            ? {
               userId: presenterAuthor.authorId,
               name: presenterAuthor.name,
               email: presenterAuthor.email,
               avatarUrl: presenterAuthor.avatarUrl,
             }
-          : null,
-      };
+            : null,
+        };
+      });
+      setPresentedPapers(papersWithPresenter);
     });
-    setPresentedPapers(papersWithPresenter);
-  });
-};
+  };
 
   // CRUD Schedule
   const handleScheduleSubmit = (values) => {
-  const baseDate = dayjs(selectedTimeline.date).format("YYYY-MM-DD");
-  const startTime = dayjs(`${baseDate} ${values.presentationStartTime.format("HH:mm")}`);
-  const endTime = dayjs(`${baseDate} ${values.presentationEndTime.format("HH:mm")}`);
+    const baseDate = dayjs(selectedTimeline.date).format("YYYY-MM-DD");
+    const startTime = dayjs(`${baseDate} ${values.presentationStartTime.format("HH:mm")}`);
+    const endTime = dayjs(`${baseDate} ${values.presentationEndTime.format("HH:mm")}`);
 
-  const data = {
-    timeLineId: selectedTimeline?.timeLineId,
-    sessionTitle: values.sessionTitle,
-    location: values.location || "",
-    paperId: values.paperId ?? null,
-  presenterId: values.presenterId ?? null, // sẽ có id từ step 2
+    const data = {
+      timeLineId: selectedTimeline?.timeLineId,
+      sessionTitle: values.sessionTitle,
+      location: values.location || "",
+      paperId: values.paperId ?? null,
+      presenterId: values.presenterId ?? null, // sẽ có id từ step 2
 
-    presentationStartTime: startTime ? startTime.toISOString() : null,
-    presentationEndTime: endTime ? endTime.toISOString() : null,
+      presentationStartTime: startTime ? startTime.toISOString() : null,
+      presentationEndTime: endTime ? endTime.toISOString() : null,
+    };
+
+    const action = editingSchedule
+      ? updateSchedule(editingSchedule.scheduleId, data)
+      : createSchedule(data);
+
+    action
+      .then(() => {
+        message.success(`Schedule ${editingSchedule ? "updated" : "created"} successfully`);
+        scheduleForm.resetFields();
+        setEditingSchedule(null);
+        setScheduleFormModalVisible(false); // tắt form
+
+        // 🔄 reload lại danh sách theo timeline hiện tại
+        getSchedulesByTimeline(selectedTimeline.timeLineId)
+          .then((res) => {
+            setSchedules(res || []);
+            setScheduleModalVisible(true); // đảm bảo modal danh sách mở
+          })
+          .catch((err) => {
+            console.error("❌ Failed to load schedules", err);
+            setSchedules([]);
+            setScheduleModalVisible(true); // vẫn mở modal danh sách
+          });
+      })
+      .catch((err) => {
+        console.error("❌ Schedule save failed", err);
+        message.error("Failed to save schedule");
+      });
   };
-
-  const action = editingSchedule
-    ? updateSchedule(editingSchedule.scheduleId, data)
-    : createSchedule(data);
-
-  action
-    .then(() => {
-      message.success(`Schedule ${editingSchedule ? "updated" : "created"} successfully`);
-      scheduleForm.resetFields();
-      setEditingSchedule(null);
-      setScheduleFormModalVisible(false); // tắt form
-
-      // 🔄 reload lại danh sách theo timeline hiện tại
-      getSchedulesByTimeline(selectedTimeline.timeLineId)
-        .then((res) => {
-          setSchedules(res || []);
-          setScheduleModalVisible(true); // đảm bảo modal danh sách mở
-        })
-        .catch((err) => {
-          console.error("❌ Failed to load schedules", err);
-          setSchedules([]);
-          setScheduleModalVisible(true); // vẫn mở modal danh sách
-        });
-    })
-    .catch((err) => {
-      console.error("❌ Schedule save failed", err);
-      message.error("Failed to save schedule");
-    });
-};
 
   const handleScheduleDelete = (id) => {
     deleteSchedule(id)
@@ -515,315 +515,315 @@ setScheduleCounts(counts);
       </div>
 
       {/* --- Filter Section --- */}
-<div className="mb-4 flex flex-wrap gap-4 items-center">
-  {/* Search by description */}
-  <Input
-  placeholder="Search description..."
-  prefix={<SearchOutlined />}
-  value={searchText}
-  onChange={(e) => {
-    const value = e.target.value;
-    setSearchText(value);
-    handleFilter(value, dateRange);
-  }}
-  style={{ width: 250 }}
-/>
+      <div className="mb-4 flex flex-wrap gap-4 items-center">
+        {/* Search by description */}
+        <Input
+          placeholder="Search description..."
+          prefix={<SearchOutlined />}
+          value={searchText}
+          onChange={(e) => {
+            const value = e.target.value;
+            setSearchText(value);
+            handleFilter(value, dateRange);
+          }}
+          style={{ width: 250 }}
+        />
 
-<RangePicker
-  value={dateRange}
-  onChange={(dates) => {
-    setDateRange(dates);
-    handleFilter(searchText, dates);
-  }}
-  format="YYYY-MM-DD"
-  allowClear
-/>
-
-
+        <RangePicker
+          value={dateRange}
+          onChange={(dates) => {
+            setDateRange(dates);
+            handleFilter(searchText, dates);
+          }}
+          format="YYYY-MM-DD"
+          allowClear
+        />
 
 
-</div>
 
 
-{/* --- Timeline Table --- */}
-<Table
-  columns={columns}
-  dataSource={filteredList}
-  rowKey="timeLineId"
-  pagination={{ pageSize: 5 }}
-  locale={{
-    emptyText: (
-      <div className="text-center text-gray-500">
-        No timeline has been created for this conference.
       </div>
-    ),
-  }}
-/>
+
+
+      {/* --- Timeline Table --- */}
+      <Table
+        columns={columns}
+        dataSource={filteredList}
+        rowKey="timeLineId"
+        pagination={{ pageSize: 5 }}
+        locale={{
+          emptyText: (
+            <div className="text-center text-gray-500">
+              No timeline has been created for this conference.
+            </div>
+          ),
+        }}
+      />
 
 
       {/* --- Schedule Modal --- */}
-<Modal
-  width={700}
-  open={scheduleModalVisible}
-  onCancel={() => {
-    setScheduleModalVisible(false);
-    setEditingSchedule(null);
-    scheduleForm.resetFields();
-  }}
-  footer={null}
-  title={
-    <div>
-      <div>📌 Schedules for "{selectedTimeline?.description || ""}"</div>
-      <div style={{ fontSize: 12, color: "#120f0fff" }}>
-  Total schedules: {scheduleCounts[selectedTimeline?.timeLineId] ?? 0}
-      </div>
-    </div>
-  }
->
+      <Modal
+        width={700}
+        open={scheduleModalVisible}
+        onCancel={() => {
+          setScheduleModalVisible(false);
+          setEditingSchedule(null);
+          scheduleForm.resetFields();
+        }}
+        footer={null}
+        title={
+          <div>
+            <div>📌 Schedules for "{selectedTimeline?.description || ""}"</div>
+            <div style={{ fontSize: 12, color: "#120f0fff" }}>
+              Total schedules: {scheduleCounts[selectedTimeline?.timeLineId] ?? 0}
+            </div>
+          </div>
+        }
+      >
 
- {/* Button Add Schedule */}
-<div className="flex justify-end mb-4">
-  <Button
-    type="primary"
-    onClick={() => {
-            setSelectedPaperForSchedule(null);
-                  scheduleForm.resetFields();
+        {/* Button Add Schedule */}
+        <div className="flex justify-end mb-4">
+          <Button
+            type="primary"
+            onClick={() => {
+              setSelectedPaperForSchedule(null);
+              scheduleForm.resetFields();
 
 
-      setEditingSchedule(null);
+              setEditingSchedule(null);
 
-      setScheduleFormModalVisible(true); // mở modal riêng
-    }}
-  >
-    + Add Schedule
-  </Button>
-</div>
+              setScheduleFormModalVisible(true); // mở modal riêng
+            }}
+          >
+            + Add Schedule
+          </Button>
+        </div>
 
- 
-{/* Danh sách grouped schedules */}
-<div className="mt-6">
-  {allSchedules.length === 0 ? (
-    <p className="text-center text-gray-500">No schedule</p>
-  ) : (
-    ["morning", "afternoon", "evening"].map((sessionKey) => {
-      const data = groupedPagedSchedules[sessionKey] || [];
-      if (data.length === 0) return null; // bỏ qua buổi trống
 
-      const label =
-        sessionKey === "morning"
-          ? "🌅 Morning"
-          : sessionKey === "afternoon"
-          ? "🌞 Afternoon"
-          : "🌙 Evening";
+        {/* Danh sách grouped schedules */}
+        <div className="mt-6">
+          {allSchedules.length === 0 ? (
+            <p className="text-center text-gray-500">No schedule</p>
+          ) : (
+            ["morning", "afternoon", "evening"].map((sessionKey) => {
+              const data = groupedPagedSchedules[sessionKey] || [];
+              if (data.length === 0) return null; // bỏ qua buổi trống
 
-      return (
-        <div key={sessionKey} className="mb-4">
-          <h4 className="font-semibold text-blue-600 mb-2">{label}</h4>
-          <List
-            dataSource={data}
-            renderItem={(item) => {
-              // tìm paper trong danh sách presentedPapers
-              const paper =
-  item.paper || presentedPapers.find((p) => p.paperId === item.paperId) || null;
-
-              // tìm presenter ưu tiên từ item, nếu null thì từ paperAuthors
-              const presenter =
-  item.presenter?.name
-    ? item.presenter
-    : paper?.paperAuthors?.[0]?.author
-    ? paper.paperAuthors[0].author
-    : item.presenterName
-    ? { name: item.presenterName }
-    : null;
+              const label =
+                sessionKey === "morning"
+                  ? "🌅 Morning"
+                  : sessionKey === "afternoon"
+                    ? "🌞 Afternoon"
+                    : "🌙 Evening";
 
               return (
-                <List.Item
-  key={item.scheduleId}
-  actions={[
-    <Button
-      size="small"
-      onClick={() => {
-        setEditingSchedule(item);
-        setSelectedPaperForSchedule(
-          item.paper || presentedPapers.find((p) => p.paperId === item.paperId) || null
-        );
-        scheduleForm.setFieldsValue({
-          sessionTitle: item.sessionTitle,
-          location: item.location,
-          paperId: item.paperId,
-          presenterId: item.presenterId,
-          presentationStartTime: dayjs(item.presentationStartTime),
-          presentationEndTime: dayjs(item.presentationEndTime),
-        });
-        setScheduleFormModalVisible(true);
-      }}
-    >
-      Edit
-    </Button>,
-    <Button
-      size="small"
-      danger
-      onClick={() => showDeleteScheduleConfirm(item.scheduleId)}
-    >
-      Delete
-    </Button>,
-  ]}
->
+                <div key={sessionKey} className="mb-4">
+                  <h4 className="font-semibold text-blue-600 mb-2">{label}</h4>
+                  <List
+                    dataSource={data}
+                    renderItem={(item) => {
+                      // tìm paper trong danh sách presentedPapers
+                      const paper =
+                        item.paper || presentedPapers.find((p) => p.paperId === item.paperId) || null;
 
-                  <div>
-                    {/* Title có thể click để toggle chi tiết */}
-                    <p
-                      className="font-semibold cursor-pointer"
-                      onClick={() =>
-                        setIsExpanded((prev) => ({
-                          ...prev,
-                          [item.scheduleId]: !prev[item.scheduleId],
-                        }))
-                      }
-                    >
-                      {dayjs(item.presentationStartTime).format("HH:mm")} -{" "}
-                      {dayjs(item.presentationEndTime).format("HH:mm")} :{" "}
-                      {item.sessionTitle}
-                    </p>
+                      // tìm presenter ưu tiên từ item, nếu null thì từ paperAuthors
+                      const presenter =
+                        item.presenter?.name
+                          ? item.presenter
+                          : paper?.paperAuthors?.[0]?.author
+                            ? paper.paperAuthors[0].author
+                            : item.presenterName
+                              ? { name: item.presenterName }
+                              : null;
 
-                    {/* Chi tiết chỉ hiển thị khi expanded */}
-                    {isExpanded[item.scheduleId] && (
-  <div className="mt-1 ml-4 space-y-1">
-    {paper?.title && <p>📝 Paper: {paper.title}</p>}
-    {presenter?.name && <p>👤 Presenter: {presenter.name}</p>}
-    {item.location && <p>📍 Location: {item.location}</p>}
-  </div>
-)}
+                      return (
+                        <List.Item
+                          key={item.scheduleId}
+                          actions={[
+                            <Button
+                              size="small"
+                              onClick={() => {
+                                setEditingSchedule(item);
+                                setSelectedPaperForSchedule(
+                                  item.paper || presentedPapers.find((p) => p.paperId === item.paperId) || null
+                                );
+                                scheduleForm.setFieldsValue({
+                                  sessionTitle: item.sessionTitle,
+                                  location: item.location,
+                                  paperId: item.paperId,
+                                  presenterId: item.presenterId,
+                                  presentationStartTime: dayjs(item.presentationStartTime),
+                                  presentationEndTime: dayjs(item.presentationEndTime),
+                                });
+                                setScheduleFormModalVisible(true);
+                              }}
+                            >
+                              Edit
+                            </Button>,
+                            <Button
+                              size="small"
+                              danger
+                              onClick={() => showDeleteScheduleConfirm(item.scheduleId)}
+                            >
+                              Delete
+                            </Button>,
+                          ]}
+                        >
 
-                  </div>
-                </List.Item>
+                          <div>
+                            {/* Title có thể click để toggle chi tiết */}
+                            <p
+                              className="font-semibold cursor-pointer"
+                              onClick={() =>
+                                setIsExpanded((prev) => ({
+                                  ...prev,
+                                  [item.scheduleId]: !prev[item.scheduleId],
+                                }))
+                              }
+                            >
+                              {dayjs(item.presentationStartTime).format("HH:mm")} -{" "}
+                              {dayjs(item.presentationEndTime).format("HH:mm")} :{" "}
+                              {item.sessionTitle}
+                            </p>
+
+                            {/* Chi tiết chỉ hiển thị khi expanded */}
+                            {isExpanded[item.scheduleId] && (
+                              <div className="mt-1 ml-4 space-y-1">
+                                {paper?.title && <p>📝 Paper: {paper.title}</p>}
+                                {presenter?.name && <p>👤 Presenter: {presenter.name}</p>}
+                                {item.location && <p>📍 Location: {item.location}</p>}
+                              </div>
+                            )}
+
+                          </div>
+                        </List.Item>
+                      );
+                    }}
+                  />
+                </div>
               );
-            }}
-          />
+            })
+          )}
         </div>
-      );
-    })
-  )}
-</div>
 
 
 
 
-  <Pagination
-    className="mt-4 text-center"
-    current={page}
-    pageSize={pageSize}
-    total={schedules.length}
-    onChange={(p) => setPage(p)}
-  />
-</Modal>
+        <Pagination
+          className="mt-4 text-center"
+          current={page}
+          pageSize={pageSize}
+          total={schedules.length}
+          onChange={(p) => setPage(p)}
+        />
+      </Modal>
 
-<Modal
-  title={editingSchedule ? "Update Schedule" : "Add Schedule"}
-  open={scheduleFormModalVisible}
-  onCancel={() => {
-    setScheduleFormModalVisible(false);
-    setEditingSchedule(null);
-    scheduleForm.resetFields();
-  }}
-  onOk={() => scheduleForm.submit()}
-  okText={editingSchedule ? "Update" : "Save"}
->
-  <Form
-    form={scheduleForm}
-    layout="vertical"
-    onFinish={handleScheduleSubmit}
-  >
-    <Form.Item
-      name="sessionTitle"
-      label="Session Title"
-      rules={[{ required: true, message: "Please enter session title" }]}
-    >
-      <Input />
-    </Form.Item>
-    <Form.Item name="location" label="Location">
-      <Input />
-    </Form.Item>
-    <Form.Item
-      name="presentationStartTime"
-      label="Start Time"
-      rules={[{ required: true, message: "Please select start time" }]}
-    >
-      <DatePicker picker="time" format="HH:mm" style={{ width: "100%" }} />
-    </Form.Item>
-    <Form.Item
-      name="presentationEndTime"
-      label="End Time"
-      rules={[{ required: true, message: "Please select end time" }]}
-    >
-      <DatePicker picker="time" format="HH:mm" style={{ width: "100%" }} />
-    </Form.Item>
-
-    {/* ← Thêm nút Choose Paper ở đây */}
-    <Form.Item label="Select Paper">
-      <Button
-        icon={<PlusOutlined />}
-        onClick={() => setPaperSelectModalVisible(true)}
+      <Modal
+        title={editingSchedule ? "Update Schedule" : "Add Schedule"}
+        open={scheduleFormModalVisible}
+        onCancel={() => {
+          setScheduleFormModalVisible(false);
+          setEditingSchedule(null);
+          scheduleForm.resetFields();
+        }}
+        onOk={() => scheduleForm.submit()}
+        okText={editingSchedule ? "Update" : "Save"}
       >
-        Choose Paper
-      </Button>
-      {selectedPaperForSchedule && (
-        <div className="mt-2">
-          📝 {selectedPaperForSchedule.title} | Score: {selectedPaperForSchedule.paperScore ?? "N/A"}
-        </div>
-      )}
-    </Form.Item>
-
-    {/* Hidden fields */}
-    <Form.Item name="paperId" hidden>
-      <Input type="hidden" />
-    </Form.Item>
-    <Form.Item name="presenterId" hidden>
-      <Input type="hidden" />
-    </Form.Item>
-  </Form>
-
-  {/* Modal Paper Select riêng bên ngoài form */}
-  <Modal
-    title="Select Paper"
-    open={paperSelectModalVisible}
-    onCancel={() => setPaperSelectModalVisible(false)}
-    footer={null}
-    width={600}
-  >
-    <List
-      dataSource={presentedPapers}
-      renderItem={(paper) => (
-        <List.Item
-          actions={[
-            <Button
-  type="primary"
-  size="small"
-  onClick={() => {
-        console.log("📝 Paper selected:", paper); // <- kiểm tra
-
-    setSelectedPaperForSchedule(paper);
-    scheduleForm.setFieldsValue({
-      paperId: paper.paperId,
-  presenterId: paper?.paperAuthors?.[0]?.author?.authorId || null, // ✅ safe now
-    });
-    setPaperSelectModalVisible(false);
-  }}
->
-  Select
-</Button>
-,
-          ]}
+        <Form
+          form={scheduleForm}
+          layout="vertical"
+          onFinish={handleScheduleSubmit}
         >
-          <List.Item.Meta
-            title={paper.title}
-            description={`Score: ${paper.paperScore ?? "N/A"}`}
+          <Form.Item
+            name="sessionTitle"
+            label="Session Title"
+            rules={[{ required: true, message: "Please enter session title" }]}
+          >
+            <Input />
+          </Form.Item>
+          <Form.Item name="location" label="Location">
+            <Input />
+          </Form.Item>
+          <Form.Item
+            name="presentationStartTime"
+            label="Start Time"
+            rules={[{ required: true, message: "Please select start time" }]}
+          >
+            <DatePicker picker="time" format="HH:mm" style={{ width: "100%" }} />
+          </Form.Item>
+          <Form.Item
+            name="presentationEndTime"
+            label="End Time"
+            rules={[{ required: true, message: "Please select end time" }]}
+          >
+            <DatePicker picker="time" format="HH:mm" style={{ width: "100%" }} />
+          </Form.Item>
+
+          {/* ← Thêm nút Choose Paper ở đây */}
+          <Form.Item label="Select Paper">
+            <Button
+              icon={<PlusOutlined />}
+              onClick={() => setPaperSelectModalVisible(true)}
+            >
+              Choose Paper
+            </Button>
+            {selectedPaperForSchedule && (
+              <div className="mt-2">
+                📝 {selectedPaperForSchedule.title} | Score: {selectedPaperForSchedule.paperScore ?? "N/A"}
+              </div>
+            )}
+          </Form.Item>
+
+          {/* Hidden fields */}
+          <Form.Item name="paperId" hidden>
+            <Input type="hidden" />
+          </Form.Item>
+          <Form.Item name="presenterId" hidden>
+            <Input type="hidden" />
+          </Form.Item>
+        </Form>
+
+        {/* Modal Paper Select riêng bên ngoài form */}
+        <Modal
+          title="Select Paper"
+          open={paperSelectModalVisible}
+          onCancel={() => setPaperSelectModalVisible(false)}
+          footer={null}
+          width={600}
+        >
+          <List
+            dataSource={presentedPapers}
+            renderItem={(paper) => (
+              <List.Item
+                actions={[
+                  <Button
+                    type="primary"
+                    size="small"
+                    onClick={() => {
+                      // console.log("📝 Paper selected:", paper); // <- kiểm tra
+
+                      setSelectedPaperForSchedule(paper);
+                      scheduleForm.setFieldsValue({
+                        paperId: paper.paperId,
+                        presenterId: paper?.paperAuthors?.[0]?.author?.authorId || null, // ✅ safe now
+                      });
+                      setPaperSelectModalVisible(false);
+                    }}
+                  >
+                    Select
+                  </Button>
+                  ,
+                ]}
+              >
+                <List.Item.Meta
+                  title={paper.title}
+                  description={`Score: ${paper.paperScore ?? "N/A"}`}
+                />
+              </List.Item>
+            )}
           />
-        </List.Item>
-      )}
-    />
-  </Modal>
-</Modal>
+        </Modal>
+      </Modal>
 
       {/* --- Modal add/edit timeline --- */}
       <Modal
@@ -861,63 +861,63 @@ setScheduleCounts(counts);
       </Modal>
 
       {/* --- Timeline Section --- */}
-<div className="pt-8">
-  <h3 className="text-xl font-bold text-blue-700 mb-4 text-center">
-    Timeline
-  </h3>
-  <div className="flex flex-wrap justify-center items-center gap-6 text-sm text-center text-gray-700 relative">
-{list.length === 0 ? (
-      <div className="text-gray-500 text-center">
-        No timeline available
-      </div>
-    ) : (
-      list
-        .sort((a, b) => new Date(a.date) - new Date(b.date))
-        .map((item, index) => {
-          const bgColors = [
-            "bg-blue-100",
-            "bg-green-100",
-            "bg-yellow-100",
-            "bg-purple-100",
-            "bg-pink-100",
-            "bg-orange-100",
-            "bg-red-100",
-            "bg-teal-100",
-          ];
-          const textColors = [
-            "text-blue-800",
-            "text-green-800",
-            "text-yellow-800",
-            "text-purple-800",
-            "text-pink-800",
-            "text-orange-800",
-            "text-red-800",
-            "text-teal-800",
-          ];
-          const bgColor = bgColors[index % bgColors.length];
-          const textColor = textColors[index % textColors.length];
-          return (
-            <div
-              key={item.timeLineId}
-              className="relative flex items-center"
-            >
-              {index > 0 && (
-                <div className="w-6 h-1 bg-gray-300 mx-2 rounded"></div>
-              )}
-              <div className={`${bgColor} rounded-xl p-4 shadow w-40 relative`}>
-                <p className={`font-bold ${textColor}`}>
-                  {dayjs(item.date).format("MMM D, HH:mm")}
-                </p>
-                <p>{item.description}</p>
+      <div className="pt-8">
+        <h3 className="text-xl font-bold text-blue-700 mb-4 text-center">
+          Timeline
+        </h3>
+        <div className="flex flex-wrap justify-center items-center gap-6 text-sm text-center text-gray-700 relative">
+          {list.length === 0 ? (
+            <div className="text-gray-500 text-center">
+              No timeline available
+            </div>
+          ) : (
+            list
+              .sort((a, b) => new Date(a.date) - new Date(b.date))
+              .map((item, index) => {
+                const bgColors = [
+                  "bg-blue-100",
+                  "bg-green-100",
+                  "bg-yellow-100",
+                  "bg-purple-100",
+                  "bg-pink-100",
+                  "bg-orange-100",
+                  "bg-red-100",
+                  "bg-teal-100",
+                ];
+                const textColors = [
+                  "text-blue-800",
+                  "text-green-800",
+                  "text-yellow-800",
+                  "text-purple-800",
+                  "text-pink-800",
+                  "text-orange-800",
+                  "text-red-800",
+                  "text-teal-800",
+                ];
+                const bgColor = bgColors[index % bgColors.length];
+                const textColor = textColors[index % textColors.length];
+                return (
+                  <div
+                    key={item.timeLineId}
+                    className="relative flex items-center"
+                  >
+                    {index > 0 && (
+                      <div className="w-6 h-1 bg-gray-300 mx-2 rounded"></div>
+                    )}
+                    <div className={`${bgColor} rounded-xl p-4 shadow w-40 relative`}>
+                      <p className={`font-bold ${textColor}`}>
+                        {dayjs(item.date).format("MMM D, HH:mm")}
+                      </p>
+                      <p>{item.description}</p>
 
-                {/* --- Eye Icon for View Schedule --- */}
-                <button
-                  className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
-                  title="View Schedule"
-                  onClick={() => handleViewSchedules(item)}
-                >
-                  <Eye size={18} />
-                </button>
+                      {/* --- Eye Icon for View Schedule --- */}
+                      <button
+                        className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
+                        title="View Schedule"
+                        onClick={() => handleViewSchedules(item)}
+                      >
+                        <Eye size={18} />
+                      </button>
                     </div>
                   </div>
                 );

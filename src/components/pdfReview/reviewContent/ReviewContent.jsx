@@ -147,8 +147,8 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
       fullText += pageText + "\n";
     }
 
-    console.log("=== Raw text from PDF ===");
-    console.log(fullText);
+    // console.log("=== Raw text from PDF ===");
+    // console.log(fullText);
 
     // Chuẩn hóa text PDF về đúng định dạng mẫu
     fullText = normalizePdfText(fullText);
@@ -167,8 +167,8 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
       hash: `hash_chunk_${idx + 1}`
     }));
 
-    console.log("=== formattedChunks gửi về parent ===");
-    console.log(formattedChunks);
+    // console.log("=== formattedChunks gửi về parent ===");
+    // console.log(formattedChunks);
 
     if (onChunksGenerated) {
       onChunksGenerated({
@@ -180,12 +180,12 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
     // Gọi API phân tích AI với mảng chunks
     try {
       if (review?.reviewId) {
-        console.log("=== Gọi AnalyzeAiService.analyzeDocument với ===");
-        console.log("reviewId:", review.reviewId);
-        console.log("chunks:", formattedChunks);
+        // console.log("=== Gọi AnalyzeAiService.analyzeDocument với ===");
+        // console.log("reviewId:", review.reviewId);
+        // console.log("chunks:", formattedChunks);
         const response = await AnalyzeAiService.analyzeDocument(review.reviewId, formattedChunks);
-        console.log("=== API response ===");
-        console.log(response);
+        // console.log("=== API response ===");
+        // console.log(response);
         setAiAnalysisResult(response);
       }
     } catch (error) {
@@ -305,8 +305,8 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
               if (!props.selectedText) return;
               setTranslating(true);
               try {
-                console.log("=== Selected text from PDF ===");
-                console.log(props.selectedText);
+                // console.log("=== Selected text from PDF ===");
+                // console.log(props.selectedText);
 
                 // Chuẩn hóa xuống dòng và giữ line break như PDF gốc
                 const preparedText = props.selectedText
@@ -315,32 +315,32 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
                   .split("\n") // tách thành các dòng
                   .map((line) => line.trim()) // loại khoảng trắng dư
                   .join("\n"); // nối lại bằng LF
-                console.log(
-                  "=== Prepared text for API (newlines normalized) ==="
-                );
-                console.log(preparedText);
-                console.log("String with explicit \\n:");
-                console.log(JSON.stringify(preparedText)); // hiển thị rõ \n trong chuỗi
+                // console.log(
+                //   "=== Prepared text for API (newlines normalized) ==="
+                // );
+                // console.log(preparedText);
+                // console.log("String with explicit \\n:");
+                // console.log(JSON.stringify(preparedText)); // hiển thị rõ \n trong chuỗi
 
                 const res = await translateHighlightedText(
                   preparedText,
                   highlightLang
                 );
 
-                console.log("=== API response ===");
-                console.log(res);
+                // console.log("=== API response ===");
+                // console.log(res);
 
                 const translated = res || "";
-                console.log("=== Translated text ===");
-                console.log(translated);
-                console.log("String with explicit \\n:");
-                console.log(JSON.stringify(translated));
+                // console.log("=== Translated text ===");
+                // console.log(translated);
+                // console.log("String with explicit \\n:");
+                // console.log(JSON.stringify(translated));
 
                 const unescapedTranslated = unescapeNewlines(translated);
-                console.log("=== Unescaped translated ===");
-                console.log(unescapedTranslated);
-                console.log("=== JSON after unescape ===");
-                console.log(JSON.stringify(unescapedTranslated));
+                // console.log("=== Unescaped translated ===");
+                // console.log(unescapedTranslated);
+                // console.log("=== JSON after unescape ===");
+                // console.log(JSON.stringify(unescapedTranslated));
 
                 setTranslatedText(unescapedTranslated);
                 setShowTranslatedModal(true);

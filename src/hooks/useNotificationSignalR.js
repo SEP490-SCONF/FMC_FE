@@ -9,22 +9,22 @@ export function useNotificationSignalR(userId, onReceive) {
     const connection = new signalR.HubConnectionBuilder()
       .withUrl(hubUrl, {
         accessTokenFactory: () => localStorage.getItem("accessToken") // hoặc từ cookie
-    })
+      })
       .withAutomaticReconnect()
       .build();
 
-   connection.start()
-  .then(() => {
-    if (import.meta.env.DEV) {
-      console.log("SignalR connected successfully");
-    }
-  })
-  .catch(() => {
-    // Ẩn log lỗi trong production
-    if (import.meta.env.DEV) {
-      console.error("SignalR connection failed");
-    }
-  });
+    connection.start()
+      .then(() => {
+        if (import.meta.env.DEV) {
+          // console.log("SignalR connected successfully");
+        }
+      })
+      .catch(() => {
+        // Ẩn log lỗi trong production
+        if (import.meta.env.DEV) {
+          console.error("SignalR connection failed");
+        }
+      });
 
     connection.on("ReceiveNotification", (title, content) => {
       if (onReceive) onReceive(title, content);

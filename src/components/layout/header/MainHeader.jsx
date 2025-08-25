@@ -61,6 +61,12 @@ const MainHeader = ({ onClick, onToggle }) => {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex flex-1 gap-10 items-center justify-center">
           <Link
+            to="/"
+            className="text-gray-700 font-semibold hover:text-blue-700 transition uppercase"
+          >
+            Home
+          </Link>
+          <Link
             to="/conferences"
             className="text-gray-700 font-semibold hover:text-blue-700 transition uppercase"
           >

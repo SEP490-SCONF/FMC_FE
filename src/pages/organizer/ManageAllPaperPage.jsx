@@ -13,30 +13,30 @@ const ManageAllPaperPage = () => {
   }, []);
 
   const fetchPapers = async () => {
-  setLoading(true);
-  try {
-    const res = await getPapers();
-    console.log("📦 Papers fetched:", res); // Thử log trực tiếp `res`
-    const data = res?.data || res || []; // fallback nếu không có .data
-    setPapers(data);
-  } catch (err) {
-    console.error("❌ Error fetching papers:", err);
-    message.error("Failed to load papers.");
-  } finally {
-    setLoading(false);
-  }
-};
+    setLoading(true);
+    try {
+      const res = await getPapers();
+      // console.log("📦 Papers fetched:", res); // Thử log trực tiếp `res`
+      const data = res?.data || res || []; // fallback nếu không có .data
+      setPapers(data);
+    } catch (err) {
+      console.error("❌ Error fetching papers:", err);
+      message.error("Failed to load papers.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
   const handleSendCertificate = async (paperId) => {
-    console.log("📤 Sending certificate for paperId:", paperId); // ✅ log khi nhấn nút
+    // console.log("📤 Sending certificate for paperId:", paperId); // ✅ log khi nhấn nút
     setSendingId(paperId);
     try {
       const res = await generateCertificatesForPaper(paperId);
-      console.log("✅ Certificate sent response:", res); // ✅ log phản hồi từ backend
+      // console.log("✅ Certificate sent response:", res); // ✅ log phản hồi từ backend
       message.success("Certificate sent successfully!");
     } catch (err) {
-      console.error("❌ Error sending certificate:", err); // ✅ log lỗi
+      // console.error("❌ Error sending certificate:", err); // ✅ log lỗi
       message.error("Failed to send certificate.");
     } finally {
       setSendingId(null);
@@ -44,47 +44,47 @@ const ManageAllPaperPage = () => {
   };
 
   const columns = [
-  {
-    title: "ID",
-    dataIndex: "paperId",
-    key: "paperId",
-  },
-  {
-    title: "Title",
-    dataIndex: "title",
-    key: "title",
-    render: (text) => text || "N/A",
-  },
-  {
-    title: "Author(s)",
-    key: "authors",
-    render: (_, record) => {
-      if (!record.authors || record.authors.length === 0) return "N/A";
-      return record.authors.map((a) => a.fullName).join(", ");
+    {
+      title: "ID",
+      dataIndex: "paperId",
+      key: "paperId",
     },
-  },
-  {
-    title: "Status",
-    dataIndex: "status",
-    key: "status",
-    render: (text) => text || "N/A",
-  },
-  {
-    title: "Action",
-    key: "action",
-    render: (_, record) =>
-      record.status === "Accepted" ? (
-        <Button
-          type="primary"
-          onClick={() => handleSendCertificate(record.paperId)}
-        >
-          Send Certificate
-        </Button>
-      ) : (
-        <span style={{ color: "#999" }}>Not accepted</span>
-      ),
-  },
-];
+    {
+      title: "Title",
+      dataIndex: "title",
+      key: "title",
+      render: (text) => text || "N/A",
+    },
+    {
+      title: "Author(s)",
+      key: "authors",
+      render: (_, record) => {
+        if (!record.authors || record.authors.length === 0) return "N/A";
+        return record.authors.map((a) => a.fullName).join(", ");
+      },
+    },
+    {
+      title: "Status",
+      dataIndex: "status",
+      key: "status",
+      render: (text) => text || "N/A",
+    },
+    {
+      title: "Action",
+      key: "action",
+      render: (_, record) =>
+        record.status === "Accepted" ? (
+          <Button
+            type="primary"
+            onClick={() => handleSendCertificate(record.paperId)}
+          >
+            Send Certificate
+          </Button>
+        ) : (
+          <span style={{ color: "#999" }}>Not accepted</span>
+        ),
+    },
+  ];
 
 
   return (
