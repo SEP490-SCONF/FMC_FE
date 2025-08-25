@@ -10,6 +10,7 @@ import {
   uploadAndSpellCheck,
 } from "../../services/PaperSerice"; // thêm import
 import { toast } from "react-toastify";
+import { getTimelinesByConferenceId } from "../../services/TimelineService"; // import hàm này
 
 const rules = [
   "Papers must be original and not under consideration elsewhere.",
@@ -35,6 +36,8 @@ const SubmitPapers = () => {
   const [coAuthorEmails, setCoAuthorEmails] = useState([""]);
   const [highlightedUrl, setHighlightedUrl] = useState(""); // thêm state highlight
   const [isChecking, setIsChecking] = useState(false); // state đang check
+  const [submissionDeadline, setSubmissionDeadline] = useState(null);
+  const [isDeadlinePassed, setIsDeadlinePassed] = useState(false);
   const fileInputRef = useRef(null);
   const authors = user ? [{ id: user.userId, name: user.name }] : [];
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -49,6 +52,33 @@ const SubmitPapers = () => {
       getConferenceTopicsByConferenceId(selectedConference.conferenceId)
         .then((res) => setTopics(res))
         .catch(() => setTopics([]));
+    }
+  }, [selectedConference]);
+
+  useEffect(() => {
+    if (selectedConference?.conferenceId) {
+      // Lấy timeline để lấy ngày Submission Deadline
+      getTimelinesByConferenceId(selectedConference.conferenceId)
+        .then((timelines) => {
+          // Tìm dòng Submission Deadline
+          const deadlineObj = (timelines.value || timelines).find(
+            (t) =>
+              t.description &&
+              t.description.toLowerCase().includes("submission deadline") &&
+              t.date
+          );
+          if (deadlineObj && deadlineObj.date) {
+            setSubmissionDeadline(deadlineObj.date);
+            // So sánh với ngày hiện tại
+            const now = new Date();
+            const deadlineDate = new Date(deadlineObj.date);
+            setIsDeadlinePassed(now > deadlineDate);
+          }
+        })
+        .catch(() => {
+          setSubmissionDeadline(null);
+          setIsDeadlinePassed(false);
+        });
     }
   }, [selectedConference]);
 
@@ -88,6 +118,10 @@ const SubmitPapers = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isDeadlinePassed) {
+      toast.error("Submission deadline has passed. You cannot submit a paper.");
+      return;
+    }
     setIsSubmitting(true);
     //   console.log("Debug values:", {
     //   file,
@@ -302,12 +336,18 @@ const SubmitPapers = () => {
               <div className="flex gap-4 mt-4">
                 <button
                   type="submit"
-                  disabled={isSubmitting}
+                  disabled={isSubmitting || isDeadlinePassed}
                   className={`px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 ${
-                    isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+                    isSubmitting || isDeadlinePassed
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
                   }`}
                 >
-                  {isSubmitting ? "Submitting..." : "Submit Paper"}
+                  {isDeadlinePassed
+                    ? "Submission Closed"
+                    : isSubmitting
+                    ? "Submitting..."
+                    : "Submit Paper"}
                 </button>
                 <button
                   type="button"
@@ -319,6 +359,11 @@ const SubmitPapers = () => {
                   {isChecking ? "Checking..." : "Check Spelling"}
                 </button>
               </div>
+              {isDeadlinePassed && (
+                <div className="text-red-600 font-semibold mt-2">
+                  Submission deadline has passed. You cannot submit a paper.
+                </div>
+              )}
               {/* Link download PDF highlight */}
               {highlightedUrl && (
                 <div className="mt-2">
