@@ -5,7 +5,10 @@ import { getConferenceTopicsByConferenceId } from "../../services/ConferenceTopi
 import { resolveAuthors } from "../../services/UserConferenceRoleService";
 import { useParams } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
-import { uploadPaperPdf, uploadAndSpellCheck } from "../../services/PaperSerice"; // thêm import
+import {
+  uploadPaperPdf,
+  uploadAndSpellCheck,
+} from "../../services/PaperSerice"; // thêm import
 import { toast } from "react-toastify";
 
 const rules = [
@@ -31,10 +34,10 @@ const SubmitPapers = () => {
   const [authorIds, setAuthorIds] = useState(user ? [user.userId] : []);
   const [coAuthorEmails, setCoAuthorEmails] = useState([""]);
   const [highlightedUrl, setHighlightedUrl] = useState(""); // thêm state highlight
-  const [isChecking, setIsChecking] = useState(false);       // state đang check
+  const [isChecking, setIsChecking] = useState(false); // state đang check
   const fileInputRef = useRef(null);
   const authors = user ? [{ id: user.userId, name: user.name }] : [];
-
+  const [isSubmitting, setIsSubmitting] = useState(false);
   useEffect(() => {
     if (!selectedConference || selectedConference.conferenceId !== Number(id)) {
       fetchConferenceDetail(id);
@@ -77,7 +80,6 @@ const SubmitPapers = () => {
         toast.error("No highlighted PDF returned from server.");
       }
     } catch (error) {
-      console.error("Spell check error:", error);
       toast.error("Spell check failed.");
     } finally {
       setIsChecking(false);
@@ -86,6 +88,7 @@ const SubmitPapers = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     //   console.log("Debug values:", {
     //   file,
     //   title,
@@ -105,6 +108,7 @@ const SubmitPapers = () => {
       authorIds.length === 0
     ) {
       toast.error("Please fill in all required fields and select a file.");
+      setIsSubmitting(false);
       return;
     }
 
@@ -144,6 +148,8 @@ const SubmitPapers = () => {
     } catch (error) {
       console.error("Error during submission:", error);
       toast.error("Error resolving co-authors or submitting paper.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -254,7 +260,9 @@ const SubmitPapers = () => {
                       type="button"
                       className="px-3 py-1 bg-red-100 border border-red-400 text-red-600 rounded"
                       onClick={() => {
-                        const newEmails = coAuthorEmails.filter((_, i) => i !== index);
+                        const newEmails = coAuthorEmails.filter(
+                          (_, i) => i !== index
+                        );
                         setCoAuthorEmails(newEmails);
                       }}
                     >
@@ -292,7 +300,15 @@ const SubmitPapers = () => {
               </div>
               {/* Buttons: Submit + Spell Check */}
               <div className="flex gap-4 mt-4">
-                <Buttonsubmit />
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 ${
+                    isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                >
+                  {isSubmitting ? "Submitting..." : "Submit Paper"}
+                </button>
                 <button
                   type="button"
                   onClick={handleSpellCheck}
