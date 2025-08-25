@@ -28,7 +28,12 @@ import "@react-pdf-viewer/default-layout/lib/styles/index.css";
 
 const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
   const { user } = useUser();
-
+  const [loading, setLoading] = useState({
+    add: false,
+    save: false,
+    saveHighlight: false,
+    translate: false,
+  });
   const [fileUrl, setFileUrl] = useState("");
   const [message, setMessage] = useState("");
   const [notes, setNotes] = useState([]);
@@ -92,15 +97,15 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
   // Hàm chuẩn hóa text PDF về đúng định dạng mẫu
   const normalizePdfText = (text) => {
     // Loại bỏ số trang (giả sử số trang là số đứng một mình)
-    let cleaned = text.replace(/\n\d+\n/g, '\n');
+    let cleaned = text.replace(/\n\d+\n/g, "\n");
     // Loại bỏ dấu gạch nối giữa dòng
-    cleaned = cleaned.replace(/-\s*\n\s*/g, '');
+    cleaned = cleaned.replace(/-\s*\n\s*/g, "");
     // Ghép các dòng bị chia nhỏ thành một dòng (loại bỏ xuống dòng giữa các câu, giữ xuống dòng giữa đoạn)
-    cleaned = cleaned.replace(/([a-zA-Z]),?\n([a-zA-Z])/g, '$1 $2');
+    cleaned = cleaned.replace(/([a-zA-Z]),?\n([a-zA-Z])/g, "$1 $2");
     // Chuẩn hóa xuống dòng về LF
-    cleaned = cleaned.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    cleaned = cleaned.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
     // Loại bỏ khoảng trắng thừa
-    cleaned = cleaned.replace(/[ \t]+/g, ' ');
+    cleaned = cleaned.replace(/[ \t]+/g, " ");
     // Loại bỏ các ký tự không liên quan (nếu có)
     return cleaned.trim();
   };
@@ -108,13 +113,16 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
   // Hàm chia đoạn văn thành các chunk đúng mẫu (chia theo đoạn, không chia theo số từ)
   const splitTextByParagraph = (text) => {
     // Tách đoạn theo 2 dấu xuống dòng liên tiếp
-    return text.split(/\n{2,}/).map(p => p.trim()).filter(p => p.length > 0);
+    return text
+      .split(/\n{2,}/)
+      .map((p) => p.trim())
+      .filter((p) => p.length > 0);
   };
 
   // Ghép các dòng nhỏ thành đoạn văn lớn
   const mergeLinesToParagraphs = (text) => {
     // Loại bỏ xuống dòng giữa các dòng không kết thúc bằng dấu chấm, chấm hỏi, chấm than
-    return text.replace(/([^\.\?\!])\n([^\n])/g, '$1 $2');
+    return text.replace(/([^\.\?\!])\n([^\n])/g, "$1 $2");
   };
 
   // Chia đoạn lớn thành các chunk theo số từ (ví dụ 250 từ mỗi chunk)
@@ -123,7 +131,7 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
     const chunks = [];
     for (let i = 0; i < words.length; i += maxWords) {
       const chunkWords = words.slice(i, i + maxWords);
-      chunks.push(chunkWords.join(' '));
+      chunks.push(chunkWords.join(" "));
     }
     return chunks;
   };
@@ -164,7 +172,7 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
       chunkId: idx + 1,
       text: para,
       tokenCount: countWords(para),
-      hash: `hash_chunk_${idx + 1}`
+      hash: `hash_chunk_${idx + 1}`,
     }));
 
     // console.log("=== formattedChunks gửi về parent ===");
@@ -173,7 +181,7 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
     if (onChunksGenerated) {
       onChunksGenerated({
         rawText: mergedText,
-        chunks: formattedChunks
+        chunks: formattedChunks,
       });
     }
 
@@ -183,7 +191,10 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
         // console.log("=== Gọi AnalyzeAiService.analyzeDocument với ===");
         // console.log("reviewId:", review.reviewId);
         // console.log("chunks:", formattedChunks);
-        const response = await AnalyzeAiService.analyzeDocument(review.reviewId, formattedChunks);
+        const response = await AnalyzeAiService.analyzeDocument(
+          review.reviewId,
+          formattedChunks
+        );
         // console.log("=== API response ===");
         // console.log(response);
         setAiAnalysisResult(response);
@@ -367,6 +378,7 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
     const addNote = async () => {
       if (message !== "") {
         try {
+          setLoading((prev) => ({ ...prev, add: true })); // bật trạng thái loading
           const formData = new FormData();
           formData.append("ReviewId", review.reviewId);
           formData.append("RevisionId", review.revisionId);
@@ -401,13 +413,14 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
             highlightAreas: props.highlightAreas,
             quote: props.selectedText,
           };
-
           setNotes((prev) => [...prev, note]);
           setMessage("");
           props.cancel();
           toast.success("Note added successfully!");
         } catch (err) {
           toast.error("Failed to save note!");
+        } finally {
+          setLoading((prev) => ({ ...prev, add: false })); // tắt trạng thái loading
         }
       }
     };
@@ -428,10 +441,15 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
         ></textarea>
         <div className="flex flex-row gap-3 justify-end">
           <button
-            className="bg-green-600 text-green rounded-lg px-4 py-1 font-semibold hover:bg-blue-700 transition"
+            disabled={loading.add}
+            className={`bg-green-600 text-white rounded-lg px-4 py-1 font-semibold ${
+              loading.add
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:bg-blue-700"
+            }`}
             onClick={addNote}
           >
-            Add
+            {loading.add ? "Adding..." : "Add"}
           </button>
           <button
             className="bg-gray-100 text-gray-700 rounded-lg px-4 py-1 font-semibold hover:bg-gray-200 transition"
@@ -444,7 +462,7 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
     );
   };
 
-  const [activateTab, setActivateTab] = useState(() => () => { });
+  const [activateTab, setActivateTab] = useState(() => () => {});
 
   const jumpToNote = (note) => {
     activateTab(3);
@@ -825,8 +843,9 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
 
       {popup.open && (
         <div
-          className={`fixed bottom-6 right-6 px-4 py-3 rounded-md font-semibold shadow-md text-white ${popup.type === "success" ? "bg-green-500" : "bg-red-500"
-            }`}
+          className={`fixed bottom-6 right-6 px-4 py-3 rounded-md font-semibold shadow-md text-white ${
+            popup.type === "success" ? "bg-green-500" : "bg-red-500"
+          }`}
           role="alert"
           style={{
             zIndex: 9999,

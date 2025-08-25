@@ -3,8 +3,8 @@ import { updateReview, sendFeedback } from "../../services/ReviewService";
 import AnalyzeAiService from "../../services/AnalyzeAiService";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import { useNavigate } from "react-router-dom";
 
-// Thêm `readOnly` vào danh sách props
 const ReviewSidebar = ({
   review,
   chunks,
@@ -15,7 +15,7 @@ const ReviewSidebar = ({
   readOnly = false,
 }) => {
   const safePaperStatus = review?.paperStatus || "Need Revision";
-
+  
   if (!review) {
     return (
       <div className="flex-1 p-6 border-r border-gray-200 bg-white">
@@ -26,7 +26,7 @@ const ReviewSidebar = ({
       </div>
     );
   }
-
+  const navigate = useNavigate();
   const handleChange = (field, value) => {
     if (!readOnly && onChange) {
       if (field === "paperStatus" && !value) {
@@ -36,8 +36,13 @@ const ReviewSidebar = ({
     }
   };
 
+  // Thêm state loading
+  const [loadingSave, setLoadingSave] = useState(false);
+  const [loadingFeedback, setLoadingFeedback] = useState(false);
+
   const handleSave = async () => {
     if (readOnly) return;
+    setLoadingSave(true);
     const formData = new FormData();
     formData.append("Comments", review.comments ?? "");
     formData.append("Score", review.score ?? "");
@@ -45,14 +50,18 @@ const ReviewSidebar = ({
     try {
       await updateReview(review.reviewId, formData);
       toast.success("Review updated successfully!");
+      navigate("/reviewer/assigned-papers");
       if (onSave) onSave();
     } catch (err) {
       toast.error("Update failed!");
+    } finally {
+      setLoadingSave(false);
     }
   };
 
   const handleSendFeedback = async () => {
     if (readOnly) return;
+    setLoadingFeedback(true);
     const formData = new FormData();
     formData.append("Comments", review.comments ?? "");
     formData.append("Score", review.score ?? "");
@@ -60,10 +69,13 @@ const ReviewSidebar = ({
     try {
       await updateReview(review.reviewId, formData);
       await sendFeedback(review.reviewId);
-      toast.success("Feedback sent and statuses updated!");
+      toast.success("Feedback sent!");
+      navigate("/reviewer/assigned-papers");
       if (onSendFeedback) onSendFeedback();
     } catch (err) {
-      toast.error("Error sending feedback!");
+      toast.error("Send feedback failed!");
+    } finally {
+      setLoadingFeedback(false);
     }
   };
 
@@ -174,16 +186,18 @@ const ReviewSidebar = ({
       {!readOnly && (
         <div className="flex gap-4 mt-auto">
           <button
-            className="flex-1 px-6 py-2 bg-blue-100 text-blue-700 border border-blue-600 rounded font-semibold hover:bg-blue-600 hover:text-white transition"
+            className="flex-1 px-6 py-2 bg-blue-100 text-blue-700 border border-blue-600 rounded font-semibold hover:bg-blue-600 hover:text-white transition disabled:opacity-60"
             onClick={handleSave}
+            disabled={loadingSave || loadingFeedback}
           >
-            Save
+            {loadingSave ? "Saving..." : "Save"}
           </button>
           <button
-            className="flex-1 px-6 py-2 bg-green-100 text-green-700 border border-green-600 rounded font-semibold hover:bg-green-600 hover:text-white transition"
+            className="flex-1 px-6 py-2 bg-green-100 text-green-700 border border-green-600 rounded font-semibold hover:bg-green-600 hover:text-white transition disabled:opacity-60"
             onClick={handleSendFeedback}
+            disabled={loadingFeedback || loadingSave}
           >
-            Send Feedback
+            {loadingFeedback ? "Sending..." : "Send Feedback"}
           </button>
         </div>
       )}
