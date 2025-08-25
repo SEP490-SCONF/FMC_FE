@@ -45,10 +45,12 @@ const ConferenceSearch = () => {
       );
     }
     if (selectedTopics.length > 0) {
-      filtered = filtered.filter((conf) =>
-        conf.topics?.some((t) => selectedTopics.includes(t.topicId))
-      );
-    }
+    filtered = filtered.filter((conf) =>
+      selectedTopics.every((topicId) =>
+        conf.topics?.some((t) => t.topicId === topicId)
+      )
+    );
+  }
 
     setFilteredConferences(filtered);
     setPage(1); // Reset về trang 1 khi filter/search
