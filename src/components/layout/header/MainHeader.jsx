@@ -43,7 +43,7 @@ const MainHeader = ({ onClick, onToggle }) => {
 
   return (
     <header className="sticky top-0 w-full bg-white border-b border-gray-200 z-50 dark:border-gray-800 dark:bg-gray-900">
-      <div className="flex items-center justify-between px-4 py-3 md:px-6">
+      <div className="container mx-auto px-4 md:px-6 flex items-center justify-between h-20">
         {/* Left: Logo */}
         <div className="flex items-center gap-4">
           <Link to="/" className="flex-shrink-0 overflow-hidden">
@@ -53,21 +53,18 @@ const MainHeader = ({ onClick, onToggle }) => {
               alt="Logo"
             />
           </Link>
+          <span className="font-bold text-xl text-gray-800 dark:text-gray-100 hidden md:inline-block">
+            FPT Conferences
+          </span>
         </div>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex flex-1 gap-8 items-center justify-center">
+        <nav className="hidden md:flex flex-1 gap-10 items-center justify-center">
           <Link
             to="/conferences"
             className="text-gray-700 font-semibold hover:text-blue-700 transition uppercase"
           >
             Conferences
-          </Link>
-          <Link
-            to="/submit-paper"
-            className="text-gray-700 font-semibold hover:text-blue-700 transition uppercase"
-          >
-            Submit Paper
           </Link>
           <Link
             to="/proceedings"
@@ -80,12 +77,6 @@ const MainHeader = ({ onClick, onToggle }) => {
             className="text-gray-700 font-semibold hover:text-blue-700 transition uppercase"
           >
             About Us
-          </Link>
-          <Link
-            to="/contact"
-            className="text-gray-700 font-semibold hover:text-blue-700 transition uppercase"
-          >
-            Contact
           </Link>
         </nav>
 

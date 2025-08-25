@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { updateReview, sendFeedback } from "../../services/ReviewService";
 import AnalyzeAiService from "../../services/AnalyzeAiService";
 import { toast } from "react-toastify";
@@ -7,14 +7,13 @@ import "react-toastify/dist/ReactToastify.css";
 // Thêm `readOnly` vào danh sách props
 const ReviewSidebar = ({
   review,
-  chunks, // Sử dụng mảng chunks thay vì rawText
+  chunks,
+  aiPercentage, // nhận prop này
   onChange,
   onSave,
   onSendFeedback,
-  readOnly = false, // Đặt giá trị mặc định là false
+  readOnly = false,
 }) => {
-  const [aiPercentage, setAiPercentage] = useState(review?.percentAi || 0);
-
   const safePaperStatus = review?.paperStatus || "Need Revision";
 
   if (!review) {
@@ -69,28 +68,51 @@ const ReviewSidebar = ({
   };
 
   const handleCheckAiAgain = async () => {
-    if (readOnly) return;
-    if (!review?.reviewId || !chunks?.length || !chunks[0]?.RawText) {
-      console.error('Missing reviewId or rawText in chunks:', { reviewId: review?.reviewId, chunks });
+    console.log("Check Again Clicked");
+    console.log("reviewId:", review?.reviewId);
+    console.log("chunks:", chunks);
+
+    if (!review?.reviewId || !chunks?.length) {
       toast.error("No data available to check AI.");
       return;
     }
-
     try {
-      console.log("Chunks being sent", chunks);
-      const response = await AnalyzeAiService.analyzeDocument(review.reviewId, chunks); // Gửi mảng chunks
-      const percentAi = response?.PercentAi !== undefined ? response.PercentAi : 0;
-      setAiPercentage(percentAi);
-      toast.info(`AI check completed! Percentage: ${percentAi}%`);
-      if (onChange) {
-        onChange({ ...review, percentAi });
-      }
+      const response = await AnalyzeAiService.analyzeDocument(review.reviewId, chunks);
+      console.log("AI API response:", response);
+      const percent = response?.percentAi ?? response?.PercentAi ?? 0;
+      if (onChange) onChange({ ...review, percentAi: percent });
     } catch (err) {
-      console.error("Error checking AI:", err);
-      const errorMessage = err.response?.data?.message || err.message;
-      toast.error(`Failed to re-check AI: ${errorMessage}`);
+      console.error("Check AI error:", err);
+      toast.error("Failed to re-check AI");
     }
   };
+
+  // Hiệu ứng số nhảy cho AI Percentage
+  const [displayedAiPercentage, setDisplayedAiPercentage] = useState(aiPercentage ?? 0);
+  const intervalRef = useRef();
+
+  useEffect(() => {
+    // Nếu giá trị mới khác với đang hiển thị, bắt đầu hiệu ứng
+    if (typeof aiPercentage === "number" && aiPercentage !== displayedAiPercentage) {
+      clearInterval(intervalRef.current);
+      let current = 0;
+      intervalRef.current = setInterval(() => {
+        // Tăng số ngẫu nhiên, nhưng không vượt quá giá trị thực
+        current = Math.min(
+          aiPercentage,
+          Math.round(current + Math.random() * (aiPercentage / 8 + 1))
+        );
+        setDisplayedAiPercentage(current);
+        if (current >= aiPercentage) {
+          clearInterval(intervalRef.current);
+          setDisplayedAiPercentage(aiPercentage);
+        }
+      }, 40); // tốc độ nhảy, có thể chỉnh lại cho mượt hơn
+      return () => clearInterval(intervalRef.current);
+    } else {
+      setDisplayedAiPercentage(aiPercentage ?? 0);
+    }
+  }, [aiPercentage]);
 
   return (
     <div className="flex-1 p-6 border-r border-gray-200 bg-white flex flex-col h-full">
@@ -135,7 +157,7 @@ const ReviewSidebar = ({
         <div className="flex items-center gap-2">
           <input
             type="text"
-            value={aiPercentage + "%"}
+            value={displayedAiPercentage + "%"}
             className="w-full border rounded px-3 py-2 bg-gray-100"
             disabled
           />

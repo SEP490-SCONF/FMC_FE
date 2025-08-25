@@ -3,18 +3,16 @@ import { apiService } from './ApiService';
 
 const AnalyzeAiService = {
     analyzeDocument: async (reviewId, chunks) => {
+        console.log("AnalyzeAiService.analyzeDocument - request:", { reviewId, chunks });
         try {
             const response = await apiService.post('/AnalyzeAi', {
-                ReviewId: reviewId,
-                Chunks: chunks,
+                reviewId,
+                chunks
             });
+            console.log("AnalyzeAiService.analyzeDocument - raw response:", response);
             return response;
         } catch (error) {
-            console.error('Failed to analyze document:', {
-                message: error.message,
-                response: error.response?.data,
-                config: error.config,
-            });
+            console.error("AnalyzeAiService.analyzeDocument - error:", error);
             throw error;
         }
     },

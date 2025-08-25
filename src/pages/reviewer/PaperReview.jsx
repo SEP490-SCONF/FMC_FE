@@ -38,12 +38,12 @@ const PaperReview = () => {
     // Hàm xử lý khi chunks được tạo từ ReviewContent
     // Trong handleChunksGenerated
     const handleChunksGenerated = async (data) => {
-        if (!data || !Array.isArray(data) || !data[0]?.RawText) {
+        if (!data || !data.rawText || !Array.isArray(data.chunks)) {
             setMessage("No valid chunks provided.");
             setMessageType('error');
             return;
         }
-        setChunks(data); // Lưu mảng chunks vào state
+        setChunks(data.chunks);
 
         if (!review?.reviewId) {
             setMessage("Review ID not available.");
@@ -51,29 +51,27 @@ const PaperReview = () => {
             return;
         }
 
-        // Chuyển đổi dữ liệu chunk thành định dạng ChunkPayloadDTO
-        const formattedChunks = data.map((chunk, index) => ({
-            ChunkId: index + 1,
-            Text: chunk.RawText, // Sử dụng full RawText thay vì chỉ 50 ký tự
-            TokenCount: countWords(chunk.RawText), // Sử dụng wordCount làm TokenCount
-            Hash: null // Có thể thêm logic hash nếu cần
-        }));
+        // Gửi đúng payload cho API
+        const payload = {
+            reviewId: review.reviewId,
+            rawText: data.rawText,
+            chunks: data.chunks
+        };
 
         try {
-            console.log('Sending to API:', { ReviewId: review.reviewId, Chunks: formattedChunks });
-            const response = await AnalyzeAiService.analyzeDocument(review.reviewId, formattedChunks); // Gửi mảng chunks đã định dạng
-            console.log('Response at:', new Date().toLocaleString(), response);
-            setAiPercentage(response.PercentAi || 0); // Cập nhật với PercentAi
+            const response = await AnalyzeAiService.analyzeDocument(payload.reviewId, payload.chunks);
+            setAiPercentage(response.percentAi || 0);
             setMessageType('success');
         } catch (err) {
-            console.error('Time:', new Date().toLocaleString(), 'Error:', err.message, err.response?.data);
             setMessageType('error');
         }
     };
 
-    // Hàm countWords (copy từ ReviewContent.jsx để tái sử dụng)
-    const countWords = (text) => {
-        return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+    const handleSidebarChange = (newReview) => {
+        setReview(newReview);
+        if (typeof newReview.percentAi === "number") {
+            setAiPercentage(newReview.percentAi);
+        }
     };
 
     return (
@@ -83,9 +81,9 @@ const PaperReview = () => {
                     <div className="w-1/4">
                         <ReviewSidebar
                             review={review}
-                            chunks={chunks} // Truyền mảng chunks thay vì rawText
+                            chunks={chunks}
                             aiPercentage={aiPercentage}
-                            onChange={setReview}
+                            onChange={handleSidebarChange}
                             onSave={() => { }}
                             onSendFeedback={() => { }}
                         />
@@ -94,7 +92,7 @@ const PaperReview = () => {
                         {review ? (
                             <ReviewContent
                                 review={review}
-                                onChunksGenerated={handleChunksGenerated} // Truyền callback
+                                onChunksGenerated={handleChunksGenerated}
                             />
                         ) : (
                             <div className="flex items-center justify-center h-full text-gray-400 text-lg">

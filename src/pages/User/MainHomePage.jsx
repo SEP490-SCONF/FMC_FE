@@ -26,10 +26,6 @@ const MainHomePage = () => {
       <div className="flex flex-col items-center justify-center h-screen relative z-10">
         <h1 className="text-white text-5xl font-bold text-center mb-6">
           Welcome to the FPT University DaNang Conference Hub.
-          <br />
-          Your comprehensive platform for organizing, attending,
-          <br />
-          and exploring academic events.
         </h1>
       </div>
       {/* Services Section */}
@@ -46,13 +42,13 @@ const MainHomePage = () => {
               className="mb-6"
               style={{ height: 64 }}
             />
-            <a
-              href="#" // Link to Conference Management section or page
-              className="text-2xl font-semibold text-red-700 mb-3 underline"
-              style={{ textUnderlineOffset: 4 }}
+            <span
+              className="text-2xl font-semibold text-red-700 mb-3 underline cursor-default"
+              style={{ textUnderlineOffset: 4, pointerEvents: "none" }}
+              aria-disabled="true"
             >
               Conference Management
-            </a>
+            </span>
             <p className="text-base text-gray-800 mb-6">
               From comprehensive program committee oversight to efficient paper
               review processes, our platform simplifies every step of organizing
@@ -70,13 +66,13 @@ const MainHomePage = () => {
               className="mb-6"
               style={{ height: 64 }}
             />
-            <a
-              href="#" // Link to Registration information or process
-              className="text-2xl font-semibold text-red-700 mb-3 underline"
-              style={{ textUnderlineOffset: 4 }}
+            <span
+              className="text-2xl font-semibold text-red-700 mb-3 underline cursor-default"
+              style={{ textUnderlineOffset: 4, pointerEvents: "none" }}
+              aria-disabled="true"
             >
               Registration & Attendance
-            </a>
+            </span>
             <p className="text-base text-gray-800 mb-6">
               Streamlined registration for all participants, authors, and
               reviewers. Our system ensures a smooth process for joining and
@@ -94,13 +90,13 @@ const MainHomePage = () => {
               className="mb-6"
               style={{ height: 64 }}
             />
-            <a
-              href="#" // Link to Publications/Proceedings archive
-              className="text-2xl font-semibold text-red-700 mb-3 underline"
-              style={{ textUnderlineOffset: 4 }}
+            <span
+              className="text-2xl font-semibold text-red-700 mb-3 underline cursor-default"
+              style={{ textUnderlineOffset: 4, pointerEvents: "none" }}
+              aria-disabled="true"
             >
               Publication & Proceedings
-            </a>
+            </span>
             <p className="text-base text-gray-800 mb-6">
               Facilitate the seamless submission, review, and publication of
               research papers. Access and explore official conference

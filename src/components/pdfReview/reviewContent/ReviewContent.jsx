@@ -89,6 +89,45 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
   // --- Modal xem bản dịch ---
   const [showTranslatedModal, setShowTranslatedModal] = useState(false);
 
+  // Hàm chuẩn hóa text PDF về đúng định dạng mẫu
+  const normalizePdfText = (text) => {
+    // Loại bỏ số trang (giả sử số trang là số đứng một mình)
+    let cleaned = text.replace(/\n\d+\n/g, '\n');
+    // Loại bỏ dấu gạch nối giữa dòng
+    cleaned = cleaned.replace(/-\s*\n\s*/g, '');
+    // Ghép các dòng bị chia nhỏ thành một dòng (loại bỏ xuống dòng giữa các câu, giữ xuống dòng giữa đoạn)
+    cleaned = cleaned.replace(/([a-zA-Z]),?\n([a-zA-Z])/g, '$1 $2');
+    // Chuẩn hóa xuống dòng về LF
+    cleaned = cleaned.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    // Loại bỏ khoảng trắng thừa
+    cleaned = cleaned.replace(/[ \t]+/g, ' ');
+    // Loại bỏ các ký tự không liên quan (nếu có)
+    return cleaned.trim();
+  };
+
+  // Hàm chia đoạn văn thành các chunk đúng mẫu (chia theo đoạn, không chia theo số từ)
+  const splitTextByParagraph = (text) => {
+    // Tách đoạn theo 2 dấu xuống dòng liên tiếp
+    return text.split(/\n{2,}/).map(p => p.trim()).filter(p => p.length > 0);
+  };
+
+  // Ghép các dòng nhỏ thành đoạn văn lớn
+  const mergeLinesToParagraphs = (text) => {
+    // Loại bỏ xuống dòng giữa các dòng không kết thúc bằng dấu chấm, chấm hỏi, chấm than
+    return text.replace(/([^\.\?\!])\n([^\n])/g, '$1 $2');
+  };
+
+  // Chia đoạn lớn thành các chunk theo số từ (ví dụ 250 từ mỗi chunk)
+  const splitTextByWordCount = (text, maxWords = 250) => {
+    const words = text.trim().split(/\s+/);
+    const chunks = [];
+    for (let i = 0; i < words.length; i += maxWords) {
+      const chunkWords = words.slice(i, i + maxWords);
+      chunks.push(chunkWords.join(' '));
+    }
+    return chunks;
+  };
+
   const handleDocumentLoad = async (e) => {
     setCurrentDoc(e.doc);
     if (currentDoc && currentDoc !== e.doc) {
@@ -103,32 +142,50 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
       const textContent = await page.getTextContent();
       const pageText = textContent.items
         .map((item) => item.str)
-        .join("\n") // Giữ xuống dòng từ PDF
+        .join("\n")
         .trim();
-      fullText += pageText + "\n"; // Giữ xuống dòng giữa các trang
+      fullText += pageText + "\n";
     }
 
-    // Chia nhỏ text tại FE dựa trên số từ
-    const maxWords = 384;
-    const overlapWords = 96;
-    const chunks = splitTextWithOverlap(fullText, maxWords, overlapWords);
+    console.log("=== Raw text from PDF ===");
+    console.log(fullText);
 
-    // Gửi mảng chunk về BE thông qua prop onChunksGenerated
+    // Chuẩn hóa text PDF về đúng định dạng mẫu
+    fullText = normalizePdfText(fullText);
+
+    // Ghép các dòng nhỏ thành đoạn lớn
+    const mergedText = mergeLinesToParagraphs(fullText);
+
+    // Chia đoạn lớn thành các chunk theo số từ
+    const paragraphs = splitTextByWordCount(mergedText, 250);
+
+    // Tạo mảng chunk đúng mẫu
+    const formattedChunks = paragraphs.map((para, idx) => ({
+      chunkId: idx + 1,
+      text: para,
+      tokenCount: countWords(para),
+      hash: `hash_chunk_${idx + 1}`
+    }));
+
+    console.log("=== formattedChunks gửi về parent ===");
+    console.log(formattedChunks);
+
     if (onChunksGenerated) {
-      onChunksGenerated(chunks); // Gửi mảng các chunk
-      console.log(
-        "Generated chunks:",
-        chunks.map((c) => ({
-          wordCount: countWords(c.RawText),
-          content: c.RawText.substring(0, 50) + "...",
-        }))
-      );
+      onChunksGenerated({
+        rawText: mergedText,
+        chunks: formattedChunks
+      });
     }
 
     // Gọi API phân tích AI với mảng chunks
     try {
       if (review?.reviewId) {
-        const response = await AnalyzeAiService.analyzeDocument(review.reviewId, chunks); // Gửi mảng chunks
+        console.log("=== Gọi AnalyzeAiService.analyzeDocument với ===");
+        console.log("reviewId:", review.reviewId);
+        console.log("chunks:", formattedChunks);
+        const response = await AnalyzeAiService.analyzeDocument(review.reviewId, formattedChunks);
+        console.log("=== API response ===");
+        console.log(response);
         setAiAnalysisResult(response);
       }
     } catch (error) {
@@ -136,6 +193,7 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
       toast.error("Failed to analyze AI content!");
     }
   };
+  //
 
   const prepareTextForApi = (text) => {
     // Chuẩn hóa mọi CRLF và CR thành LF
