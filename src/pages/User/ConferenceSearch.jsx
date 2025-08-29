@@ -18,8 +18,9 @@ const ConferenceSearch = () => {
   const [filteredConferences, setFilteredConferences] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTitle, setSearchTitle] = useState("");
+  const [showAllTopics, setShowAllTopics] = useState(false);
   const navigate = useNavigate();
-
+  
   useEffect(() => {
     setLoading(true);
     Promise.all([getAllConferences(), getAllTopics()])
@@ -102,13 +103,23 @@ const ConferenceSearch = () => {
                   onChange={handleTopicChange}
                 >
                   <Space direction="vertical">
-                    {topics.map((topic) => (
+                    {(showAllTopics ? topics : topics.slice(0, 10)).map((topic) => (
                       <Checkbox key={topic.topicId} value={topic.topicId}>
                         {topic.topicName}
                       </Checkbox>
                     ))}
                   </Space>
                 </Checkbox.Group>
+                {topics.length > 10 && (
+                  <Button
+                    size="small"
+                    type="link"
+                    style={{ paddingLeft: 0 }}
+                    onClick={() => setShowAllTopics((prev) => !prev)}
+                  >
+                    {showAllTopics ? "Less" : "More"}
+                  </Button>
+                )}
                 <Button
                   size="small"
                   type="link"
