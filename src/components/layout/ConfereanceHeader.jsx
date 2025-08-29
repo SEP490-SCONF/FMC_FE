@@ -79,7 +79,9 @@ const Header = () => {
             </li>
             <li>
               <Link
-                to={conferenceId ? `/conference/${conferenceId}/committee` : "#"}
+                to={
+                  conferenceId ? `/conference/${conferenceId}/committee` : "#"
+                }
                 className="text-gray-700 font-semibold hover:text-blue-700 transition uppercase"
               >
                 Committee
@@ -109,16 +111,20 @@ const Header = () => {
                 Paper Submission
               </Link>
             </li>
-             <li>
+            <li>
               <Link
-                to={
-                  conferenceId
-                    ? `/conference/${conferenceId}/forum`
-                    : "#"
-                }
+                to={conferenceId ? `/conference/${conferenceId}/forum` : "#"}
                 className="text-gray-700 font-semibold hover:text-blue-700 transition uppercase"
               >
                 Forum
+              </Link>
+            </li>
+            <li>
+              <Link
+                to={conferenceId ? `/conference/${conferenceId}/fees` : "#"}
+                className="text-gray-700 font-semibold hover:text-blue-700 transition uppercase"
+              >
+                Conference Fees
               </Link>
             </li>
           </ul>
@@ -181,7 +187,9 @@ const Header = () => {
             </Link>
             <Link
               to={
-                conferenceId ? `/conference/${conferenceId}/call-for-paper` : "#"
+                conferenceId
+                  ? `/conference/${conferenceId}/call-for-paper`
+                  : "#"
               }
               onClick={toggleMobileMenu}
               className="block text-gray-700 font-semibold hover:text-blue-700 transition uppercase"

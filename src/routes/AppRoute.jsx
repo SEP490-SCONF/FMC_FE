@@ -26,8 +26,8 @@ import ManageTimeline from "../pages/organizer/ManageTimeline";
 import PaymentSuccess from "../pages/author/PaymentSuccess";
 import PaymentCancel from "../pages/author/PaymentCancel";
 import PaperPay from "../pages/author/Payment";
-
-
+import ManageConferenceFee from "../pages/organizer/ManageConferenceFee";
+import ConferenceFee from "../pages/conference/ConferenceFee";
 import OrganizerTrack from "../pages/organizer/Trackincome";
 import NotFoundPage from "../pages/otherpages/NotFoundPage";
 import ForbiddenPage from "../pages/otherpages/ForbiddenPage";
@@ -104,7 +104,7 @@ export default function AppRoutes() {
                 path="/conference/:id/forum/question/:questionId"
                 element={<ForumQuestionDetail />}
               />
-
+              <Route path="/conference/:id/fees" element={<ConferenceFee />} />
               <Route path="/author/payment/:id" element={<PaperPay />} />
               <Route path="/payment-success" element={<PaymentSuccess />} />
               <Route path="/payment-cancel" element={<PaymentCancel />} />
@@ -138,6 +138,10 @@ export default function AppRoutes() {
               <Route
                 path="/manage-conference/:conferenceId/income"
                 element={<OrganizerTrack />}
+              />
+              <Route
+                path="/manage-conference/:conferenceId/fees"
+                element={<ManageConferenceFee />}
               />
             </Route>
           </Routes>

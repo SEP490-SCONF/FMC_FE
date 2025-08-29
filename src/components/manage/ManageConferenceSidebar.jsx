@@ -9,11 +9,7 @@ const navItems = [
   { label: "Reviewer List", to: "/manage-conference/:conferenceId/reviewers" },
   { label: "Published Papers", to: "/manage-conference/:conferenceId/published-papers" },
   { label: "Manage Call For Papers", to: "/manage-conference/:conferenceId/call-for-paper" },
-
-
-
-
-
+  { label: "Manage Conference Fees", to: "/manage-conference/:conferenceId/fees" }
 ];
 
 export default function ManageConferenceSidebar() {
@@ -56,8 +52,7 @@ export default function ManageConferenceSidebar() {
                   {item.label === "Published Papers" && <span>📚</span>}
                   {item.label === "Track income" && <span>💵</span>}
                   {item.label === "Manage Call For Papers" && <span>📢</span>}
-
-
+                  {item.label === "Manage Conference Fees" && <span>💰</span>}
 
                   <span>{item.label}</span>
                 </NavLink>
