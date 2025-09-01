@@ -3,6 +3,9 @@ import { Card, Modal, Spin, Typography, Button, Space } from "antd";
 import dayjs from "dayjs";
 import { getAllProceedings } from "../../services/ProceedingService";
 import { getConferenceById } from "../../services/ConferenceService";
+import { getFeesByConferenceId } from "../../services/ConferenceFeesService";
+import PayService from "../../services/PayService";
+import { useNavigate } from "react-router-dom";
 import PDFBookViewer from "../../components/organizer/PDFBookViewer";
 import * as pdfjsLib from "pdfjs-dist/build/pdf";
 
@@ -14,61 +17,103 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs
 export default function ViewProceedings() {
   const [loading, setLoading] = useState(false);
   const [proceedings, setProceedings] = useState([]);
-  const [selectedProceeding, setSelectedProceeding] = useState(null);
   const [conferenceMap, setConferenceMap] = useState({});
+  const [selectedProceeding, setSelectedProceeding] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [viewMode, setViewMode] = useState("pdf");
   const [thumbnails, setThumbnails] = useState({});
 
+  const navigate = useNavigate();
+
   useEffect(() => {
-    setLoading(true);
-    getAllProceedings()
-      .then(async (res) => {
-        const data = res || [];
-        setProceedings(data);
-
-        // Lấy thông tin conference theo conferenceId
+    const fetchProceedings = async () => {
+      setLoading(true);
+      try {
+        const data = (await getAllProceedings()) || [];
         const confs = {};
-        for (const p of data) {
-          if (p.conferenceId && !confs[p.conferenceId]) {
-            try {
-              const conf = await getConferenceById(p.conferenceId);
-              confs[p.conferenceId] = conf;
-            } catch (err) {
-              console.warn("Cannot load conference for proceeding", p.proceedingId, err);
-            }
-          }
-        }
-        setConferenceMap(confs);
 
-        // Tạo thumbnail PDF
-        const thumbs = {};
-        for (const p of data) {
-          if (p.coverPageUrl && p.coverPageUrl.endsWith(".pdf")) {
-            try {
-              const pdf = await pdfjsLib.getDocument(p.coverPageUrl).promise;
-              const page = await pdf.getPage(1);
-              const viewport = page.getViewport({ scale: 0.3 });
-              const canvas = document.createElement("canvas");
-              canvas.width = viewport.width;
-              canvas.height = viewport.height;
-              const ctx = canvas.getContext("2d");
-              await page.render({ canvasContext: ctx, viewport }).promise;
-              thumbs[p.proceedingId] = canvas.toDataURL();
-            } catch (err) {
-              console.warn("Cannot generate thumbnail for", p.title, err);
+        const dataWithFees = await Promise.all(
+          data.map(async (p) => {
+            let feeDetailId = null;
+
+            if (p.conferenceId) {
+              // Lấy thông tin conference
+              if (!confs[p.conferenceId]) {
+                try {
+                  const conf = await getConferenceById(p.conferenceId);
+                  confs[p.conferenceId] = conf;
+                } catch (err) {
+                  console.warn("Cannot load conference for proceeding", p.proceedingId, err);
+                }
+              }
+
+              // Lấy feeDetail cho "Proceedings Access"
+              try {
+                const fees = await getFeesByConferenceId(p.conferenceId);
+                const proceedingFee = fees.find(f => f.feeTypeName === "Proceedings Access");
+                if (proceedingFee) feeDetailId = proceedingFee.feeDetailId;
+              } catch (err) {
+                console.warn("Cannot fetch fee for proceeding", p.proceedingId, err);
+              }
             }
-          }
-        }
-        setThumbnails(thumbs);
-      })
-      .finally(() => setLoading(false));
+
+            // Tạo thumbnail PDF nếu có coverPageUrl
+            let thumbnail = null;
+            if (p.coverPageUrl && p.coverPageUrl.endsWith(".pdf")) {
+              try {
+                const pdf = await pdfjsLib.getDocument(p.coverPageUrl).promise;
+                const page = await pdf.getPage(1);
+                const viewport = page.getViewport({ scale: 0.3 });
+                const canvas = document.createElement("canvas");
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                const ctx = canvas.getContext("2d");
+                await page.render({ canvasContext: ctx, viewport }).promise;
+                thumbnail = canvas.toDataURL();
+              } catch (err) {
+                console.warn("Cannot generate thumbnail for", p.title, err);
+              }
+            }
+
+            return { ...p, feeDetailId, coverPageUrl: thumbnail || p.coverPageUrl };
+          })
+        );
+
+        setConferenceMap(confs);
+        setProceedings(dataWithFees);
+      } catch (err) {
+        console.error("Error fetching proceedings:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProceedings();
   }, []);
 
-  const openModal = (proc) => {
-    setSelectedProceeding(proc);
-    setViewMode("pdf");
-    setModalVisible(true);
+  const handleProceedingClick = async (proc) => {
+    const conferenceId = proc.conferenceId;
+    const feeDetailId = proc.feeDetailId;
+
+    if (!conferenceId || !feeDetailId) {
+      console.warn("Cannot check payment, missing conferenceId or feeDetailId", proc);
+      return;
+    }
+
+    try {
+      const res = await PayService.hasUserPaidFee(conferenceId, feeDetailId);
+      const hasPaid = res?.HasPaid ?? res?.hasPaid ?? false;
+
+      if (hasPaid) {
+        setSelectedProceeding(proc);
+        setViewMode("pdf");
+        setModalVisible(true);
+      } else {
+        navigate(`/author/payment?conferenceId=${conferenceId}&feeDetailId=${feeDetailId}`);
+      }
+    } catch (err) {
+      console.error("Error checking payment:", err);
+    }
   };
 
   if (loading) return <Spin size="large" style={{ marginTop: 80, display: "block" }} />;
@@ -78,7 +123,7 @@ export default function ViewProceedings() {
       <Title level={3}>📚 Proceedings</Title>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
-        {proceedings.map((proc) => {
+        {proceedings.map(proc => {
           const conf = conferenceMap[proc.conferenceId] || {};
           return (
             <Card
@@ -86,10 +131,10 @@ export default function ViewProceedings() {
               hoverable
               cover={
                 <img
-                  src={thumbnails[proc.proceedingId] || "/default-cover.png"}
+                  src={proc.coverPageUrl || "/default-cover.png"}
                   alt={conf.title || proc.title}
                   style={{ height: 200, objectFit: "cover" }}
-                  onClick={() => openModal(proc)}
+                  onClick={() => handleProceedingClick(proc)}
                 />
               }
               style={{ width: 180, cursor: "pointer" }}
@@ -107,7 +152,6 @@ export default function ViewProceedings() {
           footer={null}
           width={900}
         >
-          {/* Lấy title/description từ Conference */}
           <Title level={4}>
             {conferenceMap[selectedProceeding.conferenceId]?.title || selectedProceeding.title}
           </Title>
@@ -120,13 +164,10 @@ export default function ViewProceedings() {
           </Paragraph>
           <Paragraph>
             <strong>Published Date:</strong>{" "}
-            {selectedProceeding.publishedDate
-              ? dayjs(selectedProceeding.publishedDate).format("YYYY-MM-DD")
-              : "N/A"}
+            {selectedProceeding.publishedDate ? dayjs(selectedProceeding.publishedDate).format("YYYY-MM-DD") : "N/A"}
           </Paragraph>
           <Paragraph>
-            <strong>Published By:</strong>{" "}
-            {selectedProceeding.publishedBy?.fullName || "N/A"}
+            <strong>Published By:</strong> {selectedProceeding.publishedBy?.fullName || "N/A"}
           </Paragraph>
 
           {selectedProceeding.filePath ? (

@@ -40,6 +40,8 @@ import ViewCertificate from "../pages/author/ViewCertificate";
 import { UserProvider } from "../context/UserContext";
 import { AuthProvider } from "../context/AuthContext";
 import ViewProceedings from "../pages/User/ViewProceedings";
+import ProceedingPayment from "../pages/author/ProceedingPayment";
+
 
 
 export default function AppRoutes() {
@@ -106,6 +108,7 @@ export default function AppRoutes() {
               />
               <Route path="/conference/:id/fees" element={<ConferenceFee />} />
               <Route path="/author/payment/:id" element={<PaperPay />} />
+              <Route path="/author/payment" element={<ProceedingPayment />} />
               <Route path="/payment-success" element={<PaymentSuccess />} />
               <Route path="/payment-cancel" element={<PaymentCancel />} />
             </Route>

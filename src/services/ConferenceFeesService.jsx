@@ -6,9 +6,9 @@ export const getFeesByConferenceId = async (conferenceId) => {
 };
 
 // GET: /api/fees/{feeDetailId}
-export const getFeeDetailById = async (feeDetailId) => {
-  return apiService.get(`/fees/${feeDetailId}`);
-};
+  export const getFeeDetailById = async (feeDetailId) => {
+    return apiService.get(`/fees/${feeDetailId}`);
+  };
 
 // POST: /api/conferences/{conferenceId}/fees
 export const createFeeDetail = async (conferenceId, data) => {

@@ -89,3 +89,9 @@ export const getAcceptedPapersByUserAndConference = async (
     `/Papers/user/${userId}/conference/${conferenceId}/accepted`
   );
 };
+
+// Lấy số trang PDF của Paper theo paperId
+export const getPaperPageCount = async (paperId) => {
+  return apiService.get(`/Papers/${paperId}/page-count`);
+};
+

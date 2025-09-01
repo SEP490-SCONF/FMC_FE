@@ -20,8 +20,10 @@ import {
   SearchOutlined,
 } from "@ant-design/icons";
 import { uploadRevision } from "../../services/PaperRevisionService";
-import { setPaperPresented } from "../../services/PaperSerice";
+import { setPaperPresented,getPaperPageCount  } from "../../services/PaperSerice";
 import { useNavigate } from "react-router-dom";
+import { getFeesByConferenceId } from "../../services/ConferenceFeesService";
+
 
 const ITEMS_PER_PAGE = 5;
 const { Option } = Select;
@@ -81,6 +83,19 @@ const Submited = ({ submissions = [], userId, conferenceId }) => {
     page * ITEMS_PER_PAGE
   );
 
+const getAdditionalPageFeeDetail = async () => {
+  try {
+    const res = await getFeesByConferenceId(conferenceId);
+    const fees = res || [];
+    const additionalFee = fees.find(f => f.feeTypeName === "Additional Page");
+    return additionalFee || null;
+  } catch (err) {
+    console.error("Cannot fetch Additional Page fee:", err);
+    return null;
+  }
+};
+
+
   // --- Handle resubmit ---
   const handleResubmit = (status, paperId) => {
     if (status === "Need Revision") {
@@ -118,6 +133,35 @@ const Submited = ({ submissions = [], userId, conferenceId }) => {
       setPendingPaperId(null);
     }
   };
+
+  const getRegistrationFeeDetailId = async () => {
+  try {
+    const res = await getFeesByConferenceId(conferenceId);
+    const fees = res || []; // nếu API trả data thẳng thì res.data
+    const registrationFee = fees.find(f => f.feeTypeName === "Registration");
+    return registrationFee ? registrationFee.feeDetailId : null;
+  } catch (err) {
+    console.error("Cannot fetch registration fee:", err);
+    return null;
+  }
+};
+
+const getPresentationFeeDetail = async () => {
+  try {
+    const res = await getFeesByConferenceId(conferenceId);
+    const fees = res || [];
+    // Lấy tất cả fee Presentation
+    const presentationFee = fees.find(f => f.feeTypeName === "Presentation");
+    return presentationFee || null;
+  } catch (err) {
+    console.error("Cannot fetch Presentation fee:", err);
+    return null;
+  }
+};
+
+
+
+
 
   // --- Table Columns ---
   const columns = [
@@ -165,90 +209,138 @@ const Submited = ({ submissions = [], userId, conferenceId }) => {
       },
     },
     {
-      title: "Actions",
-      key: "actions",
-      render: (_, record) => (
+  title: "Actions",
+  key: "actions",
+  render: (_, record) => (
+    <>
+      <Button
+        icon={<EyeOutlined />}
+        type="link"
+        onClick={() => setOpenIdx(record.paperId)}
+      >
+        View Revisions
+      </Button>
+
+      <Button
+        icon={<RedoOutlined />}
+        type="link"
+        disabled={
+          record.status !== "Need Revision" ||
+          uploadingIdx === record.paperId
+        }
+        onClick={() => handleResubmit(record.status, record.paperId)}
+      >
+        {uploadingIdx === record.paperId ? "Uploading..." : "Resubmit"}
+      </Button>
+
+      {record.status === "Accepted" && (
         <>
           <Button
-            icon={<EyeOutlined />}
+            icon={<FileSearchOutlined />}
             type="link"
-            onClick={() => setOpenIdx(record.paperId)}
-          >
-            View Revisions
-          </Button>
-          <Button
-            icon={<RedoOutlined />}
-            type="link"
-            disabled={
-              record.status !== "Need Revision" ||
-              uploadingIdx === record.paperId
+            onClick={() =>
+              navigate(`/author/view-certificates/${record.paperId}`)
             }
-            onClick={() => handleResubmit(record.status, record.paperId)}
           >
-            {uploadingIdx === record.paperId ? "Uploading..." : "Resubmit"}
+            Certificate
           </Button>
-          {record.status === "Accepted" && (
-            <>
-              <Button
-                icon={<FileSearchOutlined />}
-                type="link"
-                onClick={() =>
-                  navigate(`/author/view-certificates/${record.paperId}`)
-                }
-              >
-                Certificate
-              </Button>
-              {record.isPublished ? (
-                record.isPresented === true ? (
-                  <Button icon={<EyeOutlined />} type="link" disabled>
-                    Presenting
-                  </Button>
-                ) : (
-                  <Button
-                    icon={<EyeOutlined />}
-                    type="link"
-                    loading={presentingIdx === record.paperId}
-                    disabled={presentingIdx === record.paperId}
-                    onClick={async () => {
-                      setPresentingIdx(record.paperId);
-                      try {
-                        await setPaperPresented(record.paperId, true);
-                        // message.success("Marked as Presenting!");
-                        setSubmissionsState((prev) =>
-                          prev.map((item) =>
-                            item.paperId === record.paperId
-                              ? { ...item, isPresented: true }
-                              : item
-                          )
-                        );
-                      } catch (err) {
-                        // message.error("Failed to mark as Presenting!");
-                      } finally {
-                        setPresentingIdx(null);
-                      }
-                    }}
-                  >
-                    Present
-                  </Button>
-                )
-              ) : (
-                <Button
-                  icon={<DollarOutlined />}
-                  type="link"
-                  onClick={() =>
-                    navigate(`/author/payment/${record.paperId}`, {
-                      state: { userId, conferenceId, paperId: record.paperId },
-                    })
-                  }
-                >
-                  Payment
-                </Button>
-              )}
-            </>
-          )}
+
+          {/* Publish Fee Button */}
+<Button
+  icon={<DollarOutlined />}
+  type="link"
+  onClick={async () => {
+    const registrationFeeId = await getRegistrationFeeDetailId();
+    const additionalFee = await getAdditionalPageFeeDetail();
+    if (!registrationFeeId) {
+      message.error("Cannot find Registration fee.");
+      return;
+    }
+
+    if (!record.isPublished) {
+      const feesToPay = [{ feeDetailId: registrationFeeId, mode: "Regular" }];
+
+      // Nếu vượt quá 5 trang thì thêm Additional Page Fee
+      const excessPages = record.totalPages > 5 ? record.totalPages - 5 : 0;
+      if (excessPages > 0 && additionalFee) {
+        feesToPay.push({
+          feeDetailId: additionalFee.feeDetailId,
+          mode: additionalFee.mode,
+          amountPerPage: additionalFee.amount,
+          pages: excessPages,
+        });
+      }
+
+      Modal.confirm({
+        title: "Publish Payment",
+        content:
+          "This paper has not been published yet. You need to pay the fee.",
+        okText: "Go to Payment",
+        cancelText: "Cancel",
+        onOk: () => {
+          // Gửi feesToPay sang PaymentPage
+          navigate(`/author/payment/${record.paperId}`, {
+            state: {
+              userId,
+              conferenceId,
+              paperId: record.paperId,
+              fees: feesToPay, // array gồm Registration + AdditionalPage
+            },
+          });
+        },
+      });
+    } else {
+      message.success("This paper has already been published.");
+    }
+  }}
+>
+  Publish Payment
+</Button>
+
+
+{/* Present Fee Button */}
+<Button
+  icon={<DollarOutlined />}
+  type="link"
+  onClick={async () => {
+    const presentationFee = await getPresentationFeeDetail();
+    if (!presentationFee) {
+      message.error("Cannot find Presentation fee.");
+      return;
+    }
+
+    if (!record.isPresented) {
+      Modal.confirm({
+        title: "Presentation Payment",
+        content:
+          "This paper has not been presented yet. You need to pay the fee.",
+        okText: "Go to Payment",
+        cancelText: "Cancel",
+        onOk: () =>
+          navigate(`/author/payment/${record.paperId}`, {
+            state: {
+              userId,
+              conferenceId,
+              paperId: record.paperId,
+              feeDetailId: presentationFee.feeDetailId,
+              feeMode: presentationFee.mode,
+            },
+          }),
+      });
+    } else {
+      message.success("This paper has already been presented.");
+    }
+  }}
+>
+  Present Payment
+</Button>
+
         </>
-      ),
-    },
+      )}
+    </>
+  ),
+}
+,
   ];
 
   return (
