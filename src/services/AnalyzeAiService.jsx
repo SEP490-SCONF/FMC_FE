@@ -1,7 +1,7 @@
 // src/services/AnalyzeAiService.jsx
 import axios from "axios";
 
-const API_URL = "https://ai-detector-uqw1-67835dd3.mt-guc1.bentoml.ai/predict";
+const API_URL = "https://ai-detector-ixrk-67835dd3.mt-guc1.bentoml.ai/predict";
 
 const AnalyzeAiService = {
     analyzeDocument: async (reviewId, chunks) => {
