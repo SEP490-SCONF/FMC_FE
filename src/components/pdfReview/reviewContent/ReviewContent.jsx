@@ -9,7 +9,7 @@ import {
 import { defaultLayoutPlugin } from "@react-pdf-viewer/default-layout";
 import { highlightPlugin, MessageIcon } from "@react-pdf-viewer/highlight";
 import { getPdfUrlByReviewId } from "../../../services/PaperRevisionService";
-import { translatePaperPdf } from "../../../services/PaperSerice";
+import { translatePaperPdf } from "../../../services/PaperSerice"; // sửa tên file nếu khác
 import { translateHighlightedText } from "../../../services/TranslateService";
 
 import {
@@ -21,7 +21,6 @@ import {
 import { useUser } from "../../../context/UserContext";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import AnalyzeAiService from "../../../services/AnalyzeAiService";
 
 import "@react-pdf-viewer/core/lib/styles/index.css";
 import "@react-pdf-viewer/default-layout/lib/styles/index.css";
@@ -46,13 +45,10 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
 
   const noteEles = useRef(new Map());
   const [currentDoc, setCurrentDoc] = useState(null);
-  const [aiAnalysisResult, setAiAnalysisResult] = useState(null);
+  // aiAnalysisResult removed (not used)
   const [highlightTranslation, setHighlightTranslation] = useState(null);
   const [popupPosition, setPopupPosition] = useState(null);
   const [highlightTranslations, setHighlightTranslations] = useState(new Map());
-
-
-  
 
   // Hàm đếm số từ trong text
   const countWords = (text) => {
@@ -63,34 +59,34 @@ const ReviewContent = ({ review, onChunksGenerated, readOnly = false }) => {
   };
 
   const handleHighlight = async () => {
-  const selection = window.getSelection();
-  if (!selection || selection.toString().trim() === "") return;
+    const selection = window.getSelection();
+    if (!selection || selection.toString().trim() === "") return;
 
-  const range = selection.getRangeAt(0);
-  const rect = range.getBoundingClientRect();
-  const containerRect = document
-    .querySelector(".rpv-core__viewer") // container Viewer
-    .getBoundingClientRect();
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    const container = document.querySelector(".rpv-core__viewer");
+    if (!container) return;
+    const containerRect = container.getBoundingClientRect();
 
-  const translated = await translateHighlightedText(selection.toString(), "en");
-  setHighlightTranslation(translated);
+    const translated = await translateHighlightedText(selection.toString(), "en");
+    setHighlightTranslation(translated);
 
-  setPopupPosition({
-    show: true,
-    top: rect.bottom - containerRect.top, // vị trí relative so với container
-    left: rect.left - containerRect.left,
-  });
-};
+    setPopupPosition({
+      show: true,
+      top: rect.bottom - containerRect.top, // vị trí relative so với container
+      left: rect.left - containerRect.left,
+    });
+  };
 
-const handleTranslateHighlight = async (selectedText, highlightId) => {
-  try {
-    const res = await translateHighlightedText(selectedText, highlightLang);
-    setHighlightTranslations((prev) => new Map(prev).set(highlightId, res || ""));
-    setPopupPosition({ top: rect.bottom + 5, left: rect.left });
-  } catch (err) {
-    setPopup({ open: true, text: "Failed to translate selected text", type: "error" });
-  }
-};
+  const handleTranslateHighlight = async (selectedText, highlightId) => {
+    try {
+      const res = await translateHighlightedText(selectedText, highlightLang);
+      setHighlightTranslations((prev) => new Map(prev).set(highlightId, res || ""));
+      // don't set popupPosition with undefined rect here
+    } catch (err) {
+      setPopup({ open: true, text: "Failed to translate selected text", type: "error" });
+    }
+  };
 
   // Hàm chia nhỏ text dựa trên số từ (proxy cho token)
   const splitTextWithOverlap = (text, maxWords, overlapWords) => {
@@ -121,6 +117,7 @@ const handleTranslateHighlight = async (selectedText, highlightId) => {
 
     return chunks.length > 0 ? chunks : [{ RawText: text }];
   };
+
   // --- Trạng thái dịch ---
   const [targetLang, setTargetLang] = useState("en-US"); // mặc định English
   const [translating, setTranslating] = useState(false);
@@ -132,23 +129,16 @@ const handleTranslateHighlight = async (selectedText, highlightId) => {
 
   // Hàm chuẩn hóa text PDF về đúng định dạng mẫu
   const normalizePdfText = (text) => {
-    // Loại bỏ số trang (giả sử số trang là số đứng một mình)
     let cleaned = text.replace(/\n\d+\n/g, "\n");
-    // Loại bỏ dấu gạch nối giữa dòng
     cleaned = cleaned.replace(/-\s*\n\s*/g, "");
-    // Ghép các dòng bị chia nhỏ thành một dòng (loại bỏ xuống dòng giữa các câu, giữ xuống dòng giữa đoạn)
     cleaned = cleaned.replace(/([a-zA-Z]),?\n([a-zA-Z])/g, "$1 $2");
-    // Chuẩn hóa xuống dòng về LF
     cleaned = cleaned.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
-    // Loại bỏ khoảng trắng thừa
     cleaned = cleaned.replace(/[ \t]+/g, " ");
-    // Loại bỏ các ký tự không liên quan (nếu có)
     return cleaned.trim();
   };
 
   // Hàm chia đoạn văn thành các chunk đúng mẫu (chia theo đoạn, không chia theo số từ)
   const splitTextByParagraph = (text) => {
-    // Tách đoạn theo 2 dấu xuống dòng liên tiếp
     return text
       .split(/\n{2,}/)
       .map((p) => p.trim())
@@ -157,7 +147,6 @@ const handleTranslateHighlight = async (selectedText, highlightId) => {
 
   // Ghép các dòng nhỏ thành đoạn văn lớn
   const mergeLinesToParagraphs = (text) => {
-    // Loại bỏ xuống dòng giữa các dòng không kết thúc bằng dấu chấm, chấm hỏi, chấm than
     return text.replace(/([^\.\?\!])\n([^\n])/g, "$1 $2");
   };
 
@@ -178,7 +167,6 @@ const handleTranslateHighlight = async (selectedText, highlightId) => {
       setNotes([]);
     }
 
-    // Trích xuất text từ PDF, giữ nguyên định dạng
     const numPages = e.doc.numPages;
     let fullText = "";
     for (let i = 1; i <= numPages; i++) {
@@ -191,19 +179,10 @@ const handleTranslateHighlight = async (selectedText, highlightId) => {
       fullText += pageText + "\n";
     }
 
-    // console.log("=== Raw text from PDF ===");
-    // console.log(fullText);
-
-    // Chuẩn hóa text PDF về đúng định dạng mẫu
     fullText = normalizePdfText(fullText);
-
-    // Ghép các dòng nhỏ thành đoạn lớn
     const mergedText = mergeLinesToParagraphs(fullText);
-
-    // Chia đoạn lớn thành các chunk theo số từ
     const paragraphs = splitTextByWordCount(mergedText, 250);
 
-    // Tạo mảng chunk đúng mẫu
     const formattedChunks = paragraphs.map((para, idx) => ({
       chunkId: idx + 1,
       text: para,
@@ -211,57 +190,33 @@ const handleTranslateHighlight = async (selectedText, highlightId) => {
       hash: `hash_chunk_${idx + 1}`,
     }));
 
-    // console.log("=== formattedChunks gửi về parent ===");
-    // console.log(formattedChunks);
-
     if (onChunksGenerated) {
       onChunksGenerated({
         rawText: mergedText,
         chunks: formattedChunks,
       });
     }
-
-    // Gọi API phân tích AI với mảng chunks
-    try {
-      if (review?.reviewId) {
-        // console.log("=== Gọi AnalyzeAiService.analyzeDocument với ===");
-        // console.log("reviewId:", review.reviewId);
-        // console.log("chunks:", formattedChunks);
-        const response = await AnalyzeAiService.analyzeDocument(
-          review.reviewId,
-          formattedChunks
-        );
-        // console.log("=== API response ===");
-        // console.log(response);
-        setAiAnalysisResult(response);
-      }
-    } catch (error) {
-      console.error("AI analysis failed:", error);
-      toast.error("Failed to analyze AI content!");
-    }
   };
-  //
 
   const prepareTextForApi = (text) => {
-    // Chuẩn hóa mọi CRLF và CR thành LF
     return text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   };
-  // Chia text thành các dòng dựa trên text gốc
+
   const formatTranslatedTextByOriginal = (translated, original) => {
     if (!translated || !original) return translated || "";
 
-    const originalLines = original.split("\n"); // tách theo dòng gốc
-    let words = translated.split(/\s+/); // tách tất cả từ
+    const originalLines = original.split("\n");
+    let words = translated.split(/\s+/);
     let pointer = 0;
 
     const resultLines = originalLines.map((line) => {
-      const wordCount = line.trim().split(/\s+/).length; // số từ dòng gốc
+      const wordCount = line.trim().split(/\s+/).length;
       const portion = words.slice(pointer, pointer + wordCount).join(" ");
       pointer += wordCount;
       return portion;
     });
 
-    return resultLines.join("\n"); // nối lại theo dòng gốc
+    return resultLines.join("\n");
   };
 
   const unescapeNewlines = (text) => {
@@ -271,12 +226,8 @@ const handleTranslateHighlight = async (selectedText, highlightId) => {
 
   const addLineBreaksBySentence = (text) => {
     if (!text) return "";
-
-    // Regex: kết thúc câu bằng dấu chấm, chấm than, chấm hỏi, hoặc xuống dòng, không tách số thập phân
     const sentences = text.match(/[^.!?\n]+[.!?\n]+|.+$/g);
-
     if (!sentences) return text;
-
     return sentences.map((s) => s.trim()).join("\n");
   };
 
@@ -304,130 +255,125 @@ const handleTranslateHighlight = async (selectedText, highlightId) => {
   };
 
   const renderHighlightTarget = (props) => {
-  return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        position: "absolute",
-        left: `${props.selectionRegion.left}%`,
-        top: `${props.selectionRegion.top + props.selectionRegion.height}%`,
-        transform: "translate(0, 8px)",
-        zIndex: 10,
-        gap: "8px",
-        background: "white",
-        border: "1px solid #ddd",
-        borderRadius: "8px",
-        padding: "6px 10px",
-        boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-      }}
-    >
-      {/* Nút Add a Note */}
-      <Tooltip
-        position={Position.TopCenter}
-        target={<Button onClick={props.toggle}><MessageIcon /></Button>}
-        content={() => (
-          <div
-            style={{
-              backgroundColor: "rgba(0,0,0,0.85)",
-              color: "white",
-              padding: "6px 10px",
-              borderRadius: "6px",
-              fontSize: "13px",
-              fontWeight: 500,
-              zIndex: 9999,
-              whiteSpace: "nowrap",
-              pointerEvents: "none",
-            }}
-          >
-            Add a Note
-          </div>
-        )}
-        offset={{ left: 0, top: -8 }}
-      />
-
-      {/* Dropdown chọn ngôn ngữ */}
-      <select
-        value={highlightLang}
-        onChange={(e) => setHighlightLang(e.target.value)}
+    return (
+      <div
         style={{
-          padding: "4px 6px",
-          borderRadius: 6,
-          border: "1px solid #ccc",
-          fontSize: "13px",
-          background: "#f9f9f9",
+          display: "flex",
+          alignItems: "center",
+          position: "absolute",
+          left: `${props.selectionRegion.left}%`,
+          top: `${props.selectionRegion.top + props.selectionRegion.height}%`,
+          transform: "translate(0, 8px)",
+          zIndex: 10,
+          gap: "8px",
+          background: "white",
+          border: "1px solid #ddd",
+          borderRadius: "8px",
+          padding: "6px 10px",
+          boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
         }}
       >
-        <option value="en-US">Eng</option>
-        <option value="vi">VN</option>
-        <option value="fr">Fre</option>
-        <option value="ja">Jpn</option>
-        <option value="zh">CN</option>
-      </select>
+        <Tooltip
+          position={Position.TopCenter}
+          target={<Button onClick={props.toggle}><MessageIcon /></Button>}
+          content={() => (
+            <div
+              style={{
+                backgroundColor: "rgba(0,0,0,0.85)",
+                color: "white",
+                padding: "6px 10px",
+                borderRadius: "6px",
+                fontSize: "13px",
+                fontWeight: 500,
+                zIndex: 9999,
+                whiteSpace: "nowrap",
+                pointerEvents: "none",
+              }}
+            >
+              Add a Note
+            </div>
+          )}
+          offset={{ left: 0, top: -8 }}
+        />
 
-      {/* Nút Translate + Popup dịch ngay dưới nút */}
-      <div style={{ position: "relative", display: "inline-block" }}>
-        <Button
-          onClick={async () => {
-            if (!props.selectedText) return;
-            try {
-              const res = await translateHighlightedText(props.selectedText, highlightLang);
-              setHighlightTranslation(res || "");
-              setPopupPosition({ show: true }); // Hiển thị popup
-            } catch (err) {
-              setPopup({ open: true, text: "Failed to translate selected text", type: "error" });
-            }
+        <select
+          value={highlightLang}
+          onChange={(e) => setHighlightLang(e.target.value)}
+          style={{
+            padding: "4px 6px",
+            borderRadius: 6,
+            border: "1px solid #ccc",
+            fontSize: "13px",
+            background: "#f9f9f9",
           }}
         >
-          T
-        </Button>
+          <option value="en-US">Eng</option>
+          <option value="vi">VN</option>
+          <option value="fr">Fre</option>
+          <option value="ja">Jpn</option>
+          <option value="zh">CN</option>
+        </select>
 
-        {popupPosition?.show && highlightTranslation && (
-  <div
-    style={{
-      position: "absolute", // sửa từ fixed → absolute
-      top: popupPosition.top || 0,
-      left: popupPosition.left || 0,
-      transform: "translateY(8px)", // 1 chút khoảng cách dưới highlight
-      background: "white",
-      border: "1px solid #ddd",
-      borderRadius: 8,
-      padding: "6px 10px",
-      boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-      zIndex: 9999,
-      maxWidth: 1000,
-      minWidth: 400,
-      padding: "12px 16px", // padding lớn hơn
-fontSize: 16,     // chữ lớn hơn
-      wordBreak: "break-word",
-      overflowWrap: "break-word",
-    }}
-  >
-    {highlightTranslation}
-    <button
-      style={{
-        marginLeft: 8,
-        cursor: "pointer",
-        border: "none",
-        background: "transparent",
-      }}
-      onClick={() => setPopupPosition(null)}
-    >
-      ✕
-    </button>
-  </div>
-)}
+        <div style={{ position: "relative", display: "inline-block" }}>
+          <Button
+            onClick={async () => {
+              if (!props.selectedText) return;
+              try {
+                const res = await translateHighlightedText(props.selectedText, highlightLang);
+                setHighlightTranslation(res || "");
+                setPopupPosition({ show: true }); // Hiển thị popup
+              } catch (err) {
+                setPopup({ open: true, text: "Failed to translate selected text", type: "error" });
+              }
+            }}
+          >
+            T
+          </Button>
+
+          {popupPosition?.show && highlightTranslation && (
+            <div
+              style={{
+                position: "absolute",
+                top: popupPosition.top || 0,
+                left: popupPosition.left || 0,
+                transform: "translateY(8px)",
+                background: "white",
+                border: "1px solid #ddd",
+                borderRadius: 8,
+                boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
+                zIndex: 9999,
+                maxWidth: 1000,
+                minWidth: 400,
+                padding: "12px 16px",
+                fontSize: 16,
+                wordBreak: "break-word",
+                overflowWrap: "break-word",
+              }}
+            >
+              {highlightTranslation}
+              <button
+                style={{
+                  marginLeft: 8,
+                  cursor: "pointer",
+                  border: "none",
+                  background: "transparent",
+                }}
+                onClick={() => setPopupPosition(null)}
+              >
+                ✕
+              </button>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  );
-};
-
+    );
+  };
 
   const renderHighlightContent = (props) => {
     const addNote = async () => {
       if (message !== "") {
         try {
-          setLoading((prev) => ({ ...prev, add: true })); // bật trạng thái loading
+          setLoading((prev) => ({ ...prev, add: true }));
           const formData = new FormData();
           formData.append("ReviewId", review.reviewId);
           formData.append("RevisionId", review.revisionId);
@@ -438,10 +384,7 @@ fontSize: 16,     // chữ lớn hơn
           formData.append("Status", "Draft");
 
           props.highlightAreas.forEach((area, idx) => {
-            formData.append(
-              `HighlightAreas[${idx}][PageIndex]`,
-              area.pageIndex
-            );
+            formData.append(`HighlightAreas[${idx}][PageIndex]`, area.pageIndex);
             formData.append(`HighlightAreas[${idx}][Left]`, area.left || 0);
             formData.append(`HighlightAreas[${idx}][Top]`, area.top || 0);
             formData.append(`HighlightAreas[${idx}][Width]`, area.width || 0);
@@ -469,7 +412,7 @@ fontSize: 16,     // chữ lớn hơn
         } catch (err) {
           toast.error("Failed to save note!");
         } finally {
-          setLoading((prev) => ({ ...prev, add: false })); // tắt trạng thái loading
+          setLoading((prev) => ({ ...prev, add: false }));
         }
       }
     };
@@ -491,11 +434,10 @@ fontSize: 16,     // chữ lớn hơn
         <div className="flex flex-row gap-3 justify-end">
           <button
             disabled={loading.add}
-            className={`bg-green-600 text-white rounded-lg px-4 py-1 font-semibold ${
-              loading.add
-                ? "opacity-50 cursor-not-allowed"
-                : "hover:bg-blue-700"
-            }`}
+            className={`bg-green-600 text-white rounded-lg px-4 py-1 font-semibold ${loading.add
+              ? "opacity-50 cursor-not-allowed"
+              : "hover:bg-blue-700"
+              }`}
             onClick={addNote}
           >
             {loading.add ? "Adding..." : "Add"}
@@ -511,7 +453,7 @@ fontSize: 16,     // chữ lớn hơn
     );
   };
 
-  const [activateTab, setActivateTab] = useState(() => () => {});
+  const [activateTab, setActivateTab] = useState(() => () => { });
 
   const jumpToNote = (note) => {
     activateTab(3);
@@ -732,7 +674,7 @@ fontSize: 16,     // chữ lớn hơn
               <button
                 style={{
                   padding: "10px 20px",
-                  backgroundColor: translating ? "#4d7c0f" : "#22c55e", // xanh lá đậm khi hover: #4d7c0f, bình thường: #22c55e
+                  backgroundColor: translating ? "#4d7c0f" : "#22c55e",
                   color: "white",
                   borderRadius: 8,
                   fontWeight: 600,
@@ -823,7 +765,6 @@ fontSize: 16,     // chữ lớn hơn
 
   return (
     <div style={{ height: "100%", position: "relative" }}>
-      {/* Popup Edit/Delete khi chọn highlight */}
       {selectedHighlight && (
         <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/30">
           <div className="bg-white rounded-xl shadow-2xl border border-gray-200 p-6 min-w-[300px] max-w-md w-full">
@@ -892,9 +833,8 @@ fontSize: 16,     // chữ lớn hơn
 
       {popup.open && (
         <div
-          className={`fixed bottom-6 right-6 px-4 py-3 rounded-md font-semibold shadow-md text-white ${
-            popup.type === "success" ? "bg-green-500" : "bg-red-500"
-          }`}
+          className={`fixed bottom-6 right-6 px-4 py-3 rounded-md font-semibold shadow-md text-white ${popup.type === "success" ? "bg-green-500" : "bg-red-500"
+            }`}
           role="alert"
           style={{
             zIndex: 9999,
@@ -909,15 +849,13 @@ fontSize: 16,     // chữ lớn hơn
         </div>
       )}
 
-      {/* Hiển thị file PDF */}
       <Worker workerUrl="https://unpkg.com/pdfjs-dist@3.11.174/build/pdf.worker.min.js">
         {fileUrl ? (
           <Viewer
             fileUrl={fileUrl}
             plugins={[defaultLayoutPluginInstance, highlightPluginInstance]}
             onDocumentLoad={handleDocumentLoad}
-            ini
-            tialPage={0}
+            initialPage={0}
           />
         ) : (
           <p className="text-center py-20 text-gray-500">
@@ -926,7 +864,6 @@ fontSize: 16,     // chữ lớn hơn
         )}
       </Worker>
 
-      {/* Nút View Translated Paper nằm dưới PDF */}
       <div style={{ textAlign: "center", marginTop: 16 }}>
         <button
           style={{
@@ -944,37 +881,29 @@ fontSize: 16,     // chữ lớn hơn
           onClick={() => setShowTranslatedModal(true)}
           disabled={!translatedText}
           onMouseEnter={(e) => {
-            if (translatedText)
-              e.currentTarget.style.backgroundColor = "#b91c1c";
+            if (translatedText) e.currentTarget.style.backgroundColor = "#b91c1c";
           }}
           onMouseLeave={(e) => {
-            if (translatedText)
-              e.currentTarget.style.backgroundColor = "#dc2626";
+            if (translatedText) e.currentTarget.style.backgroundColor = "#dc2626";
           }}
         >
           View Translated Paper
         </button>
       </div>
 
-      {/* Hiển thị nội dung dịch dưới cùng (không tiêu đề) */}
       <div
-  style={{
-    whiteSpace: "pre-wrap",
-    lineHeight: 1.6,
-    fontFamily: "Times New Roman", // ← thêm font
-    fontSize: 14, // có thể chỉnh kích thước
-  }}
->
-  {translatedText}
-</div>
+        style={{
+          whiteSpace: "pre-wrap",
+          lineHeight: 1.6,
+          fontFamily: "Times New Roman",
+          fontSize: 14,
+        }}
+      >
+        {translatedText}
+      </div>
 
-
-      
-
-
-      {/* Modal hiện bản dịch */}
       {showTranslatedModal && (
-                <div
+        <div
           className="fixed inset-0 flex justify-center items-center z-50"
           onClick={() => setShowTranslatedModal(false)}
         >
@@ -988,7 +917,6 @@ fontSize: 16,     // chữ lớn hơn
                 <div key={idx}>{line}</div>
               ))}
             </div>
-
 
             <button
               className="absolute top-4 right-4 text-gray-500 hover:text-gray-900 font-bold"
