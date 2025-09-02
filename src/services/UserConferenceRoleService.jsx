@@ -83,3 +83,7 @@ export const resolveAuthors = async (emails) => {
     emails: emails,
   });
 };
+// Lấy danh sách user chưa có bất kỳ conference role nào
+export const getAvailableUsers = async () => {
+  return apiService.get("/UserConferenceRoles/available-users");
+};

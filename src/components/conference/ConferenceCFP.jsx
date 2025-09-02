@@ -3,6 +3,8 @@ import { useParams, Link } from "react-router-dom";
 import { getCallForPapersByConferenceId } from "../../services/CallForPaperService";
 import { getTimelinesByConferenceId } from "../../services/TimelineService";
 import { getSchedulesByTimeline } from "../../services/ScheduleService"; // <-- import này
+import { countSchedulesByTimeline } from "../../services/ScheduleService";
+
 
 import dayjs from "dayjs";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
@@ -34,6 +36,8 @@ const CFP = () => {
   const [selectedTimelineSchedules, setSelectedTimelineSchedules] = useState([]);
   const [scheduleList, setScheduleList] = useState([]);
   const [presentedPapers, setPresentedPapers] = useState([]);
+  const [scheduleCounts, setScheduleCounts] = useState({});
+
 
 
   const handleViewSchedule = async (timelineId) => {
@@ -82,12 +86,27 @@ const CFP = () => {
         }
 
         // Gọi Timeline
-        getTimelinesByConferenceId(id)
-          .then((res) => setTimelineList(res))
-          .catch((err) => {
-            console.error("Error fetching timeline:", err);
-            setTimelineList([]);
-          });
+getTimelinesByConferenceId(id)
+  .then(async (res) => {
+    setTimelineList(res);
+
+    // Đếm số schedule cho từng timeline
+    const counts = {};
+    for (const tl of res) {
+      try {
+        const result = await countSchedulesByTimeline(tl.timeLineId);
+        counts[tl.timeLineId] = result?.scheduleCount ?? 0;
+      } catch {
+        counts[tl.timeLineId] = 0;
+      }
+    }
+    setScheduleCounts(counts);
+  })
+  .catch((err) => {
+    console.error("Error fetching timeline:", err);
+    setTimelineList([]);
+  });
+
 
       } catch (error) {
         console.error("Error fetching CFP:", error);
@@ -229,69 +248,75 @@ const CFP = () => {
         </div>
 
         {/* Timeline Section - Dynamic from API */}
-        <div className="pt-8">
-          <h3 className="text-xl font-bold text-blue-700 mb-4 text-center">
-            Timeline
-          </h3>
+<div className="pt-8">
+  <h3 className="text-xl font-bold text-blue-700 mb-4 text-center">
+    Timeline
+  </h3>
 
-          <div className="flex flex-wrap justify-center items-center gap-6 text-sm text-center text-gray-700 relative">
-            {timelineList.length === 0 ? (
-              <div className="text-gray-500 text-center">No timeline available</div>
-            ) : (
-              timelineList
-                .sort((a, b) => new Date(a.date) - new Date(b.date))
-                .map((item, index) => {
-                  const bgColors = [
-                    "bg-blue-100",
-                    "bg-green-100",
-                    "bg-yellow-100",
-                    "bg-purple-100",
-                    "bg-pink-100",
-                    "bg-orange-100",
-                    "bg-red-100",
-                    "bg-teal-100",
-                  ];
-                  const textColors = [
-                    "text-blue-800",
-                    "text-green-800",
-                    "text-yellow-800",
-                    "text-purple-800",
-                    "text-pink-800",
-                    "text-orange-800",
-                    "text-red-800",
-                    "text-teal-800",
-                  ];
-                  const bgColor = bgColors[index % bgColors.length];
-                  const textColor = textColors[index % textColors.length];
+  <div className="flex flex-wrap justify-center items-center gap-6 text-sm text-center text-gray-700 relative">
+    {timelineList.length === 0 ? (
+      <div className="text-gray-500 text-center">No timeline available</div>
+    ) : (
+      timelineList
+        .filter((item) => dayjs(item.date).isValid()) // ✅ lọc bỏ timeline Invalid Date
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .map((item, index) => {
+          const bgColors = [
+            "bg-blue-100",
+            "bg-green-100",
+            "bg-yellow-100",
+            "bg-purple-100",
+            "bg-pink-100",
+            "bg-orange-100",
+            "bg-red-100",
+            "bg-teal-100",
+          ];
+          const textColors = [
+            "text-blue-800",
+            "text-green-800",
+            "text-yellow-800",
+            "text-purple-800",
+            "text-pink-800",
+            "text-orange-800",
+            "text-red-800",
+            "text-teal-800",
+          ];
+          const bgColor = bgColors[index % bgColors.length];
+          const textColor = textColors[index % textColors.length];
 
-                  return (
-                    <div key={item.timeLineId} className="relative flex items-center">
-                      {index > 0 && (
-                        <div className="w-6 h-1 bg-gray-300 mx-2 rounded"></div>
-                      )}
-                      <div className={`${bgColor} rounded-xl p-4 shadow w-40 relative`}>
-                        <p className={`font-bold ${textColor}`}>
-                          {dayjs(item.date).format("MMM D, HH:mm")}
-                        </p>
-                        <p>{item.description}</p>
+          return (
+            <div key={item.timeLineId} className="relative flex items-center">
+              {index > 0 && (
+                <div className="w-6 h-1 bg-gray-300 mx-2 rounded"></div>
+              )}
+              <div
+                className={`${bgColor} rounded-xl p-4 shadow w-40 relative`}
+              >
+                <p className={`font-bold ${textColor}`}>
+                  {dayjs(item.date).format("MMM D, HH:mm")}
+                </p>
+                <p>{item.description}</p>
 
-                        {/* Icon View Schedule */}
-                        <button
-                          onClick={() => handleViewSchedule(item.timeLineId)}
-                          className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
-                          title="View Schedule"
-                        >
-                          <Eye size={18} />
-                        </button>
+                {/* Icon View Schedule */}
+                  {scheduleCounts[item.timeLineId] > 0 && (
+                    <button
+                      onClick={() => handleViewSchedule(item.timeLineId)}
+                      className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
+                      title="View Schedule"
+                    >
+                      <Eye size={18} />
+                    </button>
+                  )}
 
-                      </div>
 
-                    </div>
-                  );
-                })
-            )}
-          </div>
-        </div>
+              </div>
+            </div>
+          );
+        })
+    )}
+  </div>
+</div>
+
 
         <Modal
           title="View Schedule"

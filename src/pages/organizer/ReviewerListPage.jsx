@@ -22,6 +22,7 @@ import {
   getUserConferenceRolesByConferenceId,
 } from "../../services/UserConferenceRoleService";
 import { getUsersByRole } from "../../services/UserService";
+import { getAvailableUsers } from "../../services/UserConferenceRoleService";
 import { DeleteOutlined } from "@ant-design/icons";
 
 
@@ -75,26 +76,18 @@ const ReviewerListPage = () => {
   };
 
   const loadMembers = async () => {
-    try {
-      const res = await getUsersByRole(2);
-      const allMembers = res.data || res;
+  try {
+    const res = await getAvailableUsers();
+    const availableMembers = res.data || res;
 
-      const reviewerRes = await getUserConferenceRolesByConferenceId(conferenceId);
-      const allRoles = reviewerRes.data || reviewerRes;
+    setMembers(availableMembers);
+    setFilteredMembers(availableMembers);
+  } catch (err) {
+    console.error("❌ Failed to load available users:", err);
+    message.error("Failed to load available users.");
+  }
+};
 
-      const reviewerIds = new Set(
-        allRoles.filter((ucr) => ucr.conferenceRoleId === 3).map((ucr) => ucr.userId)
-      );
-
-      const availableMembers = allMembers.filter((user) => !reviewerIds.has(user.userId));
-
-      setMembers(availableMembers);
-      setFilteredMembers(availableMembers);
-    } catch (err) {
-      console.error("❌ Failed to load members:", err);
-      message.error("Failed to load members.");
-    }
-  };
 
   const showDeleteConfirm = (id) => {
     Modal.confirm({
@@ -182,7 +175,7 @@ const ReviewerListPage = () => {
       loadMembers();
     } catch (err) {
       console.error("❌ Failed to remove reviewer:", err);
-      message.error("Failed to remove reviewer.");
+      message.error("Cannot delete this user because they are assigned to papers as a reviewer.");
     }
   };
 
