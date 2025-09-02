@@ -22,6 +22,8 @@ export default function ViewProceedings() {
   const [modalVisible, setModalVisible] = useState(false);
   const [viewMode, setViewMode] = useState("pdf");
   const [thumbnails, setThumbnails] = useState({});
+  const [pendingPayment, setPendingPayment] = useState(null);
+
 
   const navigate = useNavigate();
 
@@ -92,117 +94,156 @@ export default function ViewProceedings() {
   }, []);
 
   const handleProceedingClick = async (proc) => {
-    const conferenceId = proc.conferenceId;
-    const feeDetailId = proc.feeDetailId;
+  const conferenceId = proc.conferenceId;
+  const feeDetailId = proc.feeDetailId;
 
-    if (!conferenceId || !feeDetailId) {
-      console.warn("Cannot check payment, missing conferenceId or feeDetailId", proc);
-      return;
+  if (!conferenceId || !feeDetailId) {
+    console.warn("Cannot check payment, missing conferenceId or feeDetailId", proc);
+    return;
+  }
+
+  try {
+    const res = await PayService.hasUserPaidFee(conferenceId, feeDetailId);
+    const hasPaid = res?.HasPaid ?? res?.hasPaid ?? false;
+
+    if (hasPaid) {
+      setSelectedProceeding(proc);
+      setViewMode("pdf");
+      setModalVisible(true);
+    } else {
+      // thay vì navigate ngay -> mở popup confirm
+      setPendingPayment({ conferenceId, feeDetailId });
     }
+  } catch (err) {
+    console.error("Error checking payment:", err);
+  }
+};
 
-    try {
-      const res = await PayService.hasUserPaidFee(conferenceId, feeDetailId);
-      const hasPaid = res?.HasPaid ?? res?.hasPaid ?? false;
 
-      if (hasPaid) {
-        setSelectedProceeding(proc);
-        setViewMode("pdf");
-        setModalVisible(true);
-      } else {
-        navigate(`/author/payment?conferenceId=${conferenceId}&feeDetailId=${feeDetailId}`);
-      }
-    } catch (err) {
-      console.error("Error checking payment:", err);
-    }
-  };
 
   if (loading) return <Spin size="large" style={{ marginTop: 80, display: "block" }} />;
 
   return (
-    <div style={{ padding: 24 }}>
-      <Title level={3}>📚 Proceedings</Title>
+  <div style={{ padding: 24 }}>
+    <Title level={3}>📚 Proceedings</Title>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
-        {proceedings.map(proc => {
-          const conf = conferenceMap[proc.conferenceId] || {};
-          return (
-            <Card
-              key={proc.proceedingId}
-              hoverable
-              cover={
-                <img
-                  src={proc.coverPageUrl || "/default-cover.png"}
-                  alt={conf.title || proc.title}
-                  style={{ height: 200, objectFit: "cover" }}
-                  onClick={() => handleProceedingClick(proc)}
-                />
-              }
-              style={{ width: 180, cursor: "pointer" }}
-            >
-              <Card.Meta title={conf.title || proc.title} />
-            </Card>
-          );
-        })}
-      </div>
-
-      {selectedProceeding && (
-        <Modal
-          open={modalVisible}
-          onCancel={() => setModalVisible(false)}
-          footer={null}
-          width={900}
-        >
-          <Title level={4}>
-            {conferenceMap[selectedProceeding.conferenceId]?.title || selectedProceeding.title}
-          </Title>
-          <Paragraph>
-            {conferenceMap[selectedProceeding.conferenceId]?.description || selectedProceeding.description}
-          </Paragraph>
-
-          <Paragraph>
-            <strong>DOI:</strong> {selectedProceeding.doi || "N/A"}
-          </Paragraph>
-          <Paragraph>
-            <strong>Published Date:</strong>{" "}
-            {selectedProceeding.publishedDate ? dayjs(selectedProceeding.publishedDate).format("YYYY-MM-DD") : "N/A"}
-          </Paragraph>
-          <Paragraph>
-            <strong>Published By:</strong> {selectedProceeding.publishedBy?.fullName || "N/A"}
-          </Paragraph>
-
-          {selectedProceeding.filePath ? (
-            <>
-              <Space style={{ marginBottom: 16 }}>
-                <Button
-                  type={viewMode === "pdf" ? "primary" : "default"}
-                  onClick={() => setViewMode("pdf")}
-                >
-                  PDF View
-                </Button>
-                <Button
-                  type={viewMode === "book" ? "primary" : "default"}
-                  onClick={() => setViewMode("book")}
-                >
-                  Book View
-                </Button>
-              </Space>
-
-              {viewMode === "pdf" ? (
-                <iframe
-                  src={selectedProceeding.filePath}
-                  title={selectedProceeding.title}
-                  width="100%"
-                  height={600}
-                />
-              ) : (
-                <PDFBookViewer pdfUrl={selectedProceeding.filePath} />
-              )}
-            </>
-          ) : (
-            <Text>No PDF available</Text>
-          )}
-        </Modal>
-      )}
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
+      {proceedings.map(proc => {
+        const conf = conferenceMap[proc.conferenceId] || {};
+        return (
+          <Card
+            key={proc.proceedingId}
+            hoverable
+            cover={
+              <img
+                src={proc.coverPageUrl || "/default-cover.png"}
+                alt={conf.title || proc.title}
+                style={{ height: 200, objectFit: "cover" }}
+                onClick={() => handleProceedingClick(proc)}
+              />
+            }
+            style={{ width: 180, cursor: "pointer" }}
+          >
+            <Card.Meta title={conf.title || proc.title} />
+          </Card>
+        );
+      })}
     </div>
-  );
+
+    {/* ✅ Modal confirm payment */}
+    <Modal
+      open={!!pendingPayment}
+      onCancel={() => setPendingPayment(null)}
+      footer={[
+        <Button key="cancel" onClick={() => setPendingPayment(null)}>
+          Cancel
+        </Button>,
+        <Button
+          key="pay"
+          type="primary"
+          onClick={() => {
+            if (pendingPayment) {
+              navigate("/author/payment", {
+                state: {
+                  conferenceId: pendingPayment.conferenceId,
+                  feeDetailId: pendingPayment.feeDetailId,
+                  fees: [{ feeDetailId: pendingPayment.feeDetailId }],
+                  includeAdditional: false,
+                },
+              });
+            }
+          }}
+        >
+          Payment
+        </Button>,
+      ]}
+    >
+      <Title level={4}>Proceedings Access Required</Title>
+      <Paragraph>
+        You need to complete the payment before accessing this proceedings.
+      </Paragraph>
+    </Modal>
+
+    {/* ✅ Modal view proceedings */}
+    {selectedProceeding && (
+      <Modal
+        open={modalVisible}
+        onCancel={() => setModalVisible(false)}
+        footer={null}
+        width={900}
+      >
+        <Title level={4}>
+          {conferenceMap[selectedProceeding.conferenceId]?.title || selectedProceeding.title}
+        </Title>
+        <Paragraph>
+          {conferenceMap[selectedProceeding.conferenceId]?.description || selectedProceeding.description}
+        </Paragraph>
+
+        <Paragraph>
+          <strong>DOI:</strong> {selectedProceeding.doi || "N/A"}
+        </Paragraph>
+        <Paragraph>
+          <strong>Published Date:</strong>{" "}
+          {selectedProceeding.publishedDate ? dayjs(selectedProceeding.publishedDate).format("YYYY-MM-DD") : "N/A"}
+        </Paragraph>
+        <Paragraph>
+          <strong>Published By:</strong> {selectedProceeding.publishedBy?.fullName || "N/A"}
+        </Paragraph>
+
+        {selectedProceeding.filePath ? (
+          <>
+            <Space style={{ marginBottom: 16 }}>
+              <Button
+                type={viewMode === "pdf" ? "primary" : "default"}
+                onClick={() => setViewMode("pdf")}
+              >
+                PDF View
+              </Button>
+              <Button
+                type={viewMode === "book" ? "primary" : "default"}
+                onClick={() => setViewMode("book")}
+              >
+                Book View
+              </Button>
+            </Space>
+
+            {viewMode === "pdf" ? (
+              <iframe
+                src={selectedProceeding.filePath}
+                title={selectedProceeding.title}
+                width="100%"
+                height={600}
+              />
+            ) : (
+              <PDFBookViewer pdfUrl={selectedProceeding.filePath} />
+            )}
+          </>
+        ) : (
+          <Text>No PDF available</Text>
+        )}
+      </Modal>
+    )}
+  </div>
+);
+
 }

@@ -285,6 +285,8 @@ const getPresentationFeeDetail = async () => {
               conferenceId,
               paperId: record.paperId,
               fees: feesToPay, // array gồm Registration + AdditionalPage
+              includeAdditional: true,   // ✅ cho phép lấy thêm page fee
+
             },
           });
         },
@@ -324,6 +326,8 @@ const getPresentationFeeDetail = async () => {
               paperId: record.paperId,
               feeDetailId: presentationFee.feeDetailId,
               feeMode: presentationFee.mode,
+              includeAdditional: false,  // 🚫 không tính thêm page fee
+
             },
           }),
       });

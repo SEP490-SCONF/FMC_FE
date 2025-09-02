@@ -4,13 +4,15 @@ import ButtonPay from '../../components/ui/button/ButtonPayment';
 import PayService from '../../services/PayService';
 import { useUser } from '../../context/UserContext';
 import { getFeesByConferenceId } from '../../services/ConferenceFeesService';
+import { getPaperPageCount } from '../../services/PaperSerice';
+
 
 const PaymentPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useUser();
 
-const { userId, conferenceId, paperId, feeDetailId: initFeeDetailId, feeMode: initFeeMode, fees: feesToPay } = location.state || {};
+const { userId, conferenceId, paperId, feeDetailId: initFeeDetailId, feeMode: initFeeMode, fees: feesToPay, includeAdditional  } = location.state || {};
 
 
   const [feeDetails, setFeeDetails] = useState([]);
@@ -27,34 +29,49 @@ const { userId, conferenceId, paperId, feeDetailId: initFeeDetailId, feeMode: in
   const hasFptDiscount = userEmail.toLowerCase().includes('@fpt');
 
   useEffect(() => {
-    if (!conferenceId) {
-      setLoading(false);
-      return;
-    }
+  if (!conferenceId || !paperId) return;
 
-    getFeesByConferenceId(conferenceId)
-      .then(res => {
-        setFeeDetails(res);
-        if (initFeeDetailId) {
-          const detail = res.find(f => f.feeDetailId === initFeeDetailId);
-          if (detail) {
-            setFeeDetail(detail);
-            setSelectedMode(initFeeMode || detail.mode);
-            setModes(res.filter(f => f.feeTypeName === detail.feeTypeName).map(f => f.mode));
-            return;
-          }
-        }
-        // Default: Registration đầu tiên
-        const registrationFees = res.filter(f => f.feeTypeName === 'Registration');
+  Promise.all([
+    getFeesByConferenceId(conferenceId),
+    getPaperPageCount(paperId)
+  ])
+    .then(([fees, pageCount]) => {
+      setFeeDetails(fees);
+
+      // Registration mặc định
+      if (!initFeeDetailId) {
+        const registrationFees = fees.filter(f => f.feeTypeName === 'Registration');
         if (registrationFees.length) {
           setFeeDetail(registrationFees[0]);
           setSelectedMode(registrationFees[0].mode);
           setModes(registrationFees.map(f => f.mode));
         }
-      })
-      .catch(err => console.error('Cannot load fees:', err))
-      .finally(() => setLoading(false));
-  }, [conferenceId, initFeeDetailId, initFeeMode]);
+      } else {
+        const detail = fees.find(f => f.feeDetailId === initFeeDetailId);
+        if (detail) {
+          setFeeDetail(detail);
+          setSelectedMode(initFeeMode || detail.mode);
+          setModes(fees.filter(f => f.feeTypeName === detail.feeTypeName).map(f => f.mode));
+        }
+      }
+
+      // Additional Page Fee
+if (includeAdditional) {   // ✅ chỉ khi publish mới thêm
+  const addFee = fees.find(f => f.feeTypeName === 'Additional Page');
+  if (addFee && pageCount > 5) {
+    const excessPages = pageCount - 5;
+    setAdditionalFee({
+      ...addFee,
+      total: addFee.amount * excessPages,
+      pages: excessPages
+    });
+  }
+}
+    })
+    .catch(err => console.error('Error loading fees:', err))
+    .finally(() => setLoading(false));
+}, [conferenceId, paperId, initFeeDetailId, initFeeMode]);
+
   
 
   useEffect(() => {
@@ -73,33 +90,50 @@ const { userId, conferenceId, paperId, feeDetailId: initFeeDetailId, feeMode: in
   const payable = originalFee - discountAmount;
 
   const handleCompleteOrder = async () => {
-    const description = `${displayName} - ${feeDetail.feeTypeName}`.slice(0, 25);
+  const originalFee = feeDetail.amount || 0;
+  const discountAmount = hasFptDiscount ? Math.round(originalFee * 0.1) : 0;
+  const payable = originalFee - discountAmount;
 
-    const paymentData = {
-      userId,
-      conferenceId,
-      paperId,
-      amount: payable,
-      currency: feeDetail.currency || 'VND',
-      purpose: description,
-      feeDetailId: feeDetail.feeDetailId,
-      giftCode: giftCode || undefined,
-    };
+  // danh sách phí gửi sang backend
+  const fees = [
+    {
+      feeDetailId: feeDetail.feeDetailId, // Registration
+      quantity: 1,
+    },
+  ];
 
-    try {
-      const res = await PayService.createPayment(paymentData);
-      if (res.checkoutUrl) {
-        // Lưu paperId + feeTypeName để PaymentSuccess biết cập nhật trạng thái
-        if (paperId) {
-          localStorage.setItem('paymentPaperId', paperId);
-          localStorage.setItem('paymentFeeType', feeDetail.feeTypeName);
-        }
-        window.location.href = res.checkoutUrl;
-      }
-    } catch (err) {
-      alert('Payment failed!');
-    }
+  // nếu có phí trang thêm
+  if (additionalFee) {
+    fees.push({
+      feeDetailId: additionalFee.feeDetailId,
+      quantity: additionalFee.pages, // số trang vượt
+    });
+  }
+
+  // TODO: nếu có thêm loại phí khác như Proceedings thì push tiếp ở đây
+
+  const paymentData = {
+    conferenceId,
+    paperId,
+    fees,
+    giftCode: giftCode || undefined,
   };
+
+  try {
+    const res = await PayService.createPayment(paymentData);
+    if (res.checkoutUrl) {
+      if (paperId) {
+        localStorage.setItem("paymentPaperId", paperId);
+        localStorage.setItem("paymentFeeType", feeDetail.feeTypeName);
+      }
+      window.location.href = res.checkoutUrl;
+    }
+  } catch (err) {
+    alert("Payment failed!");
+  }
+};
+
+
 
   const handleCancel = () => navigate(-1);
 
@@ -123,9 +157,17 @@ const { userId, conferenceId, paperId, feeDetailId: initFeeDetailId, feeMode: in
             className="border border-gray-300 rounded-md px-3 py-2"
           >
             {modes.map(mode => (
-              <option key={mode} value={mode}>{mode}</option>
+              <option
+                key={mode}
+                value={mode}
+                disabled={mode === "Student" && !hasFptDiscount} // ❌ disable nếu không phải email FPT
+              >
+                {mode}
+                {mode === "Student" && !hasFptDiscount ? " (FPT only)" : ""}
+              </option>
             ))}
           </select>
+
         </div>
 
         {/* Total Fee */}
@@ -141,25 +183,35 @@ const { userId, conferenceId, paperId, feeDetailId: initFeeDetailId, feeMode: in
         </div>
 
         {/* Summary */}
-        <div className="border border-gray-200 p-6 rounded-lg bg-gray-50">
-          <h3 className="text-lg font-semibold mb-4 text-gray-900">Summary</h3>
+<div className="border border-gray-200 p-6 rounded-lg bg-gray-50">
+  <h3 className="text-lg font-semibold mb-4 text-gray-900">Summary</h3>
 
-          <div className="flex justify-between mb-3 text-gray-700">
-            <span>Subtotal</span>
-            <span>{formatVnd(originalFee)}</span>
-          </div>
+  <div className="flex justify-between mb-3 text-gray-700">
+    <span>{feeDetail.feeTypeName} Fee</span>
+    <span>{formatVnd(originalFee)}</span>
+  </div>
 
-          {hasFptDiscount && (
-            <div className="flex justify-between mb-3 text-gray-700">
-              <span>FPT discount (10%)</span>
-              <span className="text-green-600">-{formatVnd(discountAmount)}</span>
-            </div>
-          )}
+  {additionalFee && (
+    <div className="flex justify-between mb-3 text-gray-700">
+      <span>Additional Pages ({additionalFee.pages} pages)</span>
+      <span>{formatVnd(additionalFee.total)}</span>
+    </div>
+  )}
 
-          <div className="flex justify-between font-semibold mb-6 text-gray-900">
-            <span>Total</span>
-            <span>{formatVnd(payable)}</span>
-          </div>
+  {hasFptDiscount && (
+    <div className="flex justify-between mb-3 text-gray-700">
+      <span>FPT discount (10%)</span>
+      <span className="text-green-600">-{formatVnd(discountAmount)}</span>
+    </div>
+  )}
+
+  <div className="flex justify-between font-semibold mb-6 text-gray-900">
+    <span>Total</span>
+    <span>
+      {formatVnd(payable + (additionalFee?.total || 0))}
+    </span>
+  </div>
+
 
           {/* Gift code */}
           <div className="mb-4">

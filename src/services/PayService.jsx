@@ -39,7 +39,13 @@
 
         getFeeDetail: async (feeDetailId) => {
             return await apiService.get(`/Payment/fee/${feeDetailId}`);
-        }
+        },
+        getPaymentsByUser: async () => {
+            return await apiService.get('/Payment/user');
+            return res.data; // trả về mảng PaymentDTO
+
+}
+
     };
 
     export default PayService;
