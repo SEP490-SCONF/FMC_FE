@@ -85,7 +85,13 @@ export default function ManageConferenceFee() {
   const handleAdd = () => {
     setEditing(null);
     form.resetFields();
-    form.setFieldsValue({ currency: "VND", mode: "Regular", isVisible: true });
+    
+    form.setFieldsValue({
+      currency: "VND",
+      feeTypeId: 1,
+      mode: MODE_OPTIONS[1][0].value,
+      isVisible: true,
+    });
     setOpen(true);
   };
 
@@ -110,6 +116,7 @@ export default function ManageConferenceFee() {
           currency: values.currency,
           mode: values.mode,
           note: values.note,
+          isVisible: values.isVisible,
         });
         message.success("Fee created successfully");
       }
@@ -221,9 +228,11 @@ export default function ManageConferenceFee() {
             >
               <Select
                 placeholder="Select fee type"
-                onChange={() => {
-                  // Reset mode khi đổi feeType
-                  form.setFieldsValue({ mode: undefined });
+                onChange={(value) => {
+                  // Khi đổi feeType, set mode mặc định là giá trị đầu tiên của MODE_OPTIONS[value]
+                  form.setFieldsValue({
+                    mode: MODE_OPTIONS[value]?.[0]?.value,
+                  });
                 }}
               >
                 {feeTypes.map((ft) => (

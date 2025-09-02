@@ -56,18 +56,7 @@ const CFP = () => {
 
 
 
-  useEffect(() => {
-    const fetchPresentedPapers = async () => {
-      try {
-        const res = await getPresentedPapersByConferenceId(id);
-        setPresentedPapers(res || []);
-      } catch (err) {
-        console.error("Error fetching presented papers:", err);
-        setPresentedPapers([]);
-      }
-    };
-    fetchPresentedPapers();
-  }, [id]);
+
 
 
 

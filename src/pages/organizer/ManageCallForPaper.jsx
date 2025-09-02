@@ -96,7 +96,7 @@ export default function ManageCallForPaper() {
         setFilteredList(res);
       })
       .catch((err) => {
-        console.error("❌ Failed to load Call For Papers", err);
+        
         message.error("Failed to load Call For Papers");
         setList([]);
         setFilteredList([]);
