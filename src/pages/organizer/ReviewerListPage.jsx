@@ -22,7 +22,6 @@ import {
   getUserConferenceRolesByConferenceId,
 } from "../../services/UserConferenceRoleService";
 import { getUsersByRole } from "../../services/UserService";
-import { getAvailableUsers } from "../../services/UserConferenceRoleService";
 import { DeleteOutlined } from "@ant-design/icons";
 
 
@@ -58,7 +57,7 @@ const ReviewerListPage = () => {
       });
       const data = res.data || res;
       const reviewersList = data.value || data;
-
+      
 
       setReviewers(reviewersList);
       const total =
@@ -70,46 +69,52 @@ const ReviewerListPage = () => {
         0;
       setTotalReviewers(total);
     } catch (err) {
-      console.error("❌ Failed to load reviewers:", err);
       message.error("Failed to load reviewers.");
     }
   };
 
   const loadMembers = async () => {
-  try {
-    const res = await getAvailableUsers();
-    const availableMembers = res.data || res;
+    try {
+      const res = await getUsersByRole(2);
+      const allMembers = res.data || res;
 
-    setMembers(availableMembers);
-    setFilteredMembers(availableMembers);
-  } catch (err) {
-    console.error("❌ Failed to load available users:", err);
-    message.error("Failed to load available users.");
-  }
-};
+      const reviewerRes = await getUserConferenceRolesByConferenceId(conferenceId);
+      const allRoles = reviewerRes.data || reviewerRes;
 
+      const reviewerIds = new Set(
+        allRoles.filter((ucr) => ucr.conferenceRoleId === 3).map((ucr) => ucr.userId)
+      );
+
+      const availableMembers = allMembers.filter((user) => !reviewerIds.has(user.userId));
+
+      setMembers(availableMembers);
+      setFilteredMembers(availableMembers);
+    } catch (err) {
+      message.error("Failed to load members.");
+    }
+  };
 
   const showDeleteConfirm = (id) => {
-    Modal.confirm({
-      title: (
-        <Text strong type="danger" style={{ fontSize: 18 }}>
-          ⚠️ Confirm Removal
-        </Text>
-      ),
-      icon: <ExclamationCircleOutlined style={{ color: "#faad14" }} />,
-      content: (
-        <div>
-          <p>This action <Text strong>cannot be undone</Text>.</p>
-          <p>Are you sure you want to remove this reviewer?</p>
-        </div>
-      ),
-      okText: "Yes, remove",
-      cancelText: "Cancel",
-      okType: "danger",
-      centered: true,
-      onOk: () => handleRemoveReviewer(id),
-    });
-  };
+  Modal.confirm({
+    title: (
+      <Text strong type="danger" style={{ fontSize: 18 }}>
+        ⚠️ Confirm Removal
+      </Text>
+    ),
+    icon: <ExclamationCircleOutlined style={{ color: "#faad14" }} />,
+    content: (
+      <div>
+        <p>This action <Text strong>cannot be undone</Text>.</p>
+        <p>Are you sure you want to remove this reviewer?</p>
+      </div>
+    ),
+    okText: "Yes, remove",
+    cancelText: "Cancel",
+    okType: "danger",
+    centered: true,
+    onOk: () => handleRemoveReviewer(id),
+  });
+};
 
   useEffect(() => {
     if (conferenceId) {
@@ -158,26 +163,22 @@ const ReviewerListPage = () => {
       setShowAddReviewer(false);
       fetchReviewers(currentPage, searchTerm);
     } catch (err) {
-      console.error(err);
       message.error("Failed to assign reviewers.");
     }
   };
 
   const handleRemoveReviewer = async (id) => {
-    // console.log("🔧 Start removing reviewer:", id);
 
-    try {
-      await deleteUserConferenceRole(id);
-      // console.log("✅ Successfully removed reviewer:", id);
+  try {
+    await deleteUserConferenceRole(id);
 
-      message.success("Reviewer removed successfully.");
-      fetchReviewers(currentPage, debouncedSearchTerm);
-      loadMembers();
-    } catch (err) {
-      console.error("❌ Failed to remove reviewer:", err);
-      message.error("Cannot delete this user because they are assigned to papers as a reviewer.");
-    }
-  };
+    message.success("Reviewer removed successfully.");
+    fetchReviewers(currentPage, debouncedSearchTerm);
+    loadMembers();
+  } catch (err) {
+    message.error("Cannot delete because reviewer is assigned to papers.");
+  }
+};
 
   const handleMemberSearch = (value) => {
     setMemberSearch(value);
@@ -286,53 +287,53 @@ const ReviewerListPage = () => {
       />
 
       <List
-        grid={{ gutter: 16, column: 2 }}
-        dataSource={reviewers}
-        locale={{ emptyText: "No reviewers found." }}
-        renderItem={(user) => {
-          return (
-            <List.Item>
-              <Card hoverable>
-                <Card.Meta
-                  avatar={
-                    user.avatarUrl ? (
-                      <Avatar src={user.avatarUrl} />
-                    ) : (
-                      <Avatar>{user.userName?.[0]}</Avatar>
-                    )
-                  }
-                  title={
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span>{user.userName}</span>
-                      <Button
-                        type="text"
-                        danger
-                        size="small"
-                        icon={<DeleteOutlined style={{ fontSize: 25, color: "red" }} />}
-                        onClick={() => showDeleteConfirm(user.id)}
-                      />
+  grid={{ gutter: 16, column: 2 }}
+  dataSource={reviewers}
+  locale={{ emptyText: "No reviewers found." }}
+  renderItem={(user) => {
+  return (
+    <List.Item>
+      <Card hoverable>
+        <Card.Meta
+          avatar={
+            user.avatarUrl ? (
+              <Avatar src={user.avatarUrl} />
+            ) : (
+              <Avatar>{user.userName?.[0]}</Avatar>
+            )
+          }
+          title={
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <span>{user.userName}</span>
+              <Button
+  type="text"
+  danger
+  size="small"
+  icon={<DeleteOutlined style={{ fontSize: 25, color: "red" }} />}
+  onClick={() => showDeleteConfirm(user.id)}
+/>
 
-                    </div>
-                  }
-                  description={
-                    <>
-                      <Text>Email: {user.userEmail}</Text> <br />
-                      <Text>Role: {user.roleName}</Text> <br />
-                      <Text>
-                        Assigned At:{" "}
-                        {user.assignedAt
-                          ? new Date(user.assignedAt).toLocaleString()
-                          : "N/A"}
-                      </Text>
-                    </>
-                  }
-                />
-              </Card>
-            </List.Item>
-          );
-        }}
+            </div>
+          }
+          description={
+            <>
+              <Text>Email: {user.userEmail}</Text> <br />
+              <Text>Role: {user.roleName}</Text> <br />
+              <Text>
+                Assigned At:{" "}
+                {user.assignedAt
+                  ? new Date(user.assignedAt).toLocaleString()
+                  : "N/A"}
+              </Text>
+            </>
+          }
+        />
+      </Card>
+    </List.Item>
+  );
+}}
 
-      />
+/>
 
       <Pagination
         current={currentPage}

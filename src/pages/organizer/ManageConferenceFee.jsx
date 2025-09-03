@@ -54,7 +54,8 @@ export default function ManageConferenceFee() {
   const [editing, setEditing] = useState(null);
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
-
+const [filterType, setFilterType] = useState(null);
+  const [filterMode, setFilterMode] = useState(null);
   // Load fee types and fee list
   useEffect(() => {
     if (!conferenceId) return;
@@ -71,6 +72,14 @@ export default function ManageConferenceFee() {
       .then((res) => setFeeList(res.data || res))
       .catch(() => setFeeList([]));
   };
+
+  // ✅ Lọc dữ liệu theo type + mode
+  const filteredList = feeList.filter((item) => {
+    return (
+      (!filterType || item.feeTypeId === filterType) &&
+      (!filterMode || item.mode === filterMode)
+    );
+  });
 
   // Open modal for add/edit
   const handleEdit = (item) => {
@@ -204,9 +213,38 @@ export default function ManageConferenceFee() {
         </Button>
       </div>
 
+      {/* ✅ Bộ lọc */}
+      <div className="flex gap-4 mb-4">
+        <Select
+          allowClear
+          placeholder="Filter by Type"
+          style={{ width: 200 }}
+          onChange={(value) => setFilterType(value || null)}
+        >
+          {feeTypes.map((ft) => (
+            <Option key={ft.feeTypeId} value={ft.feeTypeId}>
+              {ft.name}
+            </Option>
+          ))}
+        </Select>
+
+        <Select
+          allowClear
+          placeholder="Filter by Mode"
+          style={{ width: 200 }}
+          onChange={(value) => setFilterMode(value || null)}
+        >
+          {[...new Set(feeList.map((f) => f.mode))].map((m) => (
+            <Option key={m} value={m}>
+              {m}
+            </Option>
+          ))}
+        </Select>
+      </div>
+
       <Table
         columns={columns}
-        dataSource={feeList}
+        dataSource={filteredList}
         rowKey="feeDetailId"
         pagination={{ pageSize: 5 }}
       />

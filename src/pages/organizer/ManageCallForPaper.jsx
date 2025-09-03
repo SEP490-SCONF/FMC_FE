@@ -152,62 +152,78 @@ export default function ManageCallForPaper() {
   };
 
   const handleSubmit = async (values) => {
-    const formData = new FormData();
-    formData.append("conferenceId", conferenceId);
-    formData.append("description", values.description);
+  const formData = new FormData();
+  formData.append("conferenceId", conferenceId);
+  formData.append("description", values.description);
+
+  if (values.deadline) {
     formData.append("deadline", values.deadline.toISOString());
+  }
 
+  if (values.templateFile?.file) {
+    formData.append("templateFile", values.templateFile.file);
+  }
 
+  setLoading(true);
 
-    if (values.templateFile?.file) {
-      formData.append("templateFile", values.templateFile.file);
-    }
-
-    setLoading(true);
-
-    try {
-      if (editing && values.status === true) {
-        const existingActive = list.find(
-          (item) => item.cfpid !== editing.cfpid && item.status === true
+  try {
+    // ✅ Kiểm tra trước khi tạo mới
+    if (!editing) {
+      const existingActive = list.find((item) => item.status === true);
+      if (existingActive) {
+        message.error(
+          `❌ Only one Call For Paper can be Active at a time. CPF "${existingActive.cfpid}" is already active.`
         );
-
-        if (existingActive) {
-          message.error(
-            `❌ Only one Call For Paper can be Active at a time. CPF "${existingActive.cfpid}" is already active.`
-          );
-          setLoading(false);
-          return;
-        }
+        setLoading(false);
+        return; // ⛔ Dừng lại, không gọi API create
       }
-
-      if (editing && values.status !== undefined) {
-        formData.append("status", values.status);
-      }
-
-      const action = editing
-        ? updateCallForPaper(editing.cfpid, formData)
-        : createCallForPaper(formData);
-
-      await action;
-
-      message.success(`${editing ? "Updated" : "Created"} successfully`);
-      setOpen(false);
-      form.resetFields();
-      setEditing(null);
-      fetchData();
-    } catch (error) {
-      console.error("Error:", error);
-      message.error("Something went wrong");
-    } finally {
-      setLoading(false);
     }
-  };
+
+    // ✅ Kiểm tra khi update
+    if (editing && values.status === true) {
+      const existingActive = list.find(
+        (item) => item.cfpid !== editing.cfpid && item.status === true
+      );
+      if (existingActive) {
+        message.error(
+          `❌ Only one Call For Paper can be Active at a time. CPF "${existingActive.cfpid}" is already active.`
+        );
+        setLoading(false);
+        return; // ⛔ Dừng lại, không gọi API update
+      }
+    }
+
+    if (editing && values.status !== undefined) {
+      formData.append("status", values.status);
+    }
+
+    const action = editing
+      ? updateCallForPaper(editing.cfpid, formData)
+      : createCallForPaper(formData);
+
+    await action;
+
+    message.success(`${editing ? "Updated" : "Created"} successfully`);
+    setOpen(false);
+    form.resetFields();
+    setEditing(null);
+    fetchData();
+  } catch (error) {
+    console.error("Error:", error);
+    message.error("Something went wrong");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+
 
   const handleEdit = (item) => {
     setEditing(item);
     form.setFieldsValue({
       description: item.description,
-      deadline: dayjs(item.deadline).utc().local(), 
+    deadline: item.deadline ? dayjs(item.deadline).utc().local() : null, // ✅ fix null
       status: item.status,
     });
     setOpen(true);
@@ -234,25 +250,38 @@ export default function ManageCallForPaper() {
       sorter: (a, b) => a.cfpid - b.cfpid,
     },
     {
-      title: "Description",
-      dataIndex: "description",
-      render: (text) => (
-        <Text
-          ellipsis={{ tooltip: false }}
-          style={{ cursor: "pointer", maxWidth: 300, display: "block" }}
-          onClick={() =>
-            setDescriptionModal({ visible: true, content: text })
-          }
-        >
-          {text}
-        </Text>
-      ),
-    },
+  title: "Description",
+  dataIndex: "description",
+  render: (text) => (
+    <Text
+      ellipsis={{ tooltip: false }}
+      style={{
+        cursor: "pointer",
+        maxWidth: 300,
+        display: "inline-block",
+        overflow: "hidden",
+        whiteSpace: "nowrap",   // 👈 ép chỉ 1 dòng
+        textOverflow: "ellipsis", // 👈 thêm dấu ...
+      }}
+      onClick={() =>
+        setDescriptionModal({ visible: true, content: text })
+      }
+    >
+      {text}
+    </Text>
+  ),
+}
+
+,
     {
-      title: "Deadline",
-      dataIndex: "deadline",
-      render: (value) => dayjs(value).utc().local().format("YYYY-MM-DD HH:mm"),
-    },
+  title: "Deadline",
+  dataIndex: "deadline",
+  render: (value) =>
+    value
+      ? dayjs(value).utc().local().format("YYYY-MM-DD HH:mm")
+      : "N/A", // ✅ nếu null thì hiển thị N/A
+},
+
     {
       title: "Status",
       dataIndex: "status",
@@ -366,10 +395,9 @@ export default function ManageCallForPaper() {
   name="deadline"
   label="Deadline"
   rules={[
-    { required: true, message: "Please select deadline" },
     ({ getFieldValue }) => ({
       validator(_, value) {
-        if (!value || !conference) return Promise.resolve();
+        if (!value || !conference) return Promise.resolve(); // ✅ Cho phép bỏ trống
         const start = dayjs(conference.startDate);
         const end = dayjs(conference.endDate);
 
@@ -402,6 +430,8 @@ export default function ManageCallForPaper() {
 </Form.Item>
 
 
+
+
           <Form.Item name="templateFile" label="Upload Template">
             <Upload beforeUpload={() => false} maxCount={1}>
               <Button icon={<UploadOutlined />}>Choose File</Button>
@@ -424,14 +454,17 @@ export default function ManageCallForPaper() {
 
       {/* Modal hiển thị full description */}
       <Modal
-        open={descriptionModal.visible}
-        footer={null}
-        onCancel={() =>
-          setDescriptionModal({ visible: false, content: "" })
-        }
-      >
-        <p>{descriptionModal.content}</p>
-      </Modal>
+  open={descriptionModal.visible}
+  footer={null}
+  onCancel={() =>
+    setDescriptionModal({ visible: false, content: "" })
+  }
+>
+  <div style={{ whiteSpace: "pre-line" }}>
+    {descriptionModal.content}
+  </div>
+</Modal>
+
     </div>
   );
 }

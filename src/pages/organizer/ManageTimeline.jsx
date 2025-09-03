@@ -19,6 +19,7 @@ import { CloseOutlined } from "@ant-design/icons";
 import { timelineDateValidator } from "../../utils/validators";
 import { getConferenceById } from "../../services/ConferenceService";
 
+import { ArrowUpOutlined, ArrowDownOutlined } from "@ant-design/icons";
 
 
 
@@ -75,6 +76,8 @@ const [scheduleCounts, setScheduleCounts] = useState({});
   const { RangePicker } = DatePicker;
   const [dateRange, setDateRange] = useState([null, null]);
   const [conference, setConference] = useState(null);
+  const [sortOrder, setSortOrder] = useState("desc"); // "asc" hoặc "desc"
+
 
 
   const showDeleteScheduleConfirm = (scheduleId) => {
@@ -555,10 +558,33 @@ const getDisabledEndTime = (schedules, startTime, editingId = null) => {
       dataIndex: "description",
     },
     {
-      title: "Date",
-      dataIndex: "date",
-      render: (value) => dayjs(value).format("YYYY-MM-DD HH:mm"),
-    },
+    title: (
+      <div className="flex items-center gap-2">
+        Date
+        <div className="flex flex-col">
+          <ArrowUpOutlined
+            onClick={() => setSortOrder("asc")}
+            style={{
+              fontSize: 10,
+              color: sortOrder === "asc" ? "#1677ff" : "#999",
+              cursor: "pointer",
+            }}
+          />
+          <ArrowDownOutlined
+            onClick={() => setSortOrder("desc")}
+            style={{
+              fontSize: 10,
+              color: sortOrder === "desc" ? "#1677ff" : "#999",
+              cursor: "pointer",
+            }}
+          />
+
+        </div>
+      </div>
+    ),
+    dataIndex: "date",
+    render: (value) => dayjs(value).format("YYYY-MM-DD HH:mm"),
+  },
     {
       title: "Schedule",
       render: (_, record) => (
@@ -642,7 +668,11 @@ const getDisabledEndTime = (schedules, startTime, editingId = null) => {
 {/* --- Timeline Table --- */}
 <Table
   columns={columns}
-  dataSource={filteredList}
+  dataSource={[...filteredList].sort((a, b) =>
+    sortOrder === "asc"
+      ? new Date(a.date) - new Date(b.date)
+      : new Date(b.date) - new Date(a.date)
+  )}
   rowKey="timeLineId"
   pagination={{ pageSize: 5 }}
   locale={{
@@ -653,6 +683,7 @@ const getDisabledEndTime = (schedules, startTime, editingId = null) => {
     ),
   }}
 />
+
 
 
       {/* --- Schedule Modal --- */}
