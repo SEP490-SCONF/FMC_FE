@@ -24,12 +24,12 @@ const MODE_OPTIONS = {
     { value: "Regular", label: "Regular (Phí chuẩn)" },
     { value: "EarlyBird", label: "EarlyBird (Đăng ký sớm)" },
     { value: "Late", label: "Late (Đăng ký trễ)" },
-    { value: "Student", label: "Student (Sinh viên)" },
+    { value: "FPT Account", label: "FPT (Tài khoản FPT)" },
   ],
   2: [ // Participation Fee / Listener Fee
     { value: "Regular", label: "Regular (Tham dự thường)" },
     { value: "VIP", label: "VIP (Vé VIP)" },
-    { value: "Student", label: "Student (Sinh viên)" },
+    { value: "FPT Account", label: "FPT (Tài khoản FPT)" },
   ],
   3: [ // Additional Page Fee
     { value: "PerPage", label: "PerPage (Tính theo trang)" },
