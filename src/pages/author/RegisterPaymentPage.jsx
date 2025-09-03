@@ -19,53 +19,56 @@ const RegisterPaymentPage = () => {
   const [feeDetail, setFeeDetail] = useState(null);
   const [modes, setModes] = useState([]);
   const [selectedMode, setSelectedMode] = useState("");
-  const [giftCode, setGiftCode] = useState("");
   const [loading, setLoading] = useState(true);
 
   const hasFptDiscount = userEmail.toLowerCase().includes("@fpt");
 
   useEffect(() => {
-    if (!conferenceId || !userId) return;
+  if (!conferenceId || !userId) return;
 
-    const fetchFee = async () => {
-      try {
-        const fees = await getFeesByConferenceId(conferenceId);
-        setFeeDetails(fees);
+  const fetchFee = async () => {
+    try {
+      const fees = await getFeesByConferenceId(conferenceId);
 
-        // Lấy tất cả participation fees
-        const participationFees = fees.filter(f => f.feeTypeId === 2);
-        if (!participationFees.length) throw new Error("Participation fee not found");
+      // Chỉ lấy fees isVisible = true
+      const visibleFees = fees.filter(f => f.isVisible);
 
-        // Mặc định chọn mode đầu tiên
-        setFeeDetail(participationFees[0]);
-        setSelectedMode(participationFees[0].mode);
+      setFeeDetails(visibleFees);
 
-        // Lấy tất cả modes
-        setModes(participationFees.map(f => f.mode));
-      } catch (err) {
-        console.error(err);
-        alert("Cannot fetch participation fee.");
-      } finally {
-        setLoading(false);
-      }
-    };
+      // Lấy tất cả participation fees
+      const participationFees = visibleFees.filter(f => f.feeTypeId === 2);
+      if (!participationFees.length) throw new Error("Participation fee not found");
 
-    fetchFee();
-  }, [conferenceId, userId]);
+      // Mặc định chọn mode đầu tiên
+      setFeeDetail(participationFees[0]);
+      setSelectedMode(participationFees[0].mode);
+
+      // Lấy tất cả modes
+      setModes(participationFees.map(f => f.mode));
+    } catch (err) {
+      console.error(err);
+      alert("Cannot fetch participation fee.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchFee();
+}, [conferenceId, userId]);
+
 
   // Khi đổi mode, cập nhật feeDetail
   useEffect(() => {
-    if (!selectedMode) return;
-    const detail = feeDetails.find(f => f.feeTypeId === 2 && f.mode === selectedMode);
-    if (detail) setFeeDetail(detail);
-  }, [selectedMode, feeDetails]);
+  if (!selectedMode) return;
+  const detail = feeDetails.find(f => f.feeTypeId === 2 && f.mode === selectedMode && f.isVisible);
+  if (detail) setFeeDetail(detail);
+}, [selectedMode, feeDetails]);
+
 
   if (loading) return <p className="text-center mt-8">Loading payment info...</p>;
   if (!feeDetail) return <p className="text-center mt-8">Participation fee not found.</p>;
 
   const originalFee = feeDetail.amount || 0;
-  const discountAmount = hasFptDiscount ? Math.round(originalFee * 0.1) : 0;
-  const payable = originalFee - discountAmount;
 
   const formatVnd = n => Number(n || 0).toLocaleString("vi-VN") + " VND";
 
@@ -76,7 +79,6 @@ const RegisterPaymentPage = () => {
       PaperId: null,
       Fees: [{ FeeDetailId: feeDetail.feeDetailId, Quantity: 1 }],
       Mode: selectedMode,
-      GiftCode: giftCode || undefined,
     };
 
     try {
@@ -132,27 +134,11 @@ const RegisterPaymentPage = () => {
             <span>{feeDetail.feeTypeName}</span>
             <span>{formatVnd(originalFee)}</span>
           </div>
-          {hasFptDiscount && (
-            <div className="flex justify-between mb-2 text-gray-700">
-              <span>FPT Discount (10%)</span>
-              <span className="text-green-600">-{formatVnd(discountAmount)}</span>
-            </div>
-          )}
+          
           <div className="flex justify-between font-semibold text-gray-900">
             <span>Total</span>
-            <span>{formatVnd(payable)}</span>
+            <span>{formatVnd(originalFee)}</span>
           </div>
-        </div>
-
-        {/* Gift code */}
-        <div className="mb-4">
-          <label className="block text-sm font-medium mb-2 text-gray-700">Gift code</label>
-          <input
-            type="text"
-            value={giftCode}
-            onChange={e => setGiftCode(e.target.value)}
-            className="border border-gray-300 rounded-md px-4 py-2 w-full"
-          />
         </div>
 
         {/* Buttons */}

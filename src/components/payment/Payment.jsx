@@ -19,7 +19,6 @@ const { userId, conferenceId, paperId, feeDetailId: initFeeDetailId, feeMode: in
   const [feeDetail, setFeeDetail] = useState(null);
   const [modes, setModes] = useState([]);
   const [selectedMode, setSelectedMode] = useState(initFeeMode || '');
-  const [giftCode, setGiftCode] = useState('');
   const [loading, setLoading] = useState(true);
   const [additionalFee, setAdditionalFee] = useState(null);
 
@@ -36,28 +35,33 @@ const { userId, conferenceId, paperId, feeDetailId: initFeeDetailId, feeMode: in
     getPaperPageCount(paperId)
   ])
     .then(([fees, pageCount]) => {
-      setFeeDetails(fees);
+       const visibleFees = fees.filter(f => f.isVisible);
+setFeeDetails(visibleFees);
 
-      // Registration mặc định
-      if (!initFeeDetailId) {
-        const registrationFees = fees.filter(f => f.feeTypeName === 'Registration');
-        if (registrationFees.length) {
-          setFeeDetail(registrationFees[0]);
-          setSelectedMode(registrationFees[0].mode);
-          setModes(registrationFees.map(f => f.mode));
-        }
-      } else {
-        const detail = fees.find(f => f.feeDetailId === initFeeDetailId);
-        if (detail) {
-          setFeeDetail(detail);
-          setSelectedMode(initFeeMode || detail.mode);
-          setModes(fees.filter(f => f.feeTypeName === detail.feeTypeName).map(f => f.mode));
-        }
-      }
+// nếu muốn lấy mode theo fee type
+if (!initFeeDetailId) {
+  const registrationFees = visibleFees.filter(f => f.feeTypeName === 'Registration');
+  if (registrationFees.length) {
+    setFeeDetail(registrationFees[0]);
+    setSelectedMode(registrationFees[0].mode);
+    setModes(registrationFees.map(f => f.mode));
+  }
+} else {
+  const detail = visibleFees.find(f => f.feeDetailId === initFeeDetailId);
+  if (detail) {
+    setFeeDetail(detail);
+    setSelectedMode(initFeeMode || detail.mode);
+    setModes(
+      visibleFees
+        .filter(f => f.feeTypeName === detail.feeTypeName)
+        .map(f => f.mode)
+    );
+  }
+}
 
-      // Additional Page Fee
-if (includeAdditional) {   // ✅ chỉ khi publish mới thêm
-  const addFee = fees.find(f => f.feeTypeName === 'Additional Page');
+// Additional Page Fee
+if (includeAdditional) {
+  const addFee = visibleFees.find(f => f.feeTypeName === 'Additional Page');
   if (addFee && pageCount > 5) {
     const excessPages = pageCount - 5;
     setAdditionalFee({
@@ -67,6 +71,7 @@ if (includeAdditional) {   // ✅ chỉ khi publish mới thêm
     });
   }
 }
+
     })
     .catch(err => console.error('Error loading fees:', err))
     .finally(() => setLoading(false));
@@ -86,13 +91,9 @@ if (includeAdditional) {   // ✅ chỉ khi publish mới thêm
   if (!feeDetail) return <p>No fee detail found</p>;
 
   const originalFee = feeDetail.amount || 0;
-  const discountAmount = hasFptDiscount ? Math.round(originalFee * 0.1) : 0;
-  const payable = originalFee - discountAmount;
 
   const handleCompleteOrder = async () => {
   const originalFee = feeDetail.amount || 0;
-  const discountAmount = hasFptDiscount ? Math.round(originalFee * 0.1) : 0;
-  const payable = originalFee - discountAmount;
 
   // danh sách phí gửi sang backend
   const fees = [
@@ -116,7 +117,6 @@ if (includeAdditional) {   // ✅ chỉ khi publish mới thêm
     conferenceId,
     paperId,
     fees,
-    giftCode: giftCode || undefined,
   };
 
   try {
@@ -198,39 +198,14 @@ if (includeAdditional) {   // ✅ chỉ khi publish mới thêm
     </div>
   )}
 
-  {hasFptDiscount && (
-    <div className="flex justify-between mb-3 text-gray-700">
-      <span>FPT discount (10%)</span>
-      <span className="text-green-600">-{formatVnd(discountAmount)}</span>
-    </div>
-  )}
+  
 
   <div className="flex justify-between font-semibold mb-6 text-gray-900">
     <span>Total</span>
     <span>
-      {formatVnd(payable + (additionalFee?.total || 0))}
+      {formatVnd(originalFee + (additionalFee?.total || 0))}
     </span>
   </div>
-
-
-          {/* Gift code */}
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-2 text-gray-700">Gift code</label>
-            <div className="flex">
-              <input
-                type="text"
-                value={giftCode}
-                onChange={e => setGiftCode(e.target.value)}
-                className="border border-gray-300 rounded-l-md px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button
-                onClick={() => {}}
-                className="bg-blue-600 text-white px-4 py-2 rounded-r hover:bg-blue-700 transition duration-200"
-              >
-                Apply
-              </button>
-            </div>
-          </div>
 
           {/* Buttons */}
           <div className="flex justify-center gap-4 mt-6">

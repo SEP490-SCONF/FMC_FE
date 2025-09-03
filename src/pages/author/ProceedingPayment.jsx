@@ -15,21 +15,28 @@ const PaymentPage = () => {
   const { conferenceId, feeDetailId, paperId } = location.state || {};
 
   const [feeDetail, setFeeDetail] = useState(null);
-  const [giftCode, setGiftCode] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!conferenceId || !feeDetailId || !userId) {
-      setLoading(false);
-      console.error("Missing payment info:", { conferenceId, feeDetailId, userId });
-      return;
-    }
+  if (!conferenceId || !feeDetailId || !userId) {
+    setLoading(false);
+    console.error("Missing payment info:", { conferenceId, feeDetailId, userId });
+    return;
+  }
 
-    PayService.getFeeDetail(feeDetailId)
-      .then(res => setFeeDetail(res))
-      .catch(err => console.error("Error loading fee detail:", err))
-      .finally(() => setLoading(false));
-  }, [conferenceId, feeDetailId, userId]);
+  PayService.getFeeDetail(feeDetailId)
+    .then(res => {
+      if (res?.isVisible) {
+        setFeeDetail(res);
+      } else {
+        console.warn("FeeDetail is not visible:", res);
+        setFeeDetail(null);
+      }
+    })
+    .catch(err => console.error("Error loading fee detail:", err))
+    .finally(() => setLoading(false));
+}, [conferenceId, feeDetailId, userId]);
+
 
   const hasFptDiscount = userEmail.toLowerCase().includes('@fpt');
   const payable = feeDetail ? feeDetail.amount - (hasFptDiscount ? feeDetail.amount * 0.1 : 0) : 0;
@@ -108,12 +115,7 @@ const PaymentPage = () => {
             <span>{formatVnd(feeDetail.amount)}</span>
           </div>
 
-          {hasFptDiscount && (
-            <div className="flex justify-between mb-3 text-gray-700">
-              <span>FPT discount (10%)</span>
-              <span className="text-green-600">-{formatVnd(feeDetail.amount * 0.1)}</span>
-            </div>
-          )}
+          
 
           <div className="flex justify-between font-semibold mb-6 text-gray-900">
             <span>Total</span>
