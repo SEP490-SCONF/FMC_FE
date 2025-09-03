@@ -87,3 +87,7 @@ export const resolveAuthors = async (emails) => {
 export const getAvailableUsers = async () => {
   return apiService.get("/UserConferenceRoles/available-users");
 };
+
+export const getUserRolesInConference = async (userId, conferenceId) => {
+  return apiService.get(`/UserConferenceRoles/user/${userId}/conference/${conferenceId}/roles`);
+};

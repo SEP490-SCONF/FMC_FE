@@ -261,18 +261,22 @@ export default function ManageConferenceFee() {
           >
             <Input disabled value="VND" />
           </Form.Item>
-          <Form.Item
-            name="mode"
-            label="Mode"
-            rules={[{ required: true, message: "Please select mode" }]}
-          >
-            <Select placeholder="Select mode">
-              {(MODE_OPTIONS[form.getFieldValue("feeTypeId")] || []).map((m) => (
-                <Option key={m.value} value={m.value}>
-                  {m.label}
-                </Option>
-              ))}
-            </Select>
+          <Form.Item shouldUpdate={(prev, curr) => prev.feeTypeId !== curr.feeTypeId}>
+            {() => (
+              <Form.Item
+                name="mode"
+                label="Mode"
+                rules={[{ required: true, message: "Please select mode" }]}
+              >
+                <Select placeholder="Select mode">
+                  {(MODE_OPTIONS[form.getFieldValue("feeTypeId")] || []).map((m) => (
+                    <Option key={m.value} value={m.value}>
+                      {m.label}
+                    </Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            )}
           </Form.Item>
           <Form.Item name="note" label="Note">
             <Input.TextArea rows={2} />
