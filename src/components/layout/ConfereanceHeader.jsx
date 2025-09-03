@@ -1,26 +1,56 @@
 import React, { useEffect, useState } from "react";
 import { useConference } from "../../context/ConferenceContext";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams,useNavigate  } from "react-router-dom";
 import fptLogo from "../../assets/images/fptlogo.png";
 
 import UserDropdown from "./header/UserDropdown";
 import { useUser } from "../../context/UserContext";
 import { useNotificationSignalR } from "../../hooks/useNotificationSignalR";
 import { getNotificationsByUserId } from "../../services/NotificationService";
+import { getFeesByConferenceId } from "../../services/ConferenceFeesService";
+import PayService from "../../services/PayService";
 import NotificationDropdown from "./header/NotificationDropdown";
 import { toast } from "react-toastify";
+import { getUserConferenceRolesByUserId } from "../../services/UserConferenceRoleService";
+
 
 const Header = () => {
   const { user } = useUser();
   const { selectedConference } = useConference();
   const params = useParams();
+  const conferenceId = selectedConference?.conferenceId || params.id;
+
 
   const [notifications, setNotifications] = useState([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
+const [hasRegistered, setHasRegistered] = useState(false);
+const [participationFeeDetailId, setParticipationFeeDetailId] = useState(null);
+const [isOrganizer, setIsOrganizer] = useState(false);
+
 
   const toggleMobileMenu = () => {
     setIsMenuOpen((prev) => !prev);
   };
+
+  useEffect(() => {
+  const checkUserRole = async () => {
+    if (!user?.userId || !conferenceId) return;
+    try {
+      const roles = await getUserConferenceRolesByUserId(user.userId);
+      const isOrg = roles?.some(
+        (r) =>
+          String(r.conferenceId) === String(conferenceId) &&
+          r.roleName === "Organizer"
+      );
+      setIsOrganizer(isOrg);
+    } catch (err) {
+      console.error("Header: failed to check user role", err);
+    }
+  };
+  checkUserRole();
+}, [user?.userId, conferenceId]);
+
 
   // Fetch notifications
   useEffect(() => {
@@ -48,8 +78,56 @@ const Header = () => {
     getNotificationsByUserId(user.userId).then(setNotifications);
   });
 
+  
+
+
   // Prefer context id, fallback to URL param
-  const conferenceId = selectedConference?.conferenceId || params.id;
+
+  useEffect(() => {
+      const conferenceId = selectedConference?.conferenceId || params.id;
+
+  if (!user?.userId) {
+    console.log("Header: user not ready yet");
+    return;
+  }
+  if (!conferenceId) {
+    console.log("Header: conferenceId not ready yet");
+    return;
+  }
+
+  const checkParticipation = async () => {
+    console.log("Header: Checking participation...", { userId: user.userId, conferenceId });
+
+    try {
+      const fees = await getFeesByConferenceId(conferenceId);
+      console.log("Header: Fetched fees:", fees);
+
+      const participationFee = fees.find(f => f.feeTypeId === 2);
+      if (!participationFee) {
+        console.warn("Header: No Participation fee found");
+        setHasRegistered(false);
+        return;
+      }
+
+      setParticipationFeeDetailId(participationFee.feeDetailId);
+      console.log("Header: Participation fee ID:", participationFee.feeDetailId);
+
+      const res = await PayService.hasUserPaidFee(conferenceId, participationFee.feeDetailId);
+      const paid = res?.HasPaid ?? res?.hasPaid ?? false;
+      console.log("Header: Has user paid?", paid);
+console.log("Header: API response", res);
+
+      setHasRegistered(paid);
+    } catch (err) {
+      console.error("Header: Error checking participation fee:", err);
+      setHasRegistered(false);
+    }
+  };
+
+  checkParticipation();
+}, [user?.userId, conferenceId]);
+
+
 
   return (
     <header className="sticky top-0 w-full bg-white border-b border-gray-200 z-50 shadow-sm dark:bg-gray-900 dark:border-gray-800">
@@ -127,6 +205,20 @@ const Header = () => {
                 Conference Fees
               </Link>
             </li>
+
+            {!isOrganizer && (
+  <li>
+    <Link
+      to={conferenceId ? `/conference/${conferenceId}/register` : "#"}
+      className="text-gray-700 font-semibold hover:text-blue-700 transition uppercase"
+    >
+      Register
+    </Link>
+  </li>
+)}
+
+
+
           </ul>
 
           {/* Right: User and Notifications */}

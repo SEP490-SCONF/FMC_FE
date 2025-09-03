@@ -25,7 +25,6 @@ const OrganizerListView = ({ conferences }) => {
   const [searchBy, setSearchBy] = useState("title");
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-  const [callForPaperFilter, setCallForPaperFilter] = useState("All");
   const [locationFilter, setLocationFilter] = useState("All");
   const [dateRange, setDateRange] = useState(null); // [dayjs, dayjs]
 
@@ -43,31 +42,19 @@ const OrganizerListView = ({ conferences }) => {
       (statusFilter === "Open" && c.status) ||
       (statusFilter === "Closed" && !c.status);
 
-    const matchesCallForPaper =
-      callForPaperFilter === "All" ||
-      (callForPaperFilter === "Yes" && c.callForPaper) ||
-      (callForPaperFilter === "No" && !c.callForPaper);
-
     const matchesLocation =
       locationFilter === "All" || c.location === locationFilter;
 
     const matchesDate =
-  !dateRange ||
-  (dayjs(c.startDate).isBefore(dateRange[1], "day") &&
-    dayjs(c.endDate).isAfter(dateRange[0], "day"));
+      !dateRange ||
+      (dayjs(c.startDate).isBefore(dateRange[1], "day") &&
+        dayjs(c.endDate).isAfter(dateRange[0], "day"));
 
-
-    return (
-      matchesSearch &&
-      matchesStatus &&
-      matchesCallForPaper &&
-      matchesLocation &&
-      matchesDate
-    );
+    return matchesSearch && matchesStatus && matchesLocation && matchesDate;
   });
 
   return (
-    <div style={{ paddingTop: 0, paddingRight: 24, paddingBottom: 24, paddingLeft: 24 }}>
+    <div style={{ padding: 24 }}>
       <Title level={2}>List of Conferences You Organize</Title>
 
       <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
@@ -103,18 +90,6 @@ const OrganizerListView = ({ conferences }) => {
           </Select>
         </Col>
 
-        <Col xs={24} sm={4}>
-          <Select
-            value={callForPaperFilter}
-            onChange={setCallForPaperFilter}
-            style={{ width: "100%" }}
-          >
-            <Option value="All">All CFP</Option>
-            <Option value="Yes">Call For Paper</Option>
-            <Option value="No">No Call For Paper</Option>
-          </Select>
-        </Col>
-
         <Col xs={24} sm={6}>
           <Select
             value={locationFilter}
@@ -141,73 +116,107 @@ const OrganizerListView = ({ conferences }) => {
       </Row>
 
       <List
-        rowKey="conferenceId"
-        grid={{ gutter: 16, column: 2 }}
-        dataSource={filteredConferences}
-        pagination={{ pageSize: 2 }}
-        renderItem={(item) => (
-          <List.Item>
-            <Card
-              hoverable
-              title={item.title}
-              extra={
-                <div style={{ display: "flex", gap: 16 }}>
-                  <Text type={item.status ? "success" : "danger"}>
-                    {item.status ? "Open" : "Closed"}
-                  </Text>
-                  <EditOutlined
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(
-                        `/manage-conference/${item.conferenceId}/edit`
-                      );
-                    }}
-                    style={{ fontSize: 18, cursor: "pointer" }}
-                    title="Edit Conference"
-                  />
-                </div>
-              }
-              style={{ cursor: "pointer" }}
-              onClick={() =>
-                navigate(`/manage-conference/${item.conferenceId}/edit`)
-              }
-            >
-              {item.bannerImage && (
-                <img
-                  src={item.bannerImage}
-                  alt="Conference Banner"
-                  style={{
-                    width: "100%",
-                    height: "140px",
-                    objectFit: "cover",
-                    borderRadius: "8px",
-                    marginBottom: "16px",
-                  }}
-                />
-              )}
-
-              <Text strong>Description:</Text> {item.description} <br />
-              <Text strong>Time:</Text> {item.startDate} - {item.endDate} <br />
-              <Text strong>Location:</Text> {item.location} <br />
-              <Text strong>Call for Paper:</Text>{" "}
-              {item.callForPaper ? "Yes" : "No"} <br />
-
-              <Button
-                type="primary"
-                style={{ marginTop: "12px" }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(
-                    `/manage-conference/${item.conferenceId}/reviewers`
-                  );
-                }}
-              >
-                View Reviewers
-              </Button>
-            </Card>
-          </List.Item>
+  rowKey="conferenceId"
+  grid={{ gutter: 24, column: 2 }}
+  dataSource={filteredConferences}
+  pagination={{ pageSize: 2 }}
+  renderItem={(item) => (
+    <List.Item>
+      <Card
+        hoverable
+        style={{
+          borderRadius: 10,
+          boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+          cursor: "pointer",
+          height: "100%", // ensure cards fill row height
+          display: "flex",
+          flexDirection: "column",
+        }}
+        bodyStyle={{ flex: 1, display: "flex", flexDirection: "column" }}
+        onClick={() =>
+          navigate(`/manage-conference/${item.conferenceId}/edit`)
+        }
+      >
+        {item.bannerImage && (
+          <img
+            src={item.bannerImage}
+            alt="Conference Banner"
+            style={{
+              width: "100%",
+              height: "250px",
+              objectFit: "cover",
+              borderRadius: "8px",
+              marginBottom: 16,
+              flexShrink: 0,
+            }}
+          />
         )}
-      />
+        <Title
+          level={5}
+          style={{
+            marginBottom: 8,
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {item.title}
+        </Title>
+
+        <Text strong>Description:</Text>
+        <p
+          style={{
+            display: "-webkit-box",
+            WebkitLineClamp: 4,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            marginBottom: 8,
+            flexGrow: 1, // push time/location to bottom
+          }}
+        >
+          {item.description}
+        </p>
+
+        <Text
+          style={{
+            display: "block",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+            marginBottom: 4,
+          }}
+        >
+          <Text strong>Time: </Text>
+          {dayjs(item.startDate).format("YYYY-MM-DD HH:mm")} -{" "}
+          {dayjs(item.endDate).format("YYYY-MM-DD HH:mm")}
+        </Text>
+
+        <Text
+          style={{
+            display: "block",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          <Text strong>Location: </Text>
+          {item.location}
+        </Text>
+        <Text
+          type={item.status ? "success" : "danger"}
+          style={{ float: "right", marginBottom: 8 }}
+        >
+          {item.status ? "Open" : "Closed"}
+        </Text>
+      </Card>
+    </List.Item>
+  )}
+/>
+
+
     </div>
   );
 };

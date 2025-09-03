@@ -38,6 +38,10 @@ const MODE_OPTIONS = {
     { value: "Regular", label: "Regular (Mua kỷ yếu in)" },
    { value: "FPT Account", label: "FPT (Tài khoản FPT)" },
   ],
+  5: [ // Presentation Fee
+    { value: "Regular", label: "Regular (Present)" },
+    { value: "Student", label: "Student (Sinh viên)" },
+  ],
 };
 const { Option } = Select;
 const { Text } = Typography;

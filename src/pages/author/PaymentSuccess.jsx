@@ -1,33 +1,59 @@
 import React, { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import PayService from "../../services/PayService";
-import { updatePaperPublishStatus } from "../../services/PaperSerice";
+import { updatePaperPublishStatus, setPaperPresented } from "../../services/PaperSerice";
+import { createUserConferenceRole } from "../../services/UserConferenceRoleService";
+import { useUser } from "../../context/UserContext";
 
 const PaymentSuccess = () => {
+    const { user } = useUser();
     const location = useLocation();
     const params = new URLSearchParams(location.search);
     const orderCode = params.get("orderCode");
+
+    // Lấy paperId, feeTypeName, conferenceId
     const paperId = params.get("paperId") || localStorage.getItem("paymentPaperId");
+    const feeTypeName = localStorage.getItem("paymentFeeType") || 'Registration';
+    const conferenceId = location.state?.conferenceId || localStorage.getItem("paymentConferenceId");
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
 
     useEffect(() => {
-        // console.log("orderCode:", orderCode, "paperId:", paperId); // Thêm dòng này để debug
         const confirmPayment = async () => {
-
             if (!orderCode) {
                 setError("Order code not found");
                 setLoading(false);
                 return;
             }
+
             try {
+                // Xác nhận thanh toán ở backend
                 await PayService.paymentSuccess(orderCode);
+
+                // Cập nhật trạng thái paper nếu có
                 if (paperId) {
-                    await updatePaperPublishStatus(paperId, true);
+                    if (feeTypeName === "Presentation") {
+                        await setPaperPresented(paperId, true);
+                    } else {
+                        await updatePaperPublishStatus(paperId, true);
+                    }
                     localStorage.removeItem("paymentPaperId");
+                    localStorage.removeItem("paymentFeeType");
                 }
+
+                // ✅ Tạo UserConferenceRole nếu user và conferenceId tồn tại
+                if (user?.userId && conferenceId) {
+                    await createUserConferenceRole({
+                        userId: user.userId,
+                        conferenceId: conferenceId,
+                        conferenceRoleId: 1, // Participate
+                    });
+                    localStorage.removeItem("paymentConferenceId");
+                }
+
             } catch (err) {
+                console.error(err);
                 setError("Failed to confirm payment");
             } finally {
                 setLoading(false);
@@ -35,7 +61,7 @@ const PaymentSuccess = () => {
         };
 
         confirmPayment();
-    }, [orderCode, paperId]);
+    }, [orderCode, paperId, feeTypeName, user, conferenceId]);
 
     if (loading) {
         return <div className="flex items-center justify-center min-h-screen">Processing payment...</div>;

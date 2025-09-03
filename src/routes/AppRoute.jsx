@@ -40,6 +40,13 @@ import ViewCertificate from "../pages/author/ViewCertificate";
 import { UserProvider } from "../context/UserContext";
 import { AuthProvider } from "../context/AuthContext";
 import ViewProceedings from "../pages/User/ViewProceedings";
+import ProceedingPayment from "../pages/author/ProceedingPayment";
+import RegisterPage from "../pages/conference/RegisterPage";
+import RegisterPaymentPage from "../pages/author/RegisterPaymentPage";
+import ParticipantListPage from "../pages/organizer/ParticipantListPage";
+
+
+
 
 
 export default function AppRoutes() {
@@ -82,7 +89,6 @@ export default function AppRoutes() {
             </Route>
 
             <Route element={<ConferenceLayout />}>
-              <Route path="*" element={<NotFoundPage />} />
               <Route path="/conference/:id" element={<Home />} />
               <Route
                 path="/conference/:id/committee"
@@ -105,9 +111,14 @@ export default function AppRoutes() {
                 element={<ForumQuestionDetail />}
               />
               <Route path="/conference/:id/fees" element={<ConferenceFee />} />
+              <Route path="/conference/:id/register" element={<RegisterPage />} />
+              <Route path="/conference/:id/register/payment" element={<RegisterPaymentPage />} />
               <Route path="/author/payment/:id" element={<PaperPay />} />
+              <Route path="/author/payment" element={<ProceedingPayment />} />
               <Route path="/payment-success" element={<PaymentSuccess />} />
               <Route path="/payment-cancel" element={<PaymentCancel />} />
+              <Route path="*" element={<NotFoundPage />} />
+
             </Route>
 
             <Route element={<ManageConferenceLayout />}>
@@ -143,6 +154,11 @@ export default function AppRoutes() {
                 path="/manage-conference/:conferenceId/fees"
                 element={<ManageConferenceFee />}
               />
+              <Route
+                path="/manage-conference/:conferenceId/participants"
+                element={<ParticipantListPage />}
+              />
+
             </Route>
           </Routes>
         </UserProvider>
