@@ -239,8 +239,9 @@ const groupedPagedSchedules = {
       await Promise.all(
   timelines.map(async (tl) => {
     try {
-      const { data } = await countSchedulesByTimeline(tl.timeLineId);
-      counts[tl.timeLineId] = data?.scheduleCount ?? 0;
+      const res = await countSchedulesByTimeline(tl.timeLineId);
+      counts[tl.timeLineId] = res?.scheduleCount ?? 0;
+
     } catch (err) {
       counts[tl.timeLineId] = 0;
     }
@@ -299,9 +300,11 @@ setScheduleCounts(counts);
     formData.append("conferenceId", conferenceId);
     formData.append("description", values.description);
 formData.append(
-    "date",
-    values.date ? values.date.format("YYYY-MM-DDTHH:mm:ss") : ""
-  );
+  "date",
+  values.date ? values.date.format("YYYY-MM-DDTHH:mm:ss") : ""
+);
+
+
     setLoading(true);
 
     const action = editing
@@ -1050,12 +1053,11 @@ const getDisabledEndTime = (schedules, startTime, editingId = null) => {
     Timeline
   </h3>
   <div className="flex flex-wrap justify-center items-center gap-6 text-sm text-center text-gray-700 relative">
-{list.length === 0 ? (
-      <div className="text-gray-500 text-center">
-        No timeline available
-      </div>
+    {list.length === 0 ? (
+      <div className="text-gray-500 text-center">No timeline available</div>
     ) : (
       list
+        .filter((item) => dayjs(item.date).isValid()) // ✅ chỉ giữ timeline có ngày hợp lệ
         .sort((a, b) => new Date(a.date) - new Date(b.date))
         .map((item, index) => {
           const bgColors = [
@@ -1080,11 +1082,9 @@ const getDisabledEndTime = (schedules, startTime, editingId = null) => {
           ];
           const bgColor = bgColors[index % bgColors.length];
           const textColor = textColors[index % textColors.length];
+
           return (
-            <div
-              key={item.timeLineId}
-              className="relative flex items-center"
-            >
+            <div key={item.timeLineId} className="relative flex items-center">
               {index > 0 && (
                 <div className="w-6 h-1 bg-gray-300 mx-2 rounded"></div>
               )}
@@ -1095,20 +1095,26 @@ const getDisabledEndTime = (schedules, startTime, editingId = null) => {
                 <p>{item.description}</p>
 
                 {/* --- Eye Icon for View Schedule --- */}
-                <button
-                  className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
-                  title="View Schedule"
-                  onClick={() => handleViewSchedules(item)}
-                >
-                  <Eye size={18} />
-                </button>
-                    </div>
-                  </div>
-                );
-              })
-          )}
-        </div>
-      </div>
+               {(scheduleCounts[item.timeLineId] ?? 0) > 0 && (
+  <button
+    onClick={() => handleViewSchedules(item)}
+    className="absolute top-2 right-2 text-gray-600 hover:text-gray-900"
+    title="View Schedule"
+  >
+    <Eye size={18} />
+  </button>
+)}
+
+
+
+              </div>
+            </div>
+          );
+        })
+    )}
+  </div>
+</div>
+
     </div>
   );
 }

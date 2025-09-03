@@ -9,6 +9,8 @@ import { getProceedingsByConference } from "../../services/ProceedingService";
 import { getPublishedPapersByConferenceId } from "../../services/PaperSerice";
 import { getConferenceById } from "../../services/ConferenceService";
 import { getConferenceTopicsByConferenceId } from "../../services/ConferenceTopicService";
+import { getFeesByConferenceId } from "../../services/ConferenceFeesService";
+import PayService from "../../services/PayService";
 import dayjs from "dayjs";
 import * as pdfjsLib from "pdfjs-dist/build/pdf";
 
@@ -29,6 +31,10 @@ const Home = () => {
   const [viewMode, setViewMode] = useState("pdf");
   const [coverImage, setCoverImage] = useState(null);
   const [publishedVisible, setPublishedVisible] = useState(false);
+  const [hasPaid, setHasPaid] = useState(false);
+  const [proceedingFee, setProceedingFee] = useState(null);
+
+
 
 
   // Load conference
@@ -80,21 +86,45 @@ const Home = () => {
         selectedConference.conferenceId
       ).catch(() => []),
     ])
-      .then(([procRes, papersRes]) => {
-        const procArray = procRes
-          ? Array.isArray(procRes)
-            ? procRes
-            : [procRes]
-          : [];
-        setProceeding(procArray[0] || null);
+      .then(async ([procRes, papersRes]) => {
+  const procArray = procRes
+    ? Array.isArray(procRes)
+      ? procRes
+      : [procRes]
+    : [];
+  const firstProc = procArray[0] || null;
+  setProceeding(firstProc);
 
-        const accepted = (papersRes || []).filter(
-          (p) =>
-            p.paperRevisions?.some((rev) => rev.status === "Accepted") ||
-            p.status === "Accepted"
-        );
-        setPapers(accepted);
-      })
+  if (firstProc) {
+  try {
+    const fees = await getFeesByConferenceId(selectedConference.conferenceId);
+const fee = fees.find(f => f.feeTypeName === "Proceedings Access");
+if (fee) {
+  setProceedingFee(fee);   // ✅ lưu feeDetailId đúng
+  const res = await PayService.hasUserPaidFee(
+    selectedConference.conferenceId,
+    fee.feeDetailId
+  );
+  const paid = res?.HasPaid ?? res?.hasPaid ?? false;
+  setHasPaid(paid);
+} else {
+  setHasPaid(false);
+}
+
+  } catch {
+    setHasPaid(false);
+  }
+}
+
+
+  const accepted = (papersRes || []).filter(
+    (p) =>
+      p.paperRevisions?.some((rev) => rev.status === "Accepted") ||
+      p.status === "Accepted"
+  );
+  setPapers(accepted);
+})
+
       .finally(() => setLoadingProceeding(false));
   }, [selectedConference]);
 
@@ -149,20 +179,43 @@ const Home = () => {
               {/* Thumbnail cover */}
               <div style={{ textAlign: "center", marginBottom: 16 }}>
                 <img
-                  src={
-                    coverImage ||
-                    proceeding.coverPageUrl ||
-                    "/default-cover.png"
-                  }
-                  alt={proceeding.title}
-                  style={{
-                    height: 200,
-                    objectFit: "cover",
-                    cursor: "pointer",
-                    borderRadius: 8,
-                  }}
-                  onClick={() => setModalVisible(true)}
-                />
+  src={
+    coverImage ||
+    proceeding.coverPageUrl ||
+    "/default-cover.png"
+  }
+  alt={proceeding.title}
+  style={{
+    height: 200,
+    objectFit: "cover",
+    cursor: "pointer",
+    borderRadius: 8,
+  }}
+  onClick={() => {
+  if (!hasPaid) {
+    Modal.confirm({
+      title: "Payment Required",
+      content: "You must complete the payment to view this proceeding.",
+      okText: "Payment",
+      cancelText: "Cancel",
+      onOk: () => {
+        navigate(`/author/payment`, {
+          state: {
+            conferenceId: selectedConference.conferenceId,   // ✅ thêm conferenceId
+            feeDetailId: proceedingFee?.feeDetailId,  // ✅ lấy từ fee API, không phải proceeding
+            paperId: null                                    // có thể null vì không gắn paper
+          },
+        });
+      },
+    });
+  } else {
+    setModalVisible(true);
+  }
+}}
+
+
+/>
+
               </div>
               <Paragraph strong>{proceeding.title}</Paragraph>
             </>
@@ -172,7 +225,7 @@ const Home = () => {
         </Card>
       )}
 
-      {/* Nút View Published Papers nằm ngoài Proceeding */}
+      {/* Nút View Published Papers nằm ngoài Proceeding
 {papers.length > 0 && (
   <div style={{ marginBottom: 24 }}>
     <Button
@@ -186,7 +239,7 @@ const Home = () => {
       📑 View Published Papers ({papers.length})
     </Button>
   </div>
-)}
+)} */}
 
 
       {/* Proceeding Modal */}
