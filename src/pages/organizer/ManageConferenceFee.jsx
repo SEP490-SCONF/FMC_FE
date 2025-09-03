@@ -36,7 +36,7 @@ const MODE_OPTIONS = {
   ],
   4: [ // Proceedings Fee
     { value: "Regular", label: "Regular (Mua kỷ yếu in)" },
-    { value: "Free", label: "Free (Miễn phí cho tác giả)" },
+   { value: "FPT Account", label: "FPT (Tài khoản FPT)" },
   ],
 };
 const { Option } = Select;
