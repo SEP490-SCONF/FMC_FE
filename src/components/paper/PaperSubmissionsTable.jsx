@@ -146,18 +146,18 @@ const getAdditionalPageFeeDetail = async () => {
   }
 };
 
-const getPresentationFeeDetail = async () => {
+const getPresentationFees = async () => {
   try {
     const res = await getFeesByConferenceId(conferenceId);
     const fees = res || [];
-    // Lấy tất cả fee Presentation
-    const presentationFee = fees.find(f => f.feeTypeName === "Presentation");
-    return presentationFee || null;
+    // Lấy tất cả fee Presentation (có nhiều mode)
+    return fees.filter(f => f.feeTypeName === "Presentation");
   } catch (err) {
-    console.error("Cannot fetch Presentation fee:", err);
-    return null;
+    console.error("Cannot fetch Presentation fees:", err);
+    return [];
   }
 };
+
 
 
 
@@ -281,14 +281,15 @@ const getPresentationFeeDetail = async () => {
         cancelText: "Cancel",
         onOk: () => {
           navigate(`/author/payment/${record.paperId}`, {
-            state: {
-              userId,
-              conferenceId,
-              paperId: record.paperId,
-              fees: feesToPay,
-              includeAdditional: true,
-            },
-          });
+  state: {
+    userId,
+    conferenceId,
+    paperId: record.paperId,
+    fees: feesToPay,
+    includeAdditional: true,
+    paymentType: "Publish",   // 👈 thêm field này
+  },
+});
         },
       });
     }}
@@ -305,11 +306,11 @@ const getPresentationFeeDetail = async () => {
     icon={<DollarOutlined />}
     type="link"
     onClick={async () => {
-      const presentationFee = await getPresentationFeeDetail();
-      if (!presentationFee) {
-        message.error("Cannot find Presentation fee.");
-        return;
-      }
+      const presentationFees = await getPresentationFees();
+if (!presentationFees.length) {
+  message.error("Cannot find Presentation fees.");
+  return;
+}
 
       Modal.confirm({
         title: "Presentation Payment",
@@ -319,14 +320,17 @@ const getPresentationFeeDetail = async () => {
         cancelText: "Cancel",
         onOk: () =>
           navigate(`/author/payment/${record.paperId}`, {
-            state: {
-              userId,
-              conferenceId,
-              paperId: record.paperId,
-              feeDetailId: presentationFee.feeDetailId,
-              feeMode: presentationFee.mode,
-              includeAdditional: false,
-            },
+  state: {
+    userId,
+    conferenceId,
+    paperId: record.paperId,
+    fees: presentationFees.map(f => ({
+      feeDetailId: f.feeDetailId,
+      mode: f.mode,
+    })),
+    includeAdditional: false,
+    paymentType: "Presentation", // 👈 thêm field này
+  },
           }),
       });
     }}

@@ -46,16 +46,22 @@ const RegisterPaymentPage = () => {
             setFeeDetail(fptFee);
             setSelectedMode("FPT Account");
           }
-          setModes(participationFees.map(f => f.mode));
+
+          
+const availableModes = participationFees
+  .map(f => f.mode)
+  .filter(mode => isFptAccount || mode !== "FPT Account");
+
+setModes(availableModes);
         } else {
-          // mặc định mode đầu tiên
-          setFeeDetail(participationFees[0]);
-          setSelectedMode(participationFees[0].mode);
-          setModes(participationFees.map(f => f.mode));
-        }
+  const nonFptFees = participationFees.filter(f => f.mode !== "FPT Account");
+  setFeeDetail(nonFptFees[0]);
+  setSelectedMode(nonFptFees[0]?.mode || "");
+  setModes(nonFptFees.map(f => f.mode));
+}
+
       } catch (err) {
         console.error(err);
-        alert("Cannot fetch participation fee.");
       } finally {
         setLoading(false);
       }
@@ -129,6 +135,12 @@ const RegisterPaymentPage = () => {
             ))}
           </select>
         </div>
+        
+        {/* Payment method */}
+      <div className="p-4 bg-gray-50 rounded-lg mb-6">
+        <p className="font-medium mb-2 text-gray-700">Payment Method</p>
+        <span className="text-gray-600">Pay via PayOS</span>
+      </div>
 
         {/* Summary */}
         <div className="border border-gray-200 p-6 rounded-lg bg-gray-50">

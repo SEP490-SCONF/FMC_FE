@@ -52,8 +52,12 @@ const PaymentPage = () => {
           setFeeDetail(initialFee);
           setSelectedMode(initialFee.mode);
 
-          const typeModes = visibleFees.map(f => f.mode);
-          setModes([...new Set(typeModes)]);
+          const typeModes = visibleFees
+  .map(f => f.mode)
+  .filter(mode => isFptAccount || mode !== "FPT Account");
+
+setModes([...new Set(typeModes)]);
+
         }
       })
       .catch(err => console.error("Error loading fees:", err))

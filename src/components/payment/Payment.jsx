@@ -12,7 +12,7 @@ const PaymentPage = () => {
   const navigate = useNavigate();
   const { user } = useUser();
 
-const { userId, conferenceId, paperId, feeDetailId: initFeeDetailId, feeMode: initFeeMode, fees: feesToPay, includeAdditional  } = location.state || {};
+const { userId, conferenceId, paperId, feeDetailId: initFeeDetailId, feeMode: initFeeMode, fees: feesToPay, includeAdditional,paymentType   } = location.state || {};
 
 
   const [feeDetails, setFeeDetails] = useState([]);
@@ -29,6 +29,8 @@ const { userId, conferenceId, paperId, feeDetailId: initFeeDetailId, feeMode: in
     userEmail.toLowerCase().includes('@fpt') ||
     userEmail.toLowerCase().includes('@fe');
 
+
+  
   useEffect(() => {
     if (!conferenceId || !paperId) return;
 
@@ -42,35 +44,50 @@ const { userId, conferenceId, paperId, feeDetailId: initFeeDetailId, feeMode: in
 
         // Nếu user là FPT/FE thì fix mode = FPT Account
         if (isFptAccount) {
-          const fptFee = visibleFees.find(f => f.mode === "FPT Account");
-          if (fptFee) {
-            setFeeDetail(fptFee);
-            setSelectedMode("FPT Account");
-            setModes([ "FPT Account" ]); // chỉ cho hiển thị 1 mode
-          }
-        }
+  if (paymentType === "Publish") {
+    const fptFee = visibleFees.find(
+      f => f.mode === "FPT Account" && f.feeTypeName === "Registration"
+    );
+    if (fptFee) {
+      setFeeDetail(fptFee);
+      setSelectedMode("FPT Account");
+      setModes(["FPT Account"]);
+    }
+  } else if (paymentType === "Presentation") {
+    const fptFee = visibleFees.find(
+      f => f.mode === "FPT Account" && f.feeTypeName === "Presentation"
+    );
+    if (fptFee) {
+      setFeeDetail(fptFee);
+      setSelectedMode("FPT Account");
+      setModes(["FPT Account"]);
+    }
+  }
+}
+
         else {
-          // Normal logic cho user thường
-          if (!initFeeDetailId) {
-            const registrationFees = visibleFees.filter(f => f.feeTypeName === 'Registration');
-            if (registrationFees.length) {
-              setFeeDetail(registrationFees[0]);
-              setSelectedMode(registrationFees[0].mode);
-              setModes(registrationFees.map(f => f.mode));
-            }
-          } else {
-            const detail = visibleFees.find(f => f.feeDetailId === initFeeDetailId);
-            if (detail) {
-              setFeeDetail(detail);
-              setSelectedMode(initFeeMode || detail.mode);
-              setModes(
-                visibleFees
-                  .filter(f => f.feeTypeName === detail.feeTypeName)
-                  .map(f => f.mode)
-              );
-            }
-          }
-        }
+  if (paymentType === "Publish") {
+    const registrationFees = visibleFees.filter(f => f.feeTypeName === "Registration");
+    if (registrationFees.length) {
+      setFeeDetail(registrationFees[0]);
+      setSelectedMode(registrationFees[0].mode);
+      setModes(registrationFees.map(f => f.mode));
+    }
+  } else if (paymentType === "Presentation") {
+    const presentationFees = visibleFees.filter(f => f.feeTypeName === "Presentation");
+    if (presentationFees.length) {
+      const chosen = initFeeDetailId
+        ? presentationFees.find(f => f.feeDetailId === initFeeDetailId)
+        : presentationFees[0];
+      if (chosen) {
+        setFeeDetail(chosen);
+        setSelectedMode(chosen.mode);
+        setModes(presentationFees.map(f => f.mode));
+      }
+    }
+  }
+}
+
 
         // Additional Page Fee
         if (includeAdditional) {
@@ -90,7 +107,13 @@ const { userId, conferenceId, paperId, feeDetailId: initFeeDetailId, feeMode: in
   }, [conferenceId, paperId, initFeeDetailId, initFeeMode, isFptAccount, includeAdditional]);
 
 
-  
+  useEffect(() => {
+  if (paymentType === "Publish") {
+    // Logic cho Registration + Additional Page
+  } else if (paymentType === "Presentation") {
+    // Logic riêng cho Presentation
+  }
+}, [paymentType]);
 
   useEffect(() => {
   if (!selectedMode) return;
@@ -165,87 +188,92 @@ const { userId, conferenceId, paperId, feeDetailId: initFeeDetailId, feeMode: in
   const handleCancel = () => navigate(-1);
 
   return (
-    <div className="max-w-2xl mx-auto p-6 bg-white shadow-lg rounded-xl border border-gray-200">
-      <h2 className="text-2xl font-bold mb-6 text-gray-900">FMC Payment</h2>
+  <div className="max-w-2xl mx-auto p-6 bg-white shadow-xl rounded-2xl border border-gray-100">
+    {/* Header */}
+    <h2 className="text-center text-2xl font-extrabold mb-6 text-gray-900">
+      💳 FMC Payment
+    </h2>
 
-      <div className="space-y-6">
-        {/* Fee info */}
-        <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-          <span className="font-medium text-gray-700">Purpose</span>
-          <span className="text-gray-900">{feeDetail.feeTypeName}</span>
-        </div>
+    <div className="space-y-6">
+      {/* Purpose */}
+      <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+        <span className="text-gray-600 font-medium">Purpose</span>
+        <span className="text-gray-900 font-semibold">{feeDetail.feeTypeName}</span>
+      </div>
 
-        {/* Mode selector */}
-<div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-  <span className="font-medium text-gray-700">Mode</span>
-  <select
-    value={selectedMode}
-    onChange={e => setSelectedMode(e.target.value)}
-    className="border border-gray-300 rounded-md px-3 py-2"
-    disabled={isFptAccount} // ✅ disable nếu là FPT/FE
-  >
-    {modes.map(mode => (
+      {/* Mode */}
+      <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+        <span className="text-gray-600 font-medium">Mode</span>
+        <select
+  value={selectedMode}
+  onChange={(e) => setSelectedMode(e.target.value)}
+  className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-800 focus:ring-2 focus:ring-blue-400 transition"
+>
+  {modes
+    .filter(mode => isFptAccount || mode !== "FPT Account") // 👈 bỏ nếu ko phải FPT/FE
+    .map((mode) => (
       <option key={mode} value={mode}>
         {mode}
       </option>
     ))}
-  </select>
-</div>
+</select>
 
+      </div>
 
-        {/* Total Fee */}
-        <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-          <span className="font-medium text-gray-700">Total Fee</span>
-          <span className="text-gray-900">{formatVnd(feeDetail.amount)}</span>
+      {/* Base Fee */}
+      <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+        <span className="text-gray-600 font-medium">Base Fee</span>
+        <span className="text-gray-900 font-semibold">{formatVnd(feeDetail.amount)}</span>
+      </div>
+
+      {/* Method */}
+      <div className="p-4 bg-gray-50 rounded-lg">
+        <p className="text-gray-600 font-medium mb-1">Method</p>
+        <span className="text-gray-800 font-semibold">Pay via PayOS</span>
+      </div>
+
+      {/* Summary */}
+      <div className="border border-gray-200 p-6 rounded-xl bg-gradient-to-br from-gray-50 to-white">
+        <h3 className="text-lg font-bold mb-4 text-gray-900">Summary</h3>
+
+        <div className="flex justify-between mb-2 text-gray-700">
+          <span>{feeDetail.feeTypeName} Fee</span>
+          <span>{formatVnd(originalFee)}</span>
         </div>
 
-        {/* Payment method */}
-        <div className="p-4 bg-gray-50 rounded-lg">
-          <p className="font-medium mb-2 text-gray-700">Payment Method</p>
-          <span className="text-gray-600">Pay via PayOS</span>
-        </div>
-
-        {/* Summary */}
-<div className="border border-gray-200 p-6 rounded-lg bg-gray-50">
-  <h3 className="text-lg font-semibold mb-4 text-gray-900">Summary</h3>
-
-  <div className="flex justify-between mb-3 text-gray-700">
-    <span>{feeDetail.feeTypeName} Fee</span>
-    <span>{formatVnd(originalFee)}</span>
-  </div>
-
-  {additionalFee && (
-    <div className="flex justify-between mb-3 text-gray-700">
-      <span>Additional Pages ({additionalFee.pages} pages)</span>
-      <span>{formatVnd(additionalFee.total)}</span>
-    </div>
-  )}
-
-  
-
-  <div className="flex justify-between font-semibold mb-6 text-gray-900">
-    <span>Total</span>
-    <span>
-      {formatVnd(originalFee + (additionalFee?.total || 0))}
-    </span>
-  </div>
-
-          {/* Buttons */}
-          <div className="flex justify-center gap-4 mt-6">
-            <div onClick={handleCompleteOrder} className="inline-block">
-              <ButtonPay />
-            </div>
-            <button
-              onClick={handleCancel}
-              className="bg-gray-500 text-white px-6 py-2 rounded-md hover:bg-gray-600 transition duration-200"
-            >
-              Cancel
-            </button>
+        {additionalFee && (
+          <div className="flex justify-between mb-2 text-gray-700">
+            <span>Additional Pages ({additionalFee.pages})</span>
+            <span>{formatVnd(additionalFee.total)}</span>
           </div>
+        )}
+
+        <div className="flex justify-between text-lg font-bold mt-4 text-green-700">
+          <span>Total</span>
+          <span>{formatVnd(originalFee + (additionalFee?.total || 0))}</span>
         </div>
       </div>
+
+      {/* Buttons */}
+      <div className="flex justify-center gap-4 mt-6">
+        <button
+          onClick={handleCompleteOrder}
+          className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-6 py-2 rounded-lg font-semibold shadow hover:opacity-90 transition"
+        >
+          Pay Now
+        </button>
+        <button
+          onClick={handleCancel}
+          className="border border-gray-300 text-gray-600 px-6 py-2 rounded-lg font-medium hover:bg-gray-100 transition"
+        >
+          Cancel
+        </button>
+      </div>
     </div>
-  );
+  </div>
+);
+
+
 };
 
 export default PaymentPage;
