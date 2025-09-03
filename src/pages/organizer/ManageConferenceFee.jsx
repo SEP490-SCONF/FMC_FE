@@ -40,7 +40,7 @@ const MODE_OPTIONS = {
   ],
   5: [ // Presentation Fee
     { value: "Regular", label: "Regular (Present)" },
-    { value: "Student", label: "Student (Sinh viên)" },
+    { value: "FPT Account", label: "FPT (Tài khoản FPT)" },
   ],
 };
 const { Option } = Select;
