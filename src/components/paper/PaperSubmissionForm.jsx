@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Buttonsubmit from "../ui/button/Button";
 import { useConference } from "../../context/ConferenceContext";
 import { getConferenceTopicsByConferenceId } from "../../services/ConferenceTopicService";
-import { resolveAuthors } from "../../services/UserConferenceRoleService";
+import { resolveAuthors,getUserRolesInConference } from "../../services/UserConferenceRoleService";
 import { useParams } from "react-router-dom";
 import { useUser } from "../../context/UserContext";
 import {
@@ -24,6 +24,7 @@ const rules = [
 
 const SubmitPapers = () => {
   const { selectedConference, fetchConferenceDetail } = useConference();
+  const [isForbiddenRole, setIsForbiddenRole] = useState(false);
   const { user } = useUser();
   const { id } = useParams();
   const [file, setFile] = useState(null);
@@ -54,7 +55,21 @@ const SubmitPapers = () => {
         .catch(() => setTopics([]));
     }
   }, [selectedConference]);
-
+  useEffect(() => {
+  if (user && selectedConference?.conferenceId) {
+    getUserRolesInConference(user.userId, selectedConference.conferenceId)
+      .then((roles) => {
+        
+        const roleArr = roles.data || roles;
+        if (roleArr.includes("Organizer") || roleArr.includes("Reviewer")) {
+          setIsForbiddenRole(true);
+        } else {
+          setIsForbiddenRole(false);
+        }
+      })
+      .catch(() => setIsForbiddenRole(false));
+  }
+}, [user, selectedConference]);
   useEffect(() => {
     if (selectedConference?.conferenceId) {
       // Lấy timeline để lấy ngày Submission Deadline
@@ -117,11 +132,15 @@ const SubmitPapers = () => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (isDeadlinePassed) {
-      toast.error("Submission deadline has passed. You cannot submit a paper.");
-      return;
-    }
+  e.preventDefault();
+  if (isForbiddenRole) {
+    toast.error("You are not allowed to submit a paper as an Organizer or Reviewer.");
+    return;
+  }
+  if (isDeadlinePassed) {
+    toast.error("Submission deadline has passed. You cannot submit a paper.");
+    return;
+  }
     setIsSubmitting(true);
     //   console.log("Debug values:", {
     //   file,
@@ -362,6 +381,11 @@ const SubmitPapers = () => {
               {isDeadlinePassed && (
                 <div className="text-red-600 font-semibold mt-2">
                   Submission deadline has passed. You cannot submit a paper.
+                </div>
+              )}
+              {isForbiddenRole && (
+                <div className="text-red-600 font-semibold mt-2">
+                  You are not allowed to submit a paper as an Organizer or Reviewer.
                 </div>
               )}
               {/* Link download PDF highlight */}

@@ -83,3 +83,7 @@ export const resolveAuthors = async (emails) => {
     emails: emails,
   });
 };
+
+export const getUserRolesInConference = async (userId, conferenceId) => {
+  return apiService.get(`/UserConferenceRoles/user/${userId}/conference/${conferenceId}/roles`);
+};
