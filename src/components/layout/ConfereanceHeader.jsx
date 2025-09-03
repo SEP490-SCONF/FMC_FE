@@ -11,21 +11,46 @@ import { getFeesByConferenceId } from "../../services/ConferenceFeesService";
 import PayService from "../../services/PayService";
 import NotificationDropdown from "./header/NotificationDropdown";
 import { toast } from "react-toastify";
+import { getUserConferenceRolesByUserId } from "../../services/UserConferenceRoleService";
+
 
 const Header = () => {
   const { user } = useUser();
   const { selectedConference } = useConference();
   const params = useParams();
+  const conferenceId = selectedConference?.conferenceId || params.id;
+
 
   const [notifications, setNotifications] = useState([]);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
 const [hasRegistered, setHasRegistered] = useState(false);
 const [participationFeeDetailId, setParticipationFeeDetailId] = useState(null);
+const [isOrganizer, setIsOrganizer] = useState(false);
+
 
   const toggleMobileMenu = () => {
     setIsMenuOpen((prev) => !prev);
   };
+
+  useEffect(() => {
+  const checkUserRole = async () => {
+    if (!user?.userId || !conferenceId) return;
+    try {
+      const roles = await getUserConferenceRolesByUserId(user.userId);
+      const isOrg = roles?.some(
+        (r) =>
+          String(r.conferenceId) === String(conferenceId) &&
+          r.roleName === "Organizer"
+      );
+      setIsOrganizer(isOrg);
+    } catch (err) {
+      console.error("Header: failed to check user role", err);
+    }
+  };
+  checkUserRole();
+}, [user?.userId, conferenceId]);
+
 
   // Fetch notifications
   useEffect(() => {
@@ -57,7 +82,6 @@ const [participationFeeDetailId, setParticipationFeeDetailId] = useState(null);
 
 
   // Prefer context id, fallback to URL param
-  const conferenceId = selectedConference?.conferenceId || params.id;
 
   useEffect(() => {
       const conferenceId = selectedConference?.conferenceId || params.id;
@@ -182,14 +206,17 @@ console.log("Header: API response", res);
               </Link>
             </li>
 
-            <li>
-  <Link
-    to={conferenceId ? `/conference/${conferenceId}/register` : "#"}
-    className="text-gray-700 font-semibold hover:text-blue-700 transition uppercase"
-  >
-    Register
-  </Link>
-</li>
+            {!isOrganizer && (
+  <li>
+    <Link
+      to={conferenceId ? `/conference/${conferenceId}/register` : "#"}
+      className="text-gray-700 font-semibold hover:text-blue-700 transition uppercase"
+    >
+      Register
+    </Link>
+  </li>
+)}
+
 
 
           </ul>

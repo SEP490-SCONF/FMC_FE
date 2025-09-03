@@ -24,66 +24,93 @@ const { userId, conferenceId, paperId, feeDetailId: initFeeDetailId, feeMode: in
 
 
   const displayName = user?.userName || user?.fullName || user?.name || 'Unknown';
-  const userEmail = user?.email || '';
-  const hasFptDiscount = userEmail.toLowerCase().includes('@fpt');
+    const userEmail = user?.email || '';
+  const isFptAccount =
+    userEmail.toLowerCase().includes('@fpt') ||
+    userEmail.toLowerCase().includes('@fe');
 
   useEffect(() => {
-  if (!conferenceId || !paperId) return;
+    if (!conferenceId || !paperId) return;
 
-  Promise.all([
-    getFeesByConferenceId(conferenceId),
-    getPaperPageCount(paperId)
-  ])
-    .then(([fees, pageCount]) => {
-       const visibleFees = fees.filter(f => f.isVisible);
-setFeeDetails(visibleFees);
+    Promise.all([
+      getFeesByConferenceId(conferenceId),
+      getPaperPageCount(paperId)
+    ])
+      .then(([fees, pageCount]) => {
+        const visibleFees = fees.filter(f => f.isVisible);
+        setFeeDetails(visibleFees);
 
-// nếu muốn lấy mode theo fee type
-if (!initFeeDetailId) {
-  const registrationFees = visibleFees.filter(f => f.feeTypeName === 'Registration');
-  if (registrationFees.length) {
-    setFeeDetail(registrationFees[0]);
-    setSelectedMode(registrationFees[0].mode);
-    setModes(registrationFees.map(f => f.mode));
-  }
-} else {
-  const detail = visibleFees.find(f => f.feeDetailId === initFeeDetailId);
-  if (detail) {
-    setFeeDetail(detail);
-    setSelectedMode(initFeeMode || detail.mode);
-    setModes(
-      visibleFees
-        .filter(f => f.feeTypeName === detail.feeTypeName)
-        .map(f => f.mode)
-    );
-  }
-}
+        // Nếu user là FPT/FE thì fix mode = FPT Account
+        if (isFptAccount) {
+          const fptFee = visibleFees.find(f => f.mode === "FPT Account");
+          if (fptFee) {
+            setFeeDetail(fptFee);
+            setSelectedMode("FPT Account");
+            setModes([ "FPT Account" ]); // chỉ cho hiển thị 1 mode
+          }
+        }
+        else {
+          // Normal logic cho user thường
+          if (!initFeeDetailId) {
+            const registrationFees = visibleFees.filter(f => f.feeTypeName === 'Registration');
+            if (registrationFees.length) {
+              setFeeDetail(registrationFees[0]);
+              setSelectedMode(registrationFees[0].mode);
+              setModes(registrationFees.map(f => f.mode));
+            }
+          } else {
+            const detail = visibleFees.find(f => f.feeDetailId === initFeeDetailId);
+            if (detail) {
+              setFeeDetail(detail);
+              setSelectedMode(initFeeMode || detail.mode);
+              setModes(
+                visibleFees
+                  .filter(f => f.feeTypeName === detail.feeTypeName)
+                  .map(f => f.mode)
+              );
+            }
+          }
+        }
 
-// Additional Page Fee
-if (includeAdditional) {
-  const addFee = visibleFees.find(f => f.feeTypeName === 'Additional Page');
-  if (addFee && pageCount > 5) {
-    const excessPages = pageCount - 5;
-    setAdditionalFee({
-      ...addFee,
-      total: addFee.amount * excessPages,
-      pages: excessPages
-    });
-  }
-}
+        // Additional Page Fee
+        if (includeAdditional) {
+          const addFee = visibleFees.find(f => f.feeTypeName === 'Additional Page');
+          if (addFee && pageCount > 5) {
+            const excessPages = pageCount - 5;
+            setAdditionalFee({
+              ...addFee,
+              total: addFee.amount * excessPages,
+              pages: excessPages
+            });
+          }
+        }
+      })
+      .catch(err => console.error('Error loading fees:', err))
+      .finally(() => setLoading(false));
+  }, [conferenceId, paperId, initFeeDetailId, initFeeMode, isFptAccount, includeAdditional]);
 
-    })
-    .catch(err => console.error('Error loading fees:', err))
-    .finally(() => setLoading(false));
-}, [conferenceId, paperId, initFeeDetailId, initFeeMode]);
 
   
 
   useEffect(() => {
-    if (!selectedMode) return;
-    const detail = feeDetails.find(f => f.mode === selectedMode && f.feeTypeName === feeDetail?.feeTypeName);
-    if (detail) setFeeDetail(detail);
-  }, [selectedMode, feeDetails, feeDetail?.feeTypeName]);
+  if (!selectedMode) return;
+
+  // Ưu tiên theo feeDetailId được truyền vào từ state
+  if (initFeeDetailId) {
+    const detail = feeDetails.find(f => f.feeDetailId === initFeeDetailId);
+    if (detail) {
+      setFeeDetail(detail);
+      return;
+    }
+  }
+
+  // Nếu không có thì fallback theo mode như cũ
+  const detail = feeDetails.find(
+    f => f.mode === selectedMode && f.feeTypeName === feeDetail?.feeTypeName
+  );
+  if (detail) setFeeDetail(detail);
+}, [selectedMode, feeDetails, feeDetail?.feeTypeName, initFeeDetailId]);
+
 
   const formatVnd = (n) => Number(n || 0).toLocaleString('vi-VN') + ' VND';
 
@@ -149,26 +176,22 @@ if (includeAdditional) {
         </div>
 
         {/* Mode selector */}
-        <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
-          <span className="font-medium text-gray-700">Mode</span>
-          <select
-            value={selectedMode}
-            onChange={e => setSelectedMode(e.target.value)}
-            className="border border-gray-300 rounded-md px-3 py-2"
-          >
-            {modes.map(mode => (
-              <option
-                key={mode}
-                value={mode}
-                disabled={mode === "Student" && !hasFptDiscount} // ❌ disable nếu không phải email FPT
-              >
-                {mode}
-                {mode === "Student" && !hasFptDiscount ? " (FPT only)" : ""}
-              </option>
-            ))}
-          </select>
+<div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">
+  <span className="font-medium text-gray-700">Mode</span>
+  <select
+    value={selectedMode}
+    onChange={e => setSelectedMode(e.target.value)}
+    className="border border-gray-300 rounded-md px-3 py-2"
+    disabled={isFptAccount} // ✅ disable nếu là FPT/FE
+  >
+    {modes.map(mode => (
+      <option key={mode} value={mode}>
+        {mode}
+      </option>
+    ))}
+  </select>
+</div>
 
-        </div>
 
         {/* Total Fee */}
         <div className="flex justify-between items-center p-4 bg-gray-50 rounded-lg">

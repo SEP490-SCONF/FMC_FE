@@ -245,19 +245,21 @@ const getPresentationFeeDetail = async () => {
             Certificate
           </Button>
 
-          {/* Publish Fee Button */}
-<Button
-  icon={<DollarOutlined />}
-  type="link"
-  onClick={async () => {
-    const registrationFeeId = await getRegistrationFeeDetailId();
-    const additionalFee = await getAdditionalPageFeeDetail();
-    if (!registrationFeeId) {
-      message.error("Cannot find Registration fee.");
-      return;
-    }
+            {/* Publish Fee Button */}
+{record.isPublished ? (
+  <Tag color="green">Published</Tag>
+) : (
+  <Button
+    icon={<DollarOutlined />}
+    type="link"
+    onClick={async () => {
+      const registrationFeeId = await getRegistrationFeeDetailId();
+      const additionalFee = await getAdditionalPageFeeDetail();
+      if (!registrationFeeId) {
+        message.error("Cannot find Registration fee.");
+        return;
+      }
 
-    if (!record.isPublished) {
       const feesToPay = [{ feeDetailId: registrationFeeId, mode: "Regular" }];
 
       // Nếu vượt quá 5 trang thì thêm Additional Page Fee
@@ -278,40 +280,37 @@ const getPresentationFeeDetail = async () => {
         okText: "Go to Payment",
         cancelText: "Cancel",
         onOk: () => {
-          // Gửi feesToPay sang PaymentPage
           navigate(`/author/payment/${record.paperId}`, {
             state: {
               userId,
               conferenceId,
               paperId: record.paperId,
-              fees: feesToPay, // array gồm Registration + AdditionalPage
-              includeAdditional: true,   // ✅ cho phép lấy thêm page fee
-
+              fees: feesToPay,
+              includeAdditional: true,
             },
           });
         },
       });
-    } else {
-      message.success("This paper has already been published.");
-    }
-  }}
->
-  Publish Payment
-</Button>
-
+    }}
+  >
+    Publish Payment
+  </Button>
+)}
 
 {/* Present Fee Button */}
-<Button
-  icon={<DollarOutlined />}
-  type="link"
-  onClick={async () => {
-    const presentationFee = await getPresentationFeeDetail();
-    if (!presentationFee) {
-      message.error("Cannot find Presentation fee.");
-      return;
-    }
+{record.isPresented ? (
+  <Tag color="blue">Presented</Tag>
+) : (
+  <Button
+    icon={<DollarOutlined />}
+    type="link"
+    onClick={async () => {
+      const presentationFee = await getPresentationFeeDetail();
+      if (!presentationFee) {
+        message.error("Cannot find Presentation fee.");
+        return;
+      }
 
-    if (!record.isPresented) {
       Modal.confirm({
         title: "Presentation Payment",
         content:
@@ -326,18 +325,16 @@ const getPresentationFeeDetail = async () => {
               paperId: record.paperId,
               feeDetailId: presentationFee.feeDetailId,
               feeMode: presentationFee.mode,
-              includeAdditional: false,  // 🚫 không tính thêm page fee
-
+              includeAdditional: false,
             },
           }),
       });
-    } else {
-      message.success("This paper has already been presented.");
-    }
-  }}
->
-  Present Payment
-</Button>
+    }}
+  >
+    Present Payment
+  </Button>
+)}
+
 
         </>
       )}

@@ -13,6 +13,9 @@ import { getFeesByConferenceId } from "../../services/ConferenceFeesService";
 import PayService from "../../services/PayService";
 import dayjs from "dayjs";
 import * as pdfjsLib from "pdfjs-dist/build/pdf";
+import { useUser } from "../../context/UserContext";
+import { getUserConferenceRolesByUserId } from "../../services/UserConferenceRoleService";
+
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -33,9 +36,28 @@ const Home = () => {
   const [publishedVisible, setPublishedVisible] = useState(false);
   const [hasPaid, setHasPaid] = useState(false);
   const [proceedingFee, setProceedingFee] = useState(null);
+  const { user } = useUser();
+const [isOrganizer, setIsOrganizer] = useState(false);
 
 
 
+useEffect(() => {
+  const checkRole = async () => {
+    if (!user?.userId || !selectedConference?.conferenceId) return;
+    try {
+      const roles = await getUserConferenceRolesByUserId(user.userId);
+      const hasOrg = roles?.some(
+        (r) =>
+          String(r.conferenceId) === String(selectedConference.conferenceId) &&
+          r.roleName === "Organizer"
+      );
+      setIsOrganizer(hasOrg);
+    } catch (err) {
+      console.error("Home: failed to check organizer role", err);
+    }
+  };
+  checkRole();
+}, [user?.userId, selectedConference?.conferenceId]);
 
   // Load conference
   useEffect(() => {
@@ -98,18 +120,26 @@ const Home = () => {
   if (firstProc) {
   try {
     const fees = await getFeesByConferenceId(selectedConference.conferenceId);
-const fee = fees.find(f => f.feeTypeName === "Proceedings Access");
-if (fee) {
-  setProceedingFee(fee);   // ✅ lưu feeDetailId đúng
-  const res = await PayService.hasUserPaidFee(
-    selectedConference.conferenceId,
-    fee.feeDetailId
-  );
-  const paid = res?.HasPaid ?? res?.hasPaid ?? false;
+const proceedingFees = fees.filter(f => f.feeTypeName === "Proceedings Access");
+
+if (proceedingFees.length > 0) {
+  let paid = false;
+  for (const f of proceedingFees) {
+    const res = await PayService.hasUserPaidFee(
+      selectedConference.conferenceId,
+      f.feeDetailId
+    );
+    if (res?.HasPaid || res?.hasPaid) {
+      paid = true;
+      setProceedingFee(f); // ✅ lưu đúng fee user đã thanh toán
+      break;
+    }
+  }
   setHasPaid(paid);
 } else {
   setHasPaid(false);
 }
+
 
   } catch {
     setHasPaid(false);
@@ -192,7 +222,10 @@ if (fee) {
     borderRadius: 8,
   }}
   onClick={() => {
-  if (!hasPaid) {
+  if (isOrganizer) {
+    // ✅ Organizer: mở luôn
+    setModalVisible(true);
+  } else if (!hasPaid) {
     Modal.confirm({
       title: "Payment Required",
       content: "You must complete the payment to view this proceeding.",
@@ -201,9 +234,9 @@ if (fee) {
       onOk: () => {
         navigate(`/author/payment`, {
           state: {
-            conferenceId: selectedConference.conferenceId,   // ✅ thêm conferenceId
-            feeDetailId: proceedingFee?.feeDetailId,  // ✅ lấy từ fee API, không phải proceeding
-            paperId: null                                    // có thể null vì không gắn paper
+            conferenceId: selectedConference.conferenceId,
+            feeDetailId: proceedingFee?.feeDetailId,
+            paperId: null,
           },
         });
       },
@@ -212,6 +245,7 @@ if (fee) {
     setModalVisible(true);
   }
 }}
+
 
 
 />

@@ -8,6 +8,10 @@ import PayService from "../../services/PayService";
 import { useNavigate } from "react-router-dom";
 import PDFBookViewer from "../../components/organizer/PDFBookViewer";
 import * as pdfjsLib from "pdfjs-dist/build/pdf";
+import { getUserConferenceRolesByUserId } from "../../services/UserConferenceRoleService";
+import { useUser } from "../../context/UserContext"; // nếu bạn đã có UserContext
+
+
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -23,9 +27,26 @@ export default function ViewProceedings() {
   const [viewMode, setViewMode] = useState("pdf");
   const [thumbnails, setThumbnails] = useState({});
   const [pendingPayment, setPendingPayment] = useState(null);
+  const { user } = useUser(); // 👈 lấy user
+  const [isOrganizer, setIsOrganizer] = useState(false);
 
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkRole = async () => {
+      if (!user?.userId) return;
+      try {
+        const roles = await getUserConferenceRolesByUserId(user.userId);
+        const hasOrg = roles?.some(r => r.roleName === "Organizer");
+        setIsOrganizer(hasOrg);
+      } catch (err) {
+        console.error("ViewProceedings: failed to check organizer role", err);
+      }
+    };
+    checkRole();
+  }, [user?.userId]);
+
 
   useEffect(() => {
     const fetchProceedings = async () => {
@@ -95,29 +116,50 @@ export default function ViewProceedings() {
 
   const handleProceedingClick = async (proc) => {
   const conferenceId = proc.conferenceId;
-  const feeDetailId = proc.feeDetailId;
+  if (!conferenceId) {
+    console.warn("Cannot check payment, missing conferenceId", proc);
+    return;
+  }
 
-  if (!conferenceId || !feeDetailId) {
-    console.warn("Cannot check payment, missing conferenceId or feeDetailId", proc);
+  // ✅ Nếu là Organizer thì cho xem luôn
+  if (isOrganizer) {
+    setSelectedProceeding(proc);
+    setViewMode("pdf");
+    setModalVisible(true);
     return;
   }
 
   try {
-    const res = await PayService.hasUserPaidFee(conferenceId, feeDetailId);
-    const hasPaid = res?.HasPaid ?? res?.hasPaid ?? false;
+    // Lấy tất cả fees của conference
+    const fees = await getFeesByConferenceId(conferenceId);
+    const proceedingFees = fees.filter(f => f.feeTypeName === "Proceedings Access");
+
+    if (!proceedingFees.length) {
+      console.warn("No proceeding fees found for conference", conferenceId);
+      return;
+    }
+
+    let hasPaid = false;
+    for (const f of proceedingFees) {
+      const res = await PayService.hasUserPaidFee(conferenceId, f.feeDetailId);
+      if (res?.HasPaid || res?.hasPaid) {
+        hasPaid = true;
+        break;
+      }
+    }
 
     if (hasPaid) {
       setSelectedProceeding(proc);
       setViewMode("pdf");
       setModalVisible(true);
     } else {
-      // thay vì navigate ngay -> mở popup confirm
-      setPendingPayment({ conferenceId, feeDetailId });
+      setPendingPayment({ conferenceId, feeDetailIds: proceedingFees.map(f => f.feeDetailId) });
     }
   } catch (err) {
     console.error("Error checking payment:", err);
   }
 };
+
 
 
 
@@ -159,23 +201,24 @@ export default function ViewProceedings() {
           Cancel
         </Button>,
         <Button
-          key="pay"
-          type="primary"
-          onClick={() => {
-            if (pendingPayment) {
-              navigate("/author/payment", {
-                state: {
-                  conferenceId: pendingPayment.conferenceId,
-                  feeDetailId: pendingPayment.feeDetailId,
-                  fees: [{ feeDetailId: pendingPayment.feeDetailId }],
-                  includeAdditional: false,
-                },
-              });
-            }
-          }}
-        >
-          Payment
-        </Button>,
+  key="pay"
+  type="primary"
+  onClick={() => {
+    if (pendingPayment) {
+      navigate("/author/payment", {
+        state: {
+          conferenceId: pendingPayment.conferenceId,
+          feeDetailId: pendingPayment.feeDetailIds[0], // mặc định chọn cái đầu
+          fees: pendingPayment.feeDetailIds.map(id => ({ feeDetailId: id })),
+          includeAdditional: false,
+        },
+      });
+    }
+  }}
+>
+  Payment
+</Button>
+,
       ]}
     >
       <Title level={4}>Proceedings Access Required</Title>

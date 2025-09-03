@@ -21,49 +21,57 @@ const RegisterPaymentPage = () => {
   const [selectedMode, setSelectedMode] = useState("");
   const [loading, setLoading] = useState(true);
 
-  const hasFptDiscount = userEmail.toLowerCase().includes("@fpt");
+  // ✅ check mail FE/FPT
+  const isFptAccount = /@(fpt|fe)\./i.test(userEmail);
 
   useEffect(() => {
-  if (!conferenceId || !userId) return;
+    if (!conferenceId || !userId) return;
 
-  const fetchFee = async () => {
-    try {
-      const fees = await getFeesByConferenceId(conferenceId);
+    const fetchFee = async () => {
+      try {
+        const fees = await getFeesByConferenceId(conferenceId);
 
-      // Chỉ lấy fees isVisible = true
-      const visibleFees = fees.filter(f => f.isVisible);
+        const visibleFees = fees.filter(f => f.isVisible);
+        setFeeDetails(visibleFees);
 
-      setFeeDetails(visibleFees);
+        // chỉ lấy participation fees
+        const participationFees = visibleFees.filter(f => f.feeTypeId === 2);
+        if (!participationFees.length)
+          throw new Error("Participation fee not found");
 
-      // Lấy tất cả participation fees
-      const participationFees = visibleFees.filter(f => f.feeTypeId === 2);
-      if (!participationFees.length) throw new Error("Participation fee not found");
+        if (isFptAccount) {
+          // ✅ ép mode FPT Account
+          const fptFee = participationFees.find(f => f.mode === "FPT Account");
+          if (fptFee) {
+            setFeeDetail(fptFee);
+            setSelectedMode("FPT Account");
+          }
+          setModes(participationFees.map(f => f.mode));
+        } else {
+          // mặc định mode đầu tiên
+          setFeeDetail(participationFees[0]);
+          setSelectedMode(participationFees[0].mode);
+          setModes(participationFees.map(f => f.mode));
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Cannot fetch participation fee.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-      // Mặc định chọn mode đầu tiên
-      setFeeDetail(participationFees[0]);
-      setSelectedMode(participationFees[0].mode);
+    fetchFee();
+  }, [conferenceId, userId, isFptAccount]);
 
-      // Lấy tất cả modes
-      setModes(participationFees.map(f => f.mode));
-    } catch (err) {
-      console.error(err);
-      alert("Cannot fetch participation fee.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchFee();
-}, [conferenceId, userId]);
-
-
-  // Khi đổi mode, cập nhật feeDetail
+  // khi đổi mode (nếu không phải FPT)
   useEffect(() => {
-  if (!selectedMode) return;
-  const detail = feeDetails.find(f => f.feeTypeId === 2 && f.mode === selectedMode && f.isVisible);
-  if (detail) setFeeDetail(detail);
-}, [selectedMode, feeDetails]);
-
+    if (!selectedMode || isFptAccount) return;
+    const detail = feeDetails.find(
+      f => f.feeTypeId === 2 && f.mode === selectedMode && f.isVisible
+    );
+    if (detail) setFeeDetail(detail);
+  }, [selectedMode, feeDetails, isFptAccount]);
 
   if (loading) return <p className="text-center mt-8">Loading payment info...</p>;
   if (!feeDetail) return <p className="text-center mt-8">Participation fee not found.</p>;
@@ -112,19 +120,14 @@ const RegisterPaymentPage = () => {
             value={selectedMode}
             onChange={e => setSelectedMode(e.target.value)}
             className="border border-gray-300 rounded-md px-3 py-2"
-            >
+            disabled={isFptAccount} // ✅ disable nếu mail @fpt/@fe
+          >
             {modes.map(mode => (
-                <option
-                key={mode}
-                value={mode}
-                disabled={mode === "Student" && !hasFptDiscount} // ❌ disable Student nếu không phải email FPT
-                >
+              <option key={mode} value={mode}>
                 {mode}
-                {mode === "Student" && !hasFptDiscount ? " (FPT only)" : ""}
-                </option>
+              </option>
             ))}
-            </select>
-
+          </select>
         </div>
 
         {/* Summary */}
@@ -134,7 +137,7 @@ const RegisterPaymentPage = () => {
             <span>{feeDetail.feeTypeName}</span>
             <span>{formatVnd(originalFee)}</span>
           </div>
-          
+
           <div className="flex justify-between font-semibold text-gray-900">
             <span>Total</span>
             <span>{formatVnd(originalFee)}</span>
