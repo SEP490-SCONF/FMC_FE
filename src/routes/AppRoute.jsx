@@ -43,6 +43,7 @@ import ViewProceedings from "../pages/User/ViewProceedings";
 import ProceedingPayment from "../pages/author/ProceedingPayment";
 import RegisterPage from "../pages/conference/RegisterPage";
 import RegisterPaymentPage from "../pages/author/RegisterPaymentPage";
+import ParticipantListPage from "../pages/organizer/ParticipantListPage";
 
 
 
@@ -153,6 +154,11 @@ export default function AppRoutes() {
                 path="/manage-conference/:conferenceId/fees"
                 element={<ManageConferenceFee />}
               />
+              <Route
+                path="/manage-conference/:conferenceId/participants"
+                element={<ParticipantListPage />}
+              />
+
             </Route>
           </Routes>
         </UserProvider>

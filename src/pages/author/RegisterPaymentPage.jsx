@@ -20,6 +20,8 @@ const RegisterPaymentPage = () => {
   const [modes, setModes] = useState([]);
   const [selectedMode, setSelectedMode] = useState("");
   const [loading, setLoading] = useState(true);
+  
+
 
   // ✅ check mail FE/FPT
   const isFptAccount = /@(fpt|fe)\./i.test(userEmail);
@@ -87,26 +89,29 @@ setModes(availableModes);
   const formatVnd = n => Number(n || 0).toLocaleString("vi-VN") + " VND";
 
   const handleCompleteOrder = async () => {
-    const paymentDTO = {
-      UserId: userId,
-      ConferenceId: conferenceId,
-      PaperId: null,
-      Fees: [{ FeeDetailId: feeDetail.feeDetailId, Quantity: 1 }],
-      Mode: selectedMode,
-    };
-
-    try {
-      const res = await PayService.createPayment(paymentDTO);
-      if (res?.checkoutUrl) {
-        window.location.href = res.checkoutUrl;
-      } else {
-        alert("Payment initiation failed!");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Payment failed!");
-    }
+  const paymentDTO = {
+    UserId: userId,
+    ConferenceId: conferenceId,
+    PaperId: null,
+    Fees: [{ FeeDetailId: feeDetail.feeDetailId, Quantity: 1 }],
+    Mode: selectedMode,
   };
+
+  try {
+    const res = await PayService.createPayment(paymentDTO);
+    if (res?.checkoutUrl) {
+      // ✅ Lưu conferenceId để PaymentSuccess dùng
+      localStorage.setItem("paymentConferenceId", conferenceId);
+      window.location.href = res.checkoutUrl;
+    } else {
+      alert("Payment initiation failed!");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Payment failed!");
+  }
+};
+
 
   return (
     <div className="max-w-2xl mx-auto p-6 bg-white shadow-lg rounded-xl border border-gray-200 mt-8">
@@ -135,7 +140,7 @@ setModes(availableModes);
             ))}
           </select>
         </div>
-        
+
         {/* Payment method */}
       <div className="p-4 bg-gray-50 rounded-lg mb-6">
         <p className="font-medium mb-2 text-gray-700">Payment Method</p>
