@@ -164,25 +164,7 @@ const ReviewSidebar = ({
           <option value="Rejected">Rejected</option>
         </select>
       </div>
-      <div className="mb-4">
-        <label className="block text-sm font-medium mb-1">AI Percentage</label>
-        <div className="flex items-center gap-2">
-          <input
-            type="text"
-            value={displayedAiPercentage + "%"}
-            className="w-full border rounded px-3 py-2 bg-gray-100"
-            disabled
-          />
-          {!readOnly && (
-            <button
-              className="px-4 py-2 bg-blue-100 text-blue-700 border border-blue-600 rounded font-semibold hover:bg-blue-600 hover:text-white transition"
-              onClick={handleCheckAiAgain}
-            >
-              Check Again
-            </button>
-          )}
-        </div>
-      </div>
+      
       {!readOnly && (
         <div className="flex gap-4 mt-auto">
           <button
