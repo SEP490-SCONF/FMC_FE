@@ -27,8 +27,21 @@ const ReviewSidebar = ({
     );
   }
   const navigate = useNavigate();
+  const [scoreError, setScoreError] = useState(""); // Thêm state cho lỗi score
+
   const handleChange = (field, value) => {
     if (!readOnly && onChange) {
+      if (field === "score") {
+        // Chỉ cho phép số từ 1 đến 10
+        const num = Number(value);
+        if (value === "" || (num >= 1 && num <= 10)) {
+          setScoreError("");
+          onChange({ ...review, [field]: value });
+        } else {
+          setScoreError("Score must be between 1 and 10");
+        }
+        return;
+      }
       if (field === "paperStatus" && !value) {
         value = "Need Revision";
       }
@@ -135,11 +148,16 @@ const ReviewSidebar = ({
         <label className="block text-sm font-medium mb-1">Score</label>
         <input
           type="number"
+          min={1}
+          max={10}
           value={review.score ?? ""}
           onChange={(e) => handleChange("score", e.target.value)}
           className="w-full border rounded px-3 py-2 bg-gray-100"
           disabled={readOnly}
         />
+        {scoreError && (
+          <div className="text-red-500 text-xs mt-1">{scoreError}</div>
+        )}
       </div>
       <div className="mb-4">
         <label className="block text-sm font-medium mb-1">Comments</label>
