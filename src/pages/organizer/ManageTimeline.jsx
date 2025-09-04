@@ -390,7 +390,6 @@ formData.append(
       const presenterAuthor = paper.paperAuthors?.[0]?.author;
       return {
         ...paper,
-        paperScore: paper.paperScore ?? null,   // ✅ đảm bảo luôn có score
 
         presenter: presenterAuthor
           ? {
@@ -774,7 +773,6 @@ const getDisabledEndTime = (schedules, startTime, editingId = null) => {
     const paperToUse = {
   paperId: item.paper?.paperId || item.paperId || undefined,
   title: item.paper?.title || "N/A",
-  paperScore: item.paperScore ?? "N/A",
   presenter: {
     authorId: item.presenterId || item.presenter?.authorId,
     name: item.presenterName || item.presenter?.name,
@@ -940,8 +938,7 @@ const getDisabledEndTime = (schedules, startTime, editingId = null) => {
       {selectedPaperForSchedule && (
   <div className="mt-2 flex items-center">
     <span>
-      📝 {selectedPaperForSchedule.title} | Score:{" "}
-      {selectedPaperForSchedule.paperScore ?? "N/A"}
+      📝 {selectedPaperForSchedule.title} 
     </span>
     <CloseOutlined
   onClick={() => {
@@ -1003,7 +1000,6 @@ const getDisabledEndTime = (schedules, startTime, editingId = null) => {
         >
           <List.Item.Meta
             title={paper.title}
-            description={`Score: ${paper.paperScore ?? "N/A"}`}
           />
         </List.Item>
       )}
